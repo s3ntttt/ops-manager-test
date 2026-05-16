@@ -262,6 +262,12 @@ select option{background:var(--surf2)}
   </div>
   <div style="display:flex;align-items:center;gap:6px">
     <span class="clbl">SHIFT</span>
+    <select id="shift-group-sel" onchange="if(S.loaded){loadRoster();}" style="width:52px">
+      <option value="A">A</option>
+      <option value="B">B</option>
+      <option value="C">C</option>
+      <option value="D">D</option>
+    </select>
     <select id="shift-sel" onchange="if(S.loaded){loadRoster();}">
       <option value="NIGHT">NIGHT</option>
       <option value="DAY">DAY</option>
@@ -542,10 +548,12 @@ function fbSignIn(){
         await loadSheetConfigs();
         const oldDate=document.getElementById('dp')?.value;
         const oldShift=document.getElementById('shift-sel')?.value;
+        const oldGroup=document.getElementById('shift-group-sel')?.value;
         await loadLastDate();
         const newDate=document.getElementById('dp')?.value;
         const newShift=document.getElementById('shift-sel')?.value;
-        if(S.loaded && newDate===oldDate && newShift===oldShift){
+        const newGroup=document.getElementById('shift-group-sel')?.value;
+        if(S.loaded && newDate===oldDate && newShift===oldShift && newGroup===oldGroup){
           // Roster already loaded for the same date/shift — just refresh from Firebase
           await fbLoad();
         } else {
@@ -564,10 +572,11 @@ function fbSignIn(){
 
 // ── Save / Load key ──
 function fbKey(){
-  const date = document.getElementById('dp')?.value||'';
-  const shift= document.getElementById('shift-sel')?.value||'';
+  const date  = document.getElementById('dp')?.value||'';
+  const group = document.getElementById('shift-group-sel')?.value||'';
+  const shift = document.getElementById('shift-sel')?.value||'';
   if(!date||!shift) return '';
-  return `shifts/${date}_${shift}`;
+  return `shifts/${date}_${group}_${shift}`;
 }
 
 const SAVE_FIELDS=['overrides','swaps','transfers','backups','ssTechs',
@@ -604,9 +613,10 @@ async function migrateLegacyData(){
 
 function saveLastDate(){
   if(!fbReady) return;
-  const d=document.getElementById('dp')?.value;
+  const d =document.getElementById('dp')?.value;
   const sh=document.getElementById('shift-sel')?.value;
-  if(d&&sh) fbDb.ref('settings/lastDate').set({date:d,shift:sh}).catch(()=>{});
+  const sg=document.getElementById('shift-group-sel')?.value;
+  if(d&&sh) fbDb.ref('settings/lastDate').set({date:d,shift:sh,shiftGroup:sg||'A'}).catch(()=>{});
 }
 
 function fbSave(){
@@ -661,11 +671,13 @@ async function loadLastDate(){
   try {
     const snap=await fbDb.ref('settings/lastDate').get();
     if(snap.exists()){
-      const {date,shift}=snap.val();
+      const {date,shift,shiftGroup}=snap.val();
       const dp=document.getElementById('dp');
       const ss=document.getElementById('shift-sel');
+      const sg=document.getElementById('shift-group-sel');
       if(dp&&date) dp.value=date;
       if(ss&&shift) ss.value=shift;
+      if(sg&&shiftGroup) sg.value=shiftGroup;
     }
   } catch(e){}
 }
@@ -1191,7 +1203,8 @@ async function loadRoster(){
   try{
     const rows = await fetchSheet();
     if(gen!==_rosterGen) return; // a newer loadRoster started — abort this one
-    const staff = parseRoster(rows, dateStr, shift);
+    const group = document.getElementById('shift-group-sel')?.value || 'C';
+    const staff = parseRoster(rows, dateStr, shift, group);
     S.staff = staff;
     // Reset shift-specific state before loading saved data
     S.overrides={}; S.swaps=[]; S.transfers=[];
@@ -1205,7 +1218,8 @@ async function loadRoster(){
       towerSlots:[{a:'',b:'',backup:''},{a:'',b:'',backup:''},{a:'',b:'',backup:''},{a:'',b:'',backup:''}]
     };
     S.loaded = true;
-    setSt(`${staff.length} staff · ${dateStr} · ${shift}`);
+    const group = document.getElementById('shift-group-sel')?.value||'';
+    setSt(`${staff.length} staff · ${dateStr} · Shift ${group} ${shift}`);
     hideLoading();
     renderAll();
     // Load saved Firebase state — if not ready yet, fbSignIn will call fbLoad when auth completes
@@ -1242,7 +1256,8 @@ function fmtDate(iso){
   return `${String(d.getDate()).padStart(2,'0')} ${M[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-function parseRoster(rows, targetDate, shiftType){
+function parseRoster(rows, targetDate, shiftType, shiftGroup){
+  shiftGroup = (shiftGroup||'C').toUpperCase();
   const sn = parseShortNames(rows);
 
   // 1. Find date column using anchor-offset approach
@@ -1329,8 +1344,8 @@ function parseRoster(rows, targetDate, shiftType){
   ];
   function detectSection(row){
     const txt = row.map(v=>String(v||'').toUpperCase()).join(' ');
-    // Must explicitly say "SHIFT C" — ignores Shift A, B, D rows
-    if(!txt.includes('SHIFT C')) return null;
+    // Must explicitly say the selected shift group — ignores other shift rows
+    if(!txt.includes('SHIFT '+shiftGroup)) return null;
     for(const {key,pats} of SECTION_MAP){
       for(const p of pats){ if(txt.includes(p)) return key; }
     }
@@ -1368,10 +1383,10 @@ function parseRoster(rows, targetDate, shiftType){
     }
   }
 
-  // Also detect any SHIFT A/B/D header so we can stop collecting
+  // Also detect any other-shift header so we can stop collecting
   function isOtherShiftHeader(row){
     const txt = row.map(v=>String(v||'').toUpperCase()).join(' ');
-    return /SHIFT\s+[ABD]/.test(txt) && !txt.includes('SHIFT C');
+    return /SHIFT\s+[ABCD]/.test(txt) && !txt.includes('SHIFT '+shiftGroup);
   }
 
   // ── Backup code parser ──
@@ -1428,9 +1443,9 @@ function parseRoster(rows, targetDate, shiftType){
       continue;
     }
 
-    // Detect other-shift section headers (A/B/D)
-    const otherM = txt.match(/\bSHIFT\s+([ABD])\b/);
-    if(otherM && txt.includes('SHIFT '+otherM[1]) && !txt.includes('SHIFT C')){
+    // Detect other-shift section headers (any shift except selected)
+    const otherM = txt.match(/\bSHIFT\s+([ABCD])\b/);
+    if(otherM && otherM[1]!==shiftGroup && txt.includes('SHIFT '+otherM[1]) && !txt.includes('SHIFT '+shiftGroup)){
       // Which dept is this?
       let otherTeam=null;
       for(const {key,pats} of SECTION_MAP){
@@ -1507,8 +1522,8 @@ function parseRoster(rows, targetDate, shiftType){
     const row=rows[i];
     if(!row||!row.length) continue;
     const txt=row.map(v=>String(v||'').toUpperCase()).join(' ');
-    const otherM=txt.match(/\bSHIFT\s+([ABD])\b/);
-    if(otherM&&!txt.includes('SHIFT C')){ dbgOtherSec='SHIFT '+otherM[1]; continue; }
+    const otherM=txt.match(/\bSHIFT\s+([ABCD])\b/);
+    if(otherM&&otherM[1]!==shiftGroup&&!txt.includes('SHIFT '+shiftGroup)){ dbgOtherSec='SHIFT '+otherM[1]; continue; }
     if(!dbgOtherSec) continue;
     const idRaw=cols.id!==null?String(row[cols.id]||'').trim():'';
     if(!/^M\d{4,}/i.test(idRaw)) continue;
@@ -3201,7 +3216,8 @@ function printSummary(){
 function buildTxt(){
   const ds=fmtDate(document.getElementById('dp').value);
   const sh=document.getElementById('shift-sel').value;
-  let t=`SHIFT C · OPS SUMMARY\n${ds} · ${sh}\n${'═'.repeat(40)}\n\n`;
+  const sg=document.getElementById('shift-group-sel').value;
+  let t=`SHIFT C · OPS SUMMARY\n${ds} · SHIFT ${sg} ${sh}\n${'═'.repeat(40)}\n\n`;
   t+=`OPS: ARR ${S.ops.ARR||'—'} | DEP ${S.ops.DEP||'—'} | TOW ${S.ops.TOW||'—'}\n\n`;
   if(S.pdsc.some(p=>p.reg||p.certifier)){
     t+=`PDSC\n${'─'.repeat(30)}\n`;
