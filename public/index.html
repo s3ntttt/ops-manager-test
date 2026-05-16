@@ -1452,7 +1452,32 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
     if(!row||!row.length) continue;
     const txt = row.map(v=>String(v||'').toUpperCase()).join(' ');
 
-    // Detect SHIFT C section headers
+    // Detect EXCLUDED sections — clear curSection so staff below are skipped.
+    // Check only the first 6 cells (not date columns) to avoid false matches
+    // on schedule values like "(PG) JED POSTING" in staff rows.
+    // Also gate on "no valid M##### in ID column" to skip staff data rows entirely.
+    {
+      const idChk = cols.id!==null ? String(row[cols.id]||'').trim() : '';
+      if(!/^M\d{4,}/i.test(idChk)){
+        const hdr = row.slice(0, Math.min(6,row.length)).map(v=>String(v||'').toUpperCase()).join(' ');
+        const isExcluded =
+          /\bPOSTING\b/.test(hdr)                                    || // POSTING section
+          hdr.includes('VEHICLE') || hdr.includes('TRANSPORT')       || // Vehicle/Transport team
+          hdr.includes('TOOL CRIB')                                  || // Tool Crib team
+          hdr.includes('SS NILAI')                                   || // SS Nilai outstation
+          (hdr.includes('STORE') && hdr.includes('LOGISTIC'))        || // Store & Logistics
+          hdr.includes('TRANSITION') || hdr.includes('DEPLOYMENT')   || // Transition/Deployment/Long Leaves
+          hdr.includes('LONG LEAVE')                                 || // Long Leaves
+          hdr.includes('PRODUCTION PLANNING')                        || // PPC management header
+          hdr.includes('PPC');                                          // PPC SHIFT A/B/C/D (all variants)
+        if(isExcluded){
+          curSection=null; curOtherSection=null; curOtherShift=null;
+          continue;
+        }
+      }
+    }
+
+    // Detect own-shift section headers
     const sec=detectSection(row);
     if(sec!==null){
       curSection=sec; curOtherSection=null; curOtherShift=null;
