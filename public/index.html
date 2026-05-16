@@ -1352,11 +1352,11 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
   }
 
   // 3. Detect column positions from any header row (row containing "Designation" or "Staff")
-  let cols = { id:null, name:null, desig:null, acType:null, desigCode:null, fleet:null };
+  let cols = { id:null, name:null, desig:null, acType:null, desigCode:null, fleet:null, shift:null };
   for(let i=0;i<rows.length;i++){
     const row=rows[i];
     const joined=row.map(v=>String(v||'').toLowerCase()).join('|');
-    if(!joined.includes('designation')&&!(joined.includes('staff')&&joined.includes('name'))) continue;
+    if(!joined.includes('designation')&&!(joined.includes('staff')&&joined.includes('name'))&&!joined.includes('staff id')) continue;
     row.forEach((cell,j)=>{
       const v=String(cell||'').toLowerCase().trim();
       if(/^staff.?id$|^id$/.test(v)             && cols.id===null)       cols.id=j;
@@ -1365,8 +1365,26 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
       if((v.includes('aircraft')||v.includes('certif')) && cols.acType===null) cols.acType=j;
       if(v.includes('desig code')                && cols.desigCode===null) cols.desigCode=j;
       if(v==='type'                               && cols.fleet===null)    cols.fleet=j;
+      if(v==='shift'                              && cols.shift===null)    cols.shift=j;
     });
     if(cols.id!==null||cols.name!==null) break;
+  }
+  // Fallback: if Shift column not found via header, try to detect it from data rows
+  // The roster structure has: Team,Staff ID,Staff Name,Desig,AcType,DesigCode,Type,Team,Shift,...
+  // so Shift is typically at index 8
+  if(cols.shift===null && cols.id!==null && cols.id>=1){
+    // Check index 8 of a staff row for A/B/C/D/OFC pattern
+    for(let i=10;i<Math.min(rows.length,50);i++){
+      const row=rows[i];
+      if(!row||!row.length) continue;
+      const idRaw=String(row[cols.id]||'').trim();
+      if(!/^M\d{4,}/i.test(idRaw)) continue;
+      for(let j=cols.id+1;j<Math.min(row.length,cols.id+10);j++){
+        const v=String(row[j]||'').trim().toUpperCase();
+        if(/^(A|B|C|D|OFC)$/.test(v)){ cols.shift=j; break; }
+      }
+      if(cols.shift!==null) break;
+    }
   }
   // Fallback: find id col from first M##### occurrence
   if(cols.id===null){
@@ -1477,8 +1495,13 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
       (S.exclusions||[]).includes(id); // permanently excluded staff
     if(isExcluded) continue;
 
-    // ── SHIFT C own staff ──
+    // Read Shift column value for this staff member
+    const staffShiftVal = cols.shift!==null ? String(row[cols.shift]||'').trim().toUpperCase() : '';
+
+    // ── Own-shift staff ──
     if(curSection){
+      // If Shift column is detectable, only collect staff whose shift matches selected group
+      if(staffShiftVal && staffShiftVal!==shiftGroup) continue; // belongs to different shift
       if(dbgSections[curSection]) dbgSections[curSection].count++;
       staff.push({ id, fullName,
         shortName: sn[fullName]||shortify(fullName),
@@ -1492,12 +1515,14 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
 
     // ── Cross-shift backup detection ──
     else if(curOtherSection){
+      // If Shift column detectable, skip if staff actually belongs to selected shift
+      if(staffShiftVal && staffShiftVal===shiftGroup) continue;
       const schedUpper=schedVal.toUpperCase().trim();
       const bk=parseBkCode(schedVal, shiftType);
       // Include if: specific backup code OR plain NIGHT/DAY matching current shift
       const isPlainMatch=schedUpper===shiftType||schedUpper===shiftType+' (MD)';
       if((!bk||!bk.matchesShift)&&!isPlainMatch) continue;
-      if(staff.some(s=>s.id===id||s.id===id+'_BK')) continue; // already in Shift C
+      if(staff.some(s=>s.id===id||s.id===id+'_BK')) continue; // already in own shift
       const targetTeam=(bk&&bk.dept)||curOtherSection;
       staff.push({ id: id+'_BK', fullName,
         shortName: sn[fullName]||shortify(fullName),
