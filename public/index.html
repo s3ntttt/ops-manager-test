@@ -304,17 +304,12 @@ select option{background:var(--surf2)}
   <div class="modal">
     <div class="modal-title">SETUP</div>
     <div style="font-size:11px;color:var(--txt2);margin-bottom:20px;line-height:1.7">
-      Connect to your organisation's Google Sheet. The app reads roster data only — nothing is written back.
-      You'll need a Google Sheets API key from Google Cloud Console.
-    </div>
-    <div class="form-g">
-      <label>GOOGLE SHEETS API KEY</label>
-      <input type="password" id="su-key" placeholder="AIza...">
-      <div class="form-hint">Google Cloud Console → APIs &amp; Services → Credentials → API Key.<br>Enable "Google Sheets API" for the key.</div>
+      Connect to your organisation's Google Sheet. The API key is managed by the server — just enter the Sheet ID and Tab Name.
     </div>
     <div class="form-g">
       <label>SHEET ID</label>
       <input type="text" id="su-sid" value="1bdJVm15vGk7Av-LMxSbsj0mbUK8ln9x-gvMW5tTubpg">
+      <div class="form-hint">Found in the Google Sheet URL between /d/ and /edit</div>
     </div>
     <div class="form-g">
       <label>TAB NAME (e.g. KUL/0526/R0)</label>
@@ -433,13 +428,44 @@ select option{background:var(--surf2)}
 
 <!-- CONFIG MODAL -->
 <div class="overlay" id="cfg-ov">
-  <div class="modal">
+  <div class="modal" style="max-width:540px;max-height:90vh;overflow-y:auto">
     <button class="modal-close" onclick="closeCfg()">✕</button>
     <div class="modal-title">CONFIG</div>
-    <div class="form-g"><label>API KEY</label><input type="password" id="cfg-key"></div>
+
+    <!-- Default / fallback sheet -->
+    <div style="font-size:10px;color:var(--txt2);letter-spacing:1.5px;margin-bottom:8px">DEFAULT SHEET (fallback)</div>
     <div class="form-g"><label>SHEET ID</label><input type="text" id="cfg-sid"></div>
     <div class="form-g"><label>TAB NAME</label><input type="text" id="cfg-tab"></div>
-    <button class="btn btn-amber" style="width:100%" onclick="saveCfg(false)">SAVE</button>
+    <button class="btn btn-amber" style="width:100%;margin-bottom:20px" onclick="saveCfg(false)">SAVE DEFAULT</button>
+
+    <!-- Per-month sheet configs -->
+    <div style="font-family:var(--cond);font-size:13px;font-weight:700;letter-spacing:2px;color:var(--amber);margin-bottom:10px;padding-top:12px;border-top:1px solid var(--b)">
+      📅 MONTHLY ROSTERS
+    </div>
+    <div style="font-size:10px;color:var(--txt3);margin-bottom:10px">Each month's roster may come from a different Google Sheet. The app automatically picks the right one based on the date you're viewing.</div>
+
+    <!-- Existing configs list -->
+    <div id="sheet-configs-list" style="margin-bottom:14px"></div>
+
+    <!-- Add new config -->
+    <div style="background:var(--bg);border:1px solid var(--b);border-radius:var(--r);padding:12px;margin-bottom:8px">
+      <div style="font-size:10px;color:var(--txt2);letter-spacing:1.5px;margin-bottom:10px">ADD NEW MONTH</div>
+      <div style="display:grid;grid-template-columns:80px 1fr;gap:8px;margin-bottom:8px">
+        <div>
+          <div style="font-size:9px;color:var(--txt3);margin-bottom:4px">MONTH (MMYY)</div>
+          <input type="text" id="sc-mmyy" placeholder="0626" maxlength="4" style="width:100%">
+        </div>
+        <div>
+          <div style="font-size:9px;color:var(--txt3);margin-bottom:4px">TAB NAME</div>
+          <input type="text" id="sc-tab" placeholder="KUL/0626/R0" style="width:100%">
+        </div>
+      </div>
+      <div style="margin-bottom:8px">
+        <div style="font-size:9px;color:var(--txt3);margin-bottom:4px">SHEET ID</div>
+        <input type="text" id="sc-sid" placeholder="Paste the Google Sheet ID from the URL" style="width:100%">
+      </div>
+      <button class="btn btn-amber btn-sm" onclick="addSheetConfig()" style="width:100%">+ ADD MONTH</button>
+    </div>
   </div>
 </div>
 
@@ -513,6 +539,7 @@ function fbSignIn(){
         await loadTrainees();
         await loadTowers();
         await loadExclusions();
+        await loadSheetConfigs();
         const oldDate=document.getElementById('dp')?.value;
         const oldShift=document.getElementById('shift-sel')?.value;
         await loadLastDate();
@@ -733,6 +760,7 @@ const S = {
     sid:'1bdJVm15vGk7Av-LMxSbsj0mbUK8ln9x-gvMW5tTubpg',
     tab:'KUL/0526/R0'
   },
+  sheetConfigs: {}, // keyed by MMYY e.g. "0526" → { sid, tab }
   staff: [],
   overrides: {},
   nicknames: {}, // id → custom nickname, persisted to localStorage
@@ -840,6 +868,90 @@ function saveTrainees(){
   if(fbReady) fbDb.ref('settings/trainees').set(S.trainees.permanent).catch(e=>console.warn('Trainees save error:',e));
 }
 
+// ═══════════════════════════════════
+// SHEET CONFIGS (per-month)
+// ═══════════════════════════════════
+// Key format: MMYY e.g. "0526" = May 2026
+
+function dateToMmyy(dateStr){
+  // dateStr = "2026-05-18" → "0526"
+  if(!dateStr) return '';
+  const [yr, mo] = dateStr.split('-');
+  return mo + yr.slice(2);
+}
+
+function mmyyToLabel(mmyy){
+  // "0526" → "May 2026"
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const mo = parseInt(mmyy.slice(0,2),10);
+  const yr = '20' + mmyy.slice(2);
+  return (months[mo-1]||mmyy)+' '+yr;
+}
+
+function getSheetConfigForDate(dateStr){
+  const key = dateToMmyy(dateStr);
+  if(key && S.sheetConfigs[key]) return S.sheetConfigs[key];
+  return { sid: S.cfg.sid, tab: S.cfg.tab }; // fallback to default
+}
+
+async function loadSheetConfigs(){
+  // Load from localStorage first (fast)
+  try{ const lc=JSON.parse(localStorage.getItem('ops_sheetConfigs')||'{}'); if(lc) S.sheetConfigs=lc; }catch(_){}
+  // Then sync from Firebase (authoritative)
+  if(!fbReady) return;
+  try{
+    const snap=await fbDb.ref('settings/sheetConfigs').get();
+    if(snap.exists()){ S.sheetConfigs=snap.val()||{}; localStorage.setItem('ops_sheetConfigs',JSON.stringify(S.sheetConfigs)); }
+  }catch(e){ console.warn('loadSheetConfigs:',e); }
+}
+
+async function saveSheetConfigEntry(mmyy, sid, tab){
+  if(!mmyy||!sid||!tab) return;
+  S.sheetConfigs[mmyy]={ sid, tab };
+  localStorage.setItem('ops_sheetConfigs', JSON.stringify(S.sheetConfigs));
+  if(fbReady) await fbDb.ref('settings/sheetConfigs/'+mmyy).set({sid,tab}).catch(e=>console.warn(e));
+  renderSheetConfigs();
+}
+
+async function deleteSheetConfigEntry(mmyy){
+  if(!confirm('Remove config for '+mmyyToLabel(mmyy)+'?')) return;
+  delete S.sheetConfigs[mmyy];
+  localStorage.setItem('ops_sheetConfigs', JSON.stringify(S.sheetConfigs));
+  if(fbReady) await fbDb.ref('settings/sheetConfigs/'+mmyy).remove().catch(e=>console.warn(e));
+  renderSheetConfigs();
+}
+
+function renderSheetConfigs(){
+  const el=document.getElementById('sheet-configs-list');
+  if(!el) return;
+  const keys=Object.keys(S.sheetConfigs).sort().reverse();
+  if(!keys.length){
+    el.innerHTML='<div style="font-size:11px;color:var(--txt3);padding:8px 0">No monthly configs yet. Add one below.</div>';
+    return;
+  }
+  el.innerHTML=keys.map(k=>{
+    const c=S.sheetConfigs[k];
+    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--b);font-size:11px">
+      <div style="min-width:80px;font-weight:700;color:var(--amber)">${mmyyToLabel(k)}</div>
+      <div style="flex:1;color:var(--txt2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${c.tab}">${c.tab}</div>
+      <button class="btn btn-ghost btn-sm" onclick="deleteSheetConfigEntry('${k}')" style="padding:2px 8px;font-size:10px;color:var(--red)">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function addSheetConfig(){
+  const mmyy = (document.getElementById('sc-mmyy').value||'').trim().replace('/','');
+  const sid  = (document.getElementById('sc-sid').value||'').trim();
+  const tab  = (document.getElementById('sc-tab').value||'').trim();
+  if(!mmyy||mmyy.length!==4){ alert('Enter month in MMYY format, e.g. 0626 for June 2026'); return; }
+  if(!sid){ alert('Sheet ID is required'); return; }
+  if(!tab){ alert('Tab name is required'); return; }
+  saveSheetConfigEntry(mmyy, sid, tab);
+  document.getElementById('sc-mmyy').value='';
+  document.getElementById('sc-sid').value='';
+  document.getElementById('sc-tab').value='';
+}
+
 async function loadTowers(){
   if(!fbReady) return;
   try {
@@ -916,9 +1028,9 @@ function open_setup(){
 }
 function close_setup(){ document.getElementById('setup-ov').classList.remove('show'); }
 function openSettings(){
-  document.getElementById('cfg-key').value = S.cfg.key;
   document.getElementById('cfg-sid').value = S.cfg.sid;
   document.getElementById('cfg-tab').value = S.cfg.tab;
+  renderSheetConfigs();
   document.getElementById('cfg-ov').classList.add('show');
 }
 function closeCfg(){ document.getElementById('cfg-ov').classList.remove('show'); }
@@ -1052,13 +1164,12 @@ function saveCurrentAsRoster(){
 }
 
 function saveCfg(fromSetup){
-  const [kEl,sEl,tEl] = fromSetup
-    ? ['su-key','su-sid','su-tab']
-    : ['cfg-key','cfg-sid','cfg-tab'];
-  S.cfg.key = document.getElementById(kEl).value.trim();
+  const [sEl,tEl] = fromSetup
+    ? ['su-sid','su-tab']
+    : ['cfg-sid','cfg-tab'];
   S.cfg.sid = document.getElementById(sEl).value.trim();
   S.cfg.tab = document.getElementById(tEl).value.trim();
-  if(!S.cfg.key){ alert('Please enter your API key.'); return; }
+  if(!S.cfg.sid){ alert('Please enter the Sheet ID.'); return; }
   localStorage.setItem('ops_cfg', JSON.stringify(S.cfg));
   close_setup(); closeCfg();
   loadRoster();
@@ -1072,7 +1183,6 @@ function dateChanged(){ if(S.loaded) loadRoster(); }
 // ═══════════════════════════════════
 let _rosterGen=0; // increment on each call; stale calls abort on completion
 async function loadRoster(){
-  if(!S.cfg.key){ open_setup(); return; }
   const gen=++_rosterGen; // capture this call's generation
   const dateStr = fmtDate(document.getElementById('dp').value);
   const shift   = document.getElementById('shift-sel').value;
@@ -1109,8 +1219,11 @@ async function loadRoster(){
 }
 
 async function fetchSheet(){
+  // Pick the right sheet config for the selected month
+  const dateStr = document.getElementById('dp')?.value || '';
+  const cfg = getSheetConfigForDate(dateStr);
   // Route through the backend proxy — API key stays server-side
-  const params = new URLSearchParams({ sid: S.cfg.sid, tab: S.cfg.tab });
+  const params = new URLSearchParams({ sid: cfg.sid, tab: cfg.tab });
   const headers = _sessionToken ? { 'Authorization': `Bearer ${_sessionToken}` } : {};
   const r = await fetch(`/api/sheets?${params}`, { headers });
   if(!r.ok){
