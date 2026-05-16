@@ -1,0 +1,4 @@
+# Never commit secrets or dependencies
+.env
+node_modules/
+npm-debug.log*

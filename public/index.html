@@ -1,0 +1,3692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPS MANAGER · SHIFT C</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Inter+Tight:wght@600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<style>
+:root{
+  --bg:#F0F4F8;--surf:#FFFFFF;--surf2:#F8FAFC;--surf3:#EEF2F6;
+  --b:#D1DCE8;--b2:#B8C8D8;
+  --amber:#D97706;--amber2:#F59E0B;
+  --txt:#0D1B2A;--txt2:#2D4A6B;--txt3:#4A6E8A;
+  --green:#059669;--gbg:#ECFDF5;
+  --blue:#2563EB;--bbg:#EFF6FF;
+  --orange:#EA580C;--obg:#FFF7ED;
+  --red:#DC2626;--rbg:#FEF2F2;
+  --purple:#7C3AED;--pbg:#F5F3FF;
+  --yellow:#D97706;--ybg:#FFFBEB;
+  --teal:#0D9488;--tbg:#F0FDFA;
+  --gray:#6B7280;
+  --r:6px;
+  --mono:'Inter',sans-serif;
+  --cond:'Inter Tight',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px}
+body{font-family:var(--mono);background:var(--bg);color:var(--txt);min-height:100vh;line-height:1.5}
+
+/* ── HEADER ── */
+#hdr{background:var(--surf);border-bottom:1px solid var(--b);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:52px;position:sticky;top:0;z-index:100}
+.logo{font-family:var(--cond);font-size:20px;font-weight:700;color:var(--amber);letter-spacing:3px}
+.logo em{color:var(--txt2);font-style:normal;font-weight:400}
+
+/* ── CONTROL BAR ── */
+#ctrlbar{background:var(--surf2);border-bottom:1px solid var(--b);padding:10px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.clbl{font-size:10px;color:var(--txt2);letter-spacing:1.5px}
+input[type=date],input[type=text],input[type=password],select{
+  background:var(--surf);border:1px solid var(--b);border-radius:var(--r);
+  color:var(--txt);padding:5px 10px;font-family:var(--mono);font-size:12px;outline:none;transition:border-color .15s}
+input[type=date]:focus,input[type=text]:focus,input[type=password]:focus,select:focus{border-color:var(--amber)}
+select option{background:var(--surf2)}
+
+/* ── BUTTONS ── */
+.btn{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1px;border:none;border-radius:var(--r);padding:6px 14px;cursor:pointer;transition:opacity .15s,transform .1s}
+.btn:hover{opacity:.85}.btn:active{transform:scale(.97)}
+.btn-amber{background:var(--amber);color:#000}
+.btn-ghost{background:transparent;border:1px solid var(--b2);color:var(--txt2)}
+.btn-ghost:hover{border-color:var(--amber);color:var(--amber)}
+.btn-sm{padding:4px 10px;font-size:10px}
+.btn-red{background:var(--rbg);color:var(--red);border:1px solid #3A1010}
+.btn-teal{background:var(--tbg);color:var(--teal);border:1px solid #063830}
+
+/* ── TABS ── */
+#tabs{background:var(--surf);border-bottom:1px solid var(--b);padding:0 20px;display:flex}
+.tab{font-family:var(--cond);font-size:13px;font-weight:600;letter-spacing:2px;color:var(--txt2);padding:12px 18px;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s}
+.tab:hover{color:var(--txt)}
+.tab.active{color:var(--amber);border-bottom-color:var(--amber)}
+.tab .cnt{display:inline-block;margin-left:5px;background:var(--surf2);border-radius:10px;padding:1px 6px;font-size:10px;color:var(--txt2)}
+.tab.active .cnt{background:var(--amber);color:#000}
+
+/* ── CONTENT ── */
+#content{padding:20px;max-width:1400px}
+.panel{display:none}.panel.active{display:block}
+
+/* ── CATEGORY SECTION ── */
+.cat-sec{margin-bottom:20px}
+.cat-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.cat-lbl{font-family:var(--cond);font-size:11px;font-weight:700;letter-spacing:3px;color:var(--txt2)}
+.cat-div{flex:1;height:1px;background:var(--b)}
+.cat-cnt{font-size:10px;color:var(--txt3)}
+
+/* ── STAFF GRID ── */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:8px}
+
+/* ── STAFF CARD ── */
+.card{background:var(--surf);border:1px solid var(--b);border-radius:var(--r);padding:10px 12px;cursor:pointer;transition:border-color .15s,background .15s;position:relative;border-left:3px solid transparent}
+.card:hover{border-color:var(--b2);background:var(--surf2)}
+.card.working{border-left-color:var(--green)}
+.card.standby{border-left-color:var(--blue)}
+.card.leave{border-left-color:var(--orange)}
+.card.absent{border-left-color:var(--red)}
+.card.flying{border-left-color:var(--blue)}
+.card.posting{border-left-color:var(--purple)}
+.card.xfer{border-left-color:#2DD4BF;opacity:.4}
+.bxf{background:#041A18;color:#2DD4BF;border-color:#063830}
+.card-moved{border-left-color:var(--blue)!important;border-style:dashed!important}
+.card.course{border-left-color:var(--yellow)}
+.card.off{border-left-color:var(--txt3);opacity:.55}
+.card.bkcard{border-left-color:var(--teal)}
+.cname{font-family:var(--cond);font-size:15px;font-weight:700;letter-spacing:.5px;color:var(--txt);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card.bkcard .cname{color:var(--amber2)}
+.cmeta{font-size:10px;color:var(--txt2);margin-bottom:7px}
+.badge{display:inline-block;font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 6px;border-radius:3px;border:1px solid}
+.bwk{background:var(--gbg);color:var(--green);border-color:#0D3A24}
+.bst{background:var(--bbg);color:var(--blue);border-color:#0D2A48}
+.blv{background:var(--obg);color:var(--orange);border-color:#3A1A04}
+.bab{background:var(--rbg);color:var(--red);border-color:#3A0D0D}
+.bfl{background:var(--bbg);color:#93C5FD;border-color:#0D2A48}
+.bps{background:var(--pbg);color:var(--purple);border-color:#2A0848}
+.bcr{background:var(--ybg);color:var(--yellow);border-color:#3A2A04}
+.bof{background:var(--bg);color:var(--gray);border-color:var(--b)}
+.bbk{background:var(--tbg);color:var(--teal);border-color:#063830}
+.bktag{display:inline-block;font-size:8px;font-weight:700;letter-spacing:1px;padding:1px 4px;background:#1C1500;color:var(--amber);border:1px solid #3A2A00;border-radius:2px;margin-left:4px;vertical-align:middle}
+.ovr-star{color:var(--amber);font-size:9px}
+
+/* ── BACKUP SECTION ── */
+.bk-sec{background:var(--bg);border:1px dashed var(--b2);border-radius:var(--r);padding:14px 16px;margin-top:6px}
+.bk-title{font-family:var(--cond);font-size:11px;font-weight:700;letter-spacing:3px;color:var(--amber);margin-bottom:12px}
+.bk-form{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.bk-form input,.bk-form select{font-size:11px;padding:4px 8px}
+
+/* ── SUMMARY ── */
+.sum-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.scard{background:var(--surf);border:1px solid var(--b);border-radius:var(--r);padding:14px 16px}
+.stitle{font-family:var(--cond);font-size:11px;font-weight:700;letter-spacing:3px;color:var(--amber);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--b)}
+.srow{display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:3px 0}
+.srow .lbl{color:var(--txt2)}.srow .val{font-weight:700;color:var(--txt)}
+.val-g{color:var(--green)!important}.val-r{color:var(--red)!important}
+.val-o{color:var(--orange)!important}.val-a{color:var(--amber)!important}
+.val-b{color:var(--blue)!important}.val-p{color:var(--purple)!important}
+.val-t{color:var(--teal)!important}
+
+/* ── ROLES ── */
+.roles-sec{background:var(--surf);border:1px solid var(--b);border-radius:var(--r);padding:14px 16px;margin-bottom:16px}
+.roles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:8px}
+.role-item{background:var(--bg);border:1px solid var(--b);border-radius:var(--r);padding:8px 10px}
+.role-nm{font-size:9px;font-weight:700;letter-spacing:2px;color:var(--txt2);margin-bottom:4px}
+.role-item select{width:100%;font-size:11px;padding:4px 6px}
+
+/* ── SOC TABLE ── */
+.soc-wrap{background:var(--surf);border:1px solid var(--b);border-radius:var(--r);padding:14px 16px;margin-bottom:16px}
+.tbl{width:100%;border-collapse:collapse;font-size:11px}
+.tbl th{background:var(--bg);color:var(--txt2);font-size:9px;letter-spacing:1.5px;text-align:left;padding:6px 8px;border-bottom:1px solid var(--b)}
+.tbl td{padding:4px 6px;border-bottom:1px solid var(--b)}
+.tbl input{width:100%;background:transparent;border:none;color:var(--txt);font-family:var(--mono);font-size:11px;outline:none;padding:0}
+.tbl input:focus{color:var(--amber)}
+
+/* ── OPS NUMBERS ── */
+.ops-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.ops-card{background:var(--bg);border:1px solid var(--b);border-radius:var(--r);padding:10px 12px;text-align:center}
+.ops-lbl{font-size:9px;color:var(--txt2);letter-spacing:2px;margin-bottom:4px}
+.ops-card input{background:transparent;border:none;color:var(--amber);font-family:var(--cond);font-size:28px;font-weight:700;text-align:center;width:100%;outline:none}
+
+/* ── SEC TITLE ── */
+.sec-t{font-family:var(--cond);font-size:11px;font-weight:700;letter-spacing:3px;color:var(--amber);margin-bottom:10px}
+
+/* ── ALERT ── */
+.alert{background:#1A0C04;border:1px solid #3A1A04;border-radius:var(--r);padding:8px 14px;font-size:11px;color:var(--orange);margin-bottom:12px}
+
+/* ── DIVIDER ── */
+.divider{height:1px;background:var(--b);margin:8px 0}
+
+/* ── SETUP / MODAL ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;align-items:center;justify-content:center}
+.overlay.show{display:flex}
+.modal{background:var(--surf);border:1px solid var(--b2);border-radius:12px;padding:32px 40px;max-width:480px;width:100%;position:relative}
+.modal-title{font-family:var(--cond);font-size:20px;font-weight:700;letter-spacing:3px;color:var(--amber);margin-bottom:20px}
+.form-g{margin-bottom:14px}
+.form-g label{display:block;font-size:10px;color:var(--txt2);letter-spacing:1.5px;margin-bottom:5px}
+.form-g input{width:100%}
+.form-hint{font-size:10px;color:var(--txt3);margin-top:3px;line-height:1.5}
+.modal-close{position:absolute;top:14px;right:16px;background:transparent;border:none;color:var(--txt2);font-size:18px;cursor:pointer}
+
+/* ── LOADING / ERROR ── */
+.loading-wrap{padding:40px 0;display:flex;align-items:center;gap:10px;color:var(--txt2);font-size:12px}
+.spinner{width:16px;height:16px;border:2px solid var(--b2);border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err-box{background:var(--rbg);border:1px solid #3A0D0D;border-radius:var(--r);padding:12px 16px;color:var(--red);font-size:12px;margin-top:12px;white-space:pre-wrap}
+
+/* ── PRINT ── */
+@media print{
+  @page{ size:A4 landscape; margin:4mm; }
+
+  #hdr,#ctrlbar,#tabs,.np,.bk-form,
+  #panel-lo,#panel-irreg,#panel-wo,#panel-cim,
+  #access-ov{ display:none!important }
+
+  #panel-summary{ display:block!important }
+
+  html,body{
+    background:#fff!important;
+    color:#000!important;
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+  }
+
+  /* Zoom entire content to fit on one page */
+  #cs{ zoom:0.6; }
+
+  /* Main 3-col grid */
+  .sum-grid{
+    grid-template-columns:190px 1fr 290px!important;
+    gap:8px!important;
+  }
+
+  /* RIGHT COLUMN: split into 2 sub-columns using CSS columns */
+  .sum-grid > div:last-child{
+    columns:2!important;
+    column-gap:6px!important;
+  }
+  .sum-grid > div:last-child > div{
+    break-inside:avoid!important;
+    margin-bottom:4px!important;
+  }
+
+  /* Compact text */
+  .sum-grid *{ font-size:7px!important; line-height:1.15!important; }
+  .badge{ font-size:5.5px!important; padding:1px 2px!important; }
+  .scard{ padding:1px 3px!important; margin-bottom:1px!important; border:1px solid #ccc!important; }
+  table{ border-collapse:collapse!important; }
+  th,td{ padding:1px 3px!important; font-size:6.5px!important; border:1px solid #ccc!important; }
+  input{ border:none!important; background:transparent!important; padding:0!important; }
+  button{ display:none!important; }
+  #xshift-banner{ font-size:6.5px!important; padding:2px 4px!important; margin-bottom:3px!important; }
+}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .sum-grid{grid-template-columns:1fr}
+  .ops-grid{grid-template-columns:repeat(2,1fr)}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+  #ctrlbar{gap:8px}
+}
+</style>
+</head>
+<body>
+
+<!-- ACCESS CODE SCREEN -->
+<div id="access-ov" style="position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center">
+  <div style="background:var(--surf);border:1px solid var(--b);border-radius:12px;padding:32px 40px;max-width:380px;width:90%;text-align:center">
+    <div style="font-family:var(--cond);font-size:28px;font-weight:700;color:var(--amber);letter-spacing:4px;margin-bottom:6px">OPS MGR</div>
+    <div style="font-size:11px;color:var(--txt3);letter-spacing:2px;margin-bottom:28px">SHIFT C · BATIK AIR KUL</div>
+    <div style="font-size:10px;color:var(--txt2);margin-bottom:10px;text-align:left">TEAM ACCESS CODE</div>
+    <input id="access-input" type="password" placeholder="Enter access code" onkeydown="if(event.key==='Enter')checkAccess()"
+      style="width:100%;background:var(--surf2);border:1px solid var(--b);border-radius:6px;color:var(--txt);padding:10px 14px;font-family:var(--mono);font-size:14px;outline:none;box-sizing:border-box;margin-bottom:12px;text-align:center;letter-spacing:4px">
+    <div id="access-err" style="font-size:11px;color:var(--red);margin-bottom:12px;min-height:16px"></div>
+    <button onclick="checkAccess()" class="btn btn-amber" style="width:100%;font-size:13px;padding:10px;letter-spacing:2px">ENTER</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<!-- HEADER -->
+<div id="hdr">
+  <div class="logo">OPS MGR <em>· SHIFT C</em></div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span id="save-ts" style="font-size:10px;color:var(--txt3)"></span>
+    <span id="fetch-ts" style="font-size:10px;color:var(--txt3)"></span>
+    <button class="btn btn-ghost btn-sm np" onclick="openSettings()">⚙ CONFIG</button>
+  </div>
+</div>
+
+<!-- CONTROL BAR -->
+<div id="ctrlbar" class="np">
+  <div style="display:flex;align-items:center;gap:6px">
+    <span class="clbl">DATE</span>
+    <input type="date" id="dp" onchange="dateChanged()">
+  </div>
+  <div style="display:flex;align-items:center;gap:6px">
+    <span class="clbl">SHIFT</span>
+    <select id="shift-sel" onchange="if(S.loaded){loadRoster();}">
+      <option value="NIGHT">NIGHT</option>
+      <option value="DAY">DAY</option>
+    </select>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px">
+    <span class="clbl">ROSTER</span>
+    <select id="roster-sel" onchange="switchSavedRoster(this.value)" style="font-family:var(--mono);font-size:11px;min-width:140px">
+      <option value="">— saved rosters —</option>
+    </select>
+    <button class="btn btn-ghost btn-sm np" onclick="openRosterHistory()" title="Manage saved rosters" style="padding:4px 8px">📋</button>
+  </div>
+  <button class="btn btn-amber" onclick="loadRoster()">⟳ LOAD ROSTER</button>
+  <button class="btn btn-ghost btn-sm np" onclick="fbLoad()" title="Force sync from Firebase" style="padding:4px 8px">☁ SYNC</button>
+  <button class="btn btn-ghost btn-sm np" onclick="openExclModal()" title="Manage hidden staff" style="padding:4px 8px">🚫 HIDDEN</button>
+  <button class="btn btn-ghost btn-sm np" onclick="showDebug()" title="Show raw sheet data for troubleshooting">🔍 DEBUG</button>
+  <span id="fetch-st" style="font-size:11px;color:var(--txt2)"></span>
+</div>
+
+<!-- TABS -->
+<div id="tabs">
+  <div class="tab active" id="tab-lo"      onclick="switchTab('lo')">LO <span class="cnt" id="cnt-lo">—</span></div>
+  <div class="tab"        id="tab-irreg"   onclick="switchTab('irreg')">IRREG <span class="cnt" id="cnt-irreg">—</span></div>
+  <div class="tab"        id="tab-wo"      onclick="switchTab('wo')">WO <span class="cnt" id="cnt-wo">—</span></div>
+  <div class="tab"        id="tab-cim"     onclick="switchTab('cim')">CIM <span class="cnt" id="cnt-cim">—</span></div>
+  <div class="tab"        id="tab-summary" onclick="switchTab('summary')">SUMMARY OPS</div>
+</div>
+
+<!-- CONTENT -->
+<div id="content">
+  <div id="panel-lo"      class="panel active"><div id="cl"></div></div>
+  <div id="panel-irreg"   class="panel"><div id="ci"></div></div>
+  <div id="panel-wo"      class="panel"><div id="cw"></div></div>
+  <div id="panel-cim"     class="panel"><div id="cc"></div></div>
+  <div id="panel-summary" class="panel"><div id="cs"></div></div>
+</div>
+
+<!-- SETUP MODAL -->
+<div class="overlay show" id="setup-ov">
+  <div class="modal">
+    <div class="modal-title">SETUP</div>
+    <div style="font-size:11px;color:var(--txt2);margin-bottom:20px;line-height:1.7">
+      Connect to your organisation's Google Sheet. The app reads roster data only — nothing is written back.
+      You'll need a Google Sheets API key from Google Cloud Console.
+    </div>
+    <div class="form-g">
+      <label>GOOGLE SHEETS API KEY</label>
+      <input type="password" id="su-key" placeholder="AIza...">
+      <div class="form-hint">Google Cloud Console → APIs &amp; Services → Credentials → API Key.<br>Enable "Google Sheets API" for the key.</div>
+    </div>
+    <div class="form-g">
+      <label>SHEET ID</label>
+      <input type="text" id="su-sid" value="1bdJVm15vGk7Av-LMxSbsj0mbUK8ln9x-gvMW5tTubpg">
+    </div>
+    <div class="form-g">
+      <label>TAB NAME (e.g. KUL/0526/R0)</label>
+      <input type="text" id="su-tab" value="KUL/0526/R0">
+    </div>
+    <button class="btn btn-amber" style="width:100%;margin-top:8px" onclick="saveCfg(true)">SAVE &amp; LOAD ROSTER</button>
+  </div>
+</div>
+
+<!-- ROSTER HISTORY MODAL -->
+<div class="overlay" id="roster-hist-ov">
+  <div class="modal" style="max-width:520px">
+    <button class="modal-close" onclick="closeRosterHistory()">✕</button>
+    <div class="modal-title">📋 SAVED ROSTERS</div>
+    <div id="roster-hist-body"></div>
+  </div>
+</div>
+
+<!-- EXCLUSIONS MANAGER MODAL -->
+<div class="overlay" id="excl-ov">
+  <div class="modal" style="max-width:420px">
+    <button class="modal-close" onclick="closeExclModal()">✕</button>
+    <div class="modal-title">🚫 HIDDEN STAFF</div>
+    <div style="font-size:10px;color:var(--txt2);margin-bottom:10px">Staff permanently hidden from all lists. Click RESTORE to bring them back.</div>
+    <div id="excl-body"></div>
+  </div>
+</div>
+
+<!-- EXCLUSIONS MODAL -->
+<div class="overlay" id="excl-ov">
+  <div class="modal" style="max-width:400px">
+    <button class="modal-close" onclick="closeExclusionsModal()">✕</button>
+    <div class="modal-title">🚫 HIDDEN STAFF</div>
+    <div id="excl-body"></div>
+    <div style="margin-top:12px">
+      <button class="btn btn-ghost" onclick="closeExclusionsModal()">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<!-- ACTING GL MODAL -->
+<div class="overlay" id="actgl-ov">
+  <div class="modal" style="max-width:380px">
+    <button class="modal-close" onclick="closeActingGLModal()">✕</button>
+    <div class="modal-title" id="actgl-title">✎ APPOINT ACTING GL</div>
+    <div id="actgl-body"></div>
+  </div>
+</div>
+
+<!-- BRIEFING TEXT MODAL -->
+<div class="overlay" id="briefing-ov">
+  <div class="modal" style="max-width:560px;max-height:90vh;display:flex;flex-direction:column">
+    <button class="modal-close" onclick="closeBriefingModal()">✕</button>
+    <div class="modal-title">📤 BRIEFING TEXT</div>
+    <textarea id="briefing-out" readonly style="flex:1;min-height:400px;background:var(--surf2);border:1px solid var(--b);border-radius:6px;color:var(--txt);font-family:var(--mono);font-size:11px;padding:12px;resize:none;outline:none;white-space:pre;overflow-y:auto"></textarea>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button id="briefing-copy-btn" class="btn btn-amber" onclick="copyBriefingText()">📋 COPY</button>
+      <button class="btn btn-ghost" onclick="closeBriefingModal()">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<!-- PASTE ALLOCATION MODAL -->
+<div class="overlay" id="alloc-ov">
+  <div class="modal" style="max-width:640px;max-height:90vh;overflow-y:auto">
+    <button class="modal-close" onclick="closeAllocModal()">✕</button>
+    <div class="modal-title">📋 PASTE ALLOCATION</div>
+    <div id="alloc-body">
+      <div style="font-size:10px;color:var(--txt2);margin-bottom:10px">Paste the allocation text received (MOC CHASER, MOJO, WHEELCREW, RUNNER, TOWING TEAM)</div>
+      <textarea id="alloc-input" placeholder="MOC CHASER&#10;DAMIRI&#10;&#10;MOJO&#10;SYAMIM&#10;&#10;WHEELCREW&#10;HAFIZ + TRAINEE ABRAM&#10;..." 
+        style="width:100%;height:200px;background:var(--surf2);border:1px solid var(--b);border-radius:6px;color:var(--txt);font-family:var(--mono);font-size:11px;padding:10px;resize:vertical;outline:none;box-sizing:border-box"></textarea>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn btn-amber" onclick="parseAllocText()">🔍 PARSE & PREVIEW</button>
+        <button class="btn btn-ghost" onclick="closeAllocModal()">CANCEL</button>
+      </div>
+      <div id="alloc-preview" style="margin-top:14px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ROLES MODAL -->
+<div class="overlay" id="roles-ov">
+  <div class="modal" style="max-width:560px;max-height:88vh;overflow-y:auto">
+    <button class="modal-close" onclick="closeRolesModal()">✕</button>
+    <div class="modal-title">✎ ASSIGN ROLES</div>
+    <div id="roles-body"></div>
+  </div>
+</div>
+
+<!-- TRAINEE EDIT MODAL -->
+<div class="overlay" id="trainee-edit-ov">
+  <div class="modal" style="max-width:420px">
+    <button class="modal-close" onclick="closeTraineeEdit()">✕</button>
+    <div class="modal-title" style="color:#4ade80">✎ TRAINEES</div>
+    <div id="trainee-edit-body"></div>
+  </div>
+</div>
+
+<!-- TOWER EDIT MODAL -->
+<div class="overlay" id="tower-edit-ov">
+  <div class="modal" style="max-width:420px">
+    <button class="modal-close" onclick="closeTowerEdit()">✕</button>
+    <div class="modal-title" style="color:#C084FC">✎ TOWER STAFF</div>
+    <div id="tower-edit-body"></div>
+  </div>
+</div>
+
+<!-- SWAP / TRANSFER MODAL -->
+<div class="overlay" id="swap-ov">
+  <div class="modal" style="max-width:540px;max-height:85vh;overflow-y:auto">
+    <button class="modal-close" onclick="closeSwapModal()">✕</button>
+    <div class="modal-title">⇄ SWAP / TRANSFER</div>
+    <div id="swap-body"></div>
+  </div>
+</div>
+
+<!-- CONFIG MODAL -->
+<div class="overlay" id="cfg-ov">
+  <div class="modal">
+    <button class="modal-close" onclick="closeCfg()">✕</button>
+    <div class="modal-title">CONFIG</div>
+    <div class="form-g"><label>API KEY</label><input type="password" id="cfg-key"></div>
+    <div class="form-g"><label>SHEET ID</label><input type="text" id="cfg-sid"></div>
+    <div class="form-g"><label>TAB NAME</label><input type="text" id="cfg-tab"></div>
+    <button class="btn btn-amber" style="width:100%" onclick="saveCfg(false)">SAVE</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════
+// BACKEND API — replaces hardcoded secrets
+// All credentials now live in .env on the server
+// ═══════════════════════════════════
+
+// Session token stored after successful auth
+let _sessionToken = sessionStorage.getItem('ops_token') || null;
+
+// Firebase is initialised lazily after auth succeeds (config comes from server)
+let fbAuth = null;
+let fbDb   = null;
+let fbReady = false;
+
+/**
+ * Authenticate against the backend.
+ * On success: receives JWT + Firebase config, then initialises Firebase.
+ */
+async function checkAccess(){
+  const val = (document.getElementById('access-input').value||'').trim();
+  const errEl = document.getElementById('access-err');
+  errEl.textContent = '';
+
+  try {
+    const res  = await fetch('/api/auth', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ code: val })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      errEl.textContent = data.error || 'Incorrect code. Try again.';
+      document.getElementById('access-input').value = '';
+      document.getElementById('access-input').focus();
+      return;
+    }
+
+    // Store token for API calls
+    _sessionToken = data.token;
+    sessionStorage.setItem('ops_token', _sessionToken);
+    sessionStorage.setItem('ops_access', 'OK'); // backward compat flag
+
+    // Initialise Firebase with config returned by server
+    if (!firebase.apps.length) {
+      firebase.initializeApp(data.firebaseConfig);
+    }
+    fbAuth = firebase.auth();
+    fbDb   = firebase.database();
+
+    document.getElementById('access-ov').style.display = 'none';
+    fbSignIn();
+
+  } catch(e) {
+    errEl.textContent = 'Could not reach server. Is it running?';
+  }
+}
+
+function fbSignIn(){
+  const el=document.getElementById('save-ts');
+  if(el) el.textContent='☁ Connecting…';
+  fbAuth.signInAnonymously()
+    .then(()=>{
+      fbReady=true;
+      if(el) el.textContent='☁ Connected';
+      // Load nicknames first, then shift data so nicknames are ready when rendering
+      loadNicknames().then(async ()=>{
+        await loadTrainees();
+        await loadTowers();
+        await loadExclusions();
+        const oldDate=document.getElementById('dp')?.value;
+        const oldShift=document.getElementById('shift-sel')?.value;
+        await loadLastDate();
+        const newDate=document.getElementById('dp')?.value;
+        const newShift=document.getElementById('shift-sel')?.value;
+        if(S.loaded && newDate===oldDate && newShift===oldShift){
+          // Roster already loaded for the same date/shift — just refresh from Firebase
+          await fbLoad();
+        } else {
+          // Date/shift changed or roster not yet loaded — fetch roster first;
+          // loadRoster() will call fbLoad() when done
+          loadRoster();
+        }
+        flushPendingSave();
+      });
+    })
+    .catch(e=>{ 
+      if(el) el.textContent='⚠ Offline mode'; 
+      console.warn('Firebase auth error:',e); 
+    });
+}
+
+// ── Save / Load key ──
+function fbKey(){
+  const date = document.getElementById('dp')?.value||'';
+  const shift= document.getElementById('shift-sel')?.value||'';
+  if(!date||!shift) return '';
+  return `shifts/${date}_${shift}`;
+}
+
+const SAVE_FIELDS=['overrides','swaps','transfers','backups','ssTechs',
+  'soc','pdsc','fgs','ops','roles','actingGL','exclusions'];
+
+// Force save when tab goes to background or closes — works on mobile too
+window.addEventListener('beforeunload', ()=>{ if(fbReady&&S.loaded){ fbSave(); } });
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState==='hidden'&&fbReady&&S.loaded){ fbSave(); }
+});
+
+async function migrateLegacyData(){
+  if(!fbReady) return;
+  // Old fbKey() used underscores instead of slash: shifts_DATE_SHIFT
+  // New fbKey() uses: shifts/DATE_SHIFT
+  // Migrate any data found at old paths to new paths
+  const date=document.getElementById('dp')?.value||'';
+  const shift=document.getElementById('shift-sel')?.value||'';
+  if(!date||!shift) return;
+  const oldKey=`shifts_${date}_${shift}`;
+  const newKey=`shifts/${date}_${shift}`;
+  try {
+    const snap=await fbDb.ref(oldKey).get();
+    if(snap.exists()){
+      const data=snap.val();
+      // Copy to new path
+      await fbDb.ref(newKey).set(data);
+      // Delete old path
+      await fbDb.ref(oldKey).remove();
+      console.log('Migrated data from',oldKey,'to',newKey);
+    }
+  } catch(e){ console.warn('Migration error:',e); }
+}
+
+function saveLastDate(){
+  if(!fbReady) return;
+  const d=document.getElementById('dp')?.value;
+  const sh=document.getElementById('shift-sel')?.value;
+  if(d&&sh) fbDb.ref('settings/lastDate').set({date:d,shift:sh}).catch(()=>{});
+}
+
+function fbSave(){
+  if(!fbReady||!S.loaded) return;
+  const date=document.getElementById('dp')?.value||'';
+  const shift=document.getElementById('shift-sel')?.value||'';
+  if(!date||!shift) return;
+  const key='shifts/'+date+'_'+shift;
+  const payload={_savedAt:Date.now(),_key:key};
+  SAVE_FIELDS.forEach(f=>{
+    try{ payload[f]=JSON.parse(JSON.stringify(S[f])); }catch(e){}
+  });
+  const el=document.getElementById('save-ts');
+  fbDb.ref(key).set(payload)
+    .then(()=>{ if(el) el.textContent='☁ Saved '+new Date().toLocaleTimeString(); saveLastDate(); })
+    .catch(e=>{ if(el) el.textContent='⚠ Save failed: '+e.code; console.error('fbSave:',e); });
+}
+
+async function fbLoad(){
+  if(!fbReady) return;
+  const date=document.getElementById('dp')?.value||'';
+  const shift=document.getElementById('shift-sel')?.value||'';
+  if(!date||!shift) return;
+  const key='shifts/'+date+'_'+shift;
+  const el=document.getElementById('save-ts');
+  if(el) el.textContent='☁ Loading…';
+  try{
+    // migrate old underscore key if exists
+    const oldSnap=await fbDb.ref('shifts_'+date+'_'+shift).get();
+    if(oldSnap.exists()){
+      await fbDb.ref(key).set(oldSnap.val());
+      await fbDb.ref('shifts_'+date+'_'+shift).remove();
+    }
+    const snap=await fbDb.ref(key).get();
+    if(snap.exists()){
+      const raw=snap.val();
+      const d=sanitizeState(raw);
+      SAVE_FIELDS.forEach(f=>{ if(d[f]!=null) try{ S[f]=JSON.parse(JSON.stringify(d[f])); }catch(e){} });
+      if(el) el.textContent='☁ Synced '+new Date(d._savedAt||Date.now()).toLocaleTimeString();
+    } else {
+      if(el) el.textContent='☁ No saved data';
+    }
+    renderAll();
+  }catch(e){
+    if(el) el.textContent='⚠ Error: '+e.code;
+    console.error('fbLoad:',e);
+  }
+}
+
+async function loadLastDate(){
+  if(!fbReady) return;
+  try {
+    const snap=await fbDb.ref('settings/lastDate').get();
+    if(snap.exists()){
+      const {date,shift}=snap.val();
+      const dp=document.getElementById('dp');
+      const ss=document.getElementById('shift-sel');
+      if(dp&&date) dp.value=date;
+      if(ss&&shift) ss.value=shift;
+    }
+  } catch(e){}
+}
+
+function saveSocNow(){ if(fbReady&&S.loaded) fbSave(); }
+
+let saveTimer=null, pendingSave=false;
+
+function scheduleSave(){
+  if(!S.loaded) return;
+  pendingSave=true;
+  if(!fbReady) return; // will flush when fbReady
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(fbSave, 500);
+}
+
+function flushPendingSave(){
+  if(pendingSave && fbReady){ pendingSave=false; fbSave(); }
+}
+
+function sanitizeState(data){
+  if(!data||typeof data!=='object') return data||{};
+
+  // Arrays that must always be arrays
+  const mustBeArr = ['swaps','transfers','ssTechs'];
+  mustBeArr.forEach(f=>{ if(!Array.isArray(data[f])) data[f]=[]; });
+
+  // backups object
+  if(!data.backups||typeof data.backups!=='object') data.backups={};
+  ['lo','irreg','wo','cim','moc'].forEach(k=>{ if(!Array.isArray(data.backups[k])) data.backups[k]=[]; });
+
+  // towers
+  if(!data.towers||typeof data.towers!=='object') data.towers={permanent:[],backups:[]};
+  if(!Array.isArray(data.towers.permanent)) data.towers.permanent=[];
+  if(!Array.isArray(data.towers.backups))   data.towers.backups=[];
+  data.towers.permanent.forEach((t,i)=>{ if(!t||typeof t!=='object') data.towers.permanent[i]={name:'',status:'AVAIL'}; });
+
+  // trainees
+  if(!data.trainees||typeof data.trainees!=='object') data.trainees={permanent:[],backups:[]};
+  if(!Array.isArray(data.trainees.permanent)) data.trainees.permanent=[];
+  if(!Array.isArray(data.trainees.backups))   data.trainees.backups=[];
+
+  // soc/pdsc/fgs
+  if(!Array.isArray(data.soc)||!data.soc.length)   data.soc=[{flight:'',name:'',time:'',remark:''}];
+  if(!Array.isArray(data.pdsc)||!data.pdsc.length)  data.pdsc=[{reg:'',certifier:''}];
+  if(!Array.isArray(data.fgs)||!data.fgs.length)    data.fgs=[{reg:'',remark:''}];
+
+  // ops
+  if(!data.ops||typeof data.ops!=='object') data.ops={ARR:'',DEP:'',TOW:''};
+
+  if(!data.actingGL||typeof data.actingGL!=='object') data.actingGL={lo:'',irreg:'',wo:''};
+  ['lo','irreg','wo'].forEach(k=>{ if(typeof data.actingGL[k]!=='string') data.actingGL[k]=''; });
+
+  // nicknames/overrides
+  if(!data.nicknames||typeof data.nicknames!=='object') data.nicknames={};
+  if(!data.overrides||typeof data.overrides!=='object') data.overrides={};
+
+  // ssTechs
+  if(!Array.isArray(data.ssTechs)) data.ssTechs=[];
+
+  // roles — full deep sanitize
+  const defRoles = {
+    mocChaser:'', mojo:['','',''],
+    wc:[{primary:'',asst:''},{primary:'',asst:''}],
+    runners:[
+      {name:'',timing:'0600-1200 / 1800-0000'},{name:'',timing:'0700-1300 / 1900-0100'},
+      {name:'',timing:'1200-1800 / 0000-0600'},{name:'',timing:'1300-1900 / 0100-0700'}
+    ],
+    towerSlots:[{a:'',b:'',backup:''},{a:'',b:'',backup:''},{a:'',b:'',backup:''},{a:'',b:'',backup:''}]
+  };
+  if(!data.roles||typeof data.roles!=='object'){ data.roles=defRoles; return data; }
+  const r=data.roles;
+  if(!Array.isArray(r.mojo)||r.mojo.length<3)       r.mojo=[0,1,2].map(i=>r.mojo?.[i]||'');
+  if(!Array.isArray(r.wc)||r.wc.length<2)
+    r.wc=[0,1].map(i=>({primary:r.wc?.[i]?.primary||'',asst:r.wc?.[i]?.asst||''}));
+  if(!Array.isArray(r.runners)||r.runners.length<4)
+    r.runners=defRoles.runners.map((d,i)=>({name:r.runners?.[i]?.name||'',timing:r.runners?.[i]?.timing||d.timing}));
+  if(!Array.isArray(r.towerSlots)||r.towerSlots.length<4)
+    r.towerSlots=[0,1,2,3].map(i=>({a:r.towerSlots?.[i]?.a||'',b:r.towerSlots?.[i]?.b||'',backup:r.towerSlots?.[i]?.backup||''}));
+  if(typeof r.mocChaser!=='string') r.mocChaser='';
+
+  return data;
+}
+
+// Auto-save hook — patch renderAll
+// ═══════════════════════════════════
+// STATE
+// ═══════════════════════════════════
+const S = {
+  cfg: {
+    // API key removed — the backend proxies Google Sheets now (key lives in .env)
+    sid:'1bdJVm15vGk7Av-LMxSbsj0mbUK8ln9x-gvMW5tTubpg',
+    tab:'KUL/0526/R0'
+  },
+  staff: [],
+  overrides: {},
+  nicknames: {}, // id → custom nickname, persisted to localStorage
+  debug: {},
+  swaps: [],
+  transfers: [],
+  backups: { lo:[], irreg:[], wo:[], cim:[], moc:[] },
+  towers: {
+    permanent: [
+      {name:'FIKRI',   status:'AVAIL'},
+      {name:'ZAFFAR',  status:'AVAIL'},
+      {name:'SYAHRIN', status:'AVAIL'},
+      {name:'KHAIRI',  status:'AVAIL'},
+      {name:'FIRDAUS', status:'AVAIL'},
+      {name:'LUQMAN',  status:'AVAIL'},
+    ],
+    backups: []
+  },
+  trainees: {
+    permanent: [], // [{name, status}] — saved to localStorage
+    backups:   []
+  },
+  roles: {
+    mocChaser: '',
+    mojo: ['', '', ''],
+    wc: [{ primary:'', asst:'' }, { primary:'', asst:'' }],
+    runners: [
+      { name:'', timing:'0600-1200 / 1800-0000' },
+      { name:'', timing:'0700-1300 / 1900-0100' },
+      { name:'', timing:'1200-1800 / 0000-0600' },
+      { name:'', timing:'1300-1900 / 0100-0700' }
+    ],
+    towerSlots: [
+      { a:'', b:'', backup:'' },
+      { a:'', b:'', backup:'' },
+      { a:'', b:'', backup:'' },
+      { a:'', b:'', backup:'' }
+    ]
+  },
+  ssTechs: [],  // staff IDs of LO TECH marked as SS (earlier shift)
+  actingGL: { lo:'', irreg:'', wo:'' }, // manually appointed acting GLs
+  exclusions: [], // staff IDs permanently excluded from all lists
+  soc: [{ flight:'', name:'', time:'', remark:'' }],
+  pdsc: [{ reg:'', certifier:'' }],
+  fgs:  [{ reg:'', remark:'' }],
+  ops: { ARR:'', DEP:'', TOW:'' },
+  tab: 'lo',
+  loaded: false
+};
+
+// ═══════════════════════════════════
+// INIT
+// ═══════════════════════════════════
+(function init(){
+  try { const c=JSON.parse(localStorage.getItem('ops_cfg')||'{}'); if(c.key) Object.assign(S.cfg,c); } catch(_){}
+  try { const n=JSON.parse(localStorage.getItem('ops_nicknames')||'{}'); S.nicknames=n; } catch(_){}
+  try { const t=JSON.parse(localStorage.getItem('ops_towers')||'null'); if(t) S.towers.permanent=t; } catch(_){}
+  try { const tr=JSON.parse(localStorage.getItem('ops_trainees')||'[]'); S.trainees.permanent=tr; } catch(_){}
+  document.getElementById('dp').value = new Date().toISOString().split('T')[0];
+  close_setup();
+  // Auto-login if session is still valid (page refresh)
+  if(_sessionToken && sessionStorage.getItem('ops_access')==='OK'){
+    // Re-initialise Firebase using stored token — fetch config from server
+    (async()=>{
+      try {
+        const res  = await fetch('/api/auth', {
+          method:  'POST',
+          headers: { 'Content-Type':'application/json' },
+          // Send a dummy code; server accepts stored tokens separately
+          // Instead, we validate the token via a config endpoint
+          body: JSON.stringify({ token: _sessionToken })
+        });
+        // If the token is still valid the server returns firebase config
+        if(res.ok){
+          const data = await res.json();
+          if(data.firebaseConfig && !firebase.apps.length){
+            firebase.initializeApp(data.firebaseConfig);
+            fbAuth = firebase.auth();
+            fbDb   = firebase.database();
+          }
+          document.getElementById('access-ov').style.display='none';
+          fbSignIn();
+        } else {
+          // Token expired — show login screen
+          sessionStorage.removeItem('ops_token');
+          sessionStorage.removeItem('ops_access');
+        }
+      } catch(e){
+        // Server unreachable on refresh — show login
+        console.warn('Could not refresh session:', e);
+      }
+    })();
+  } else {
+    // Fresh device — wait for access code, don't pre-load
+  }
+  populateRosterDropdown();
+})();
+
+function saveTowers(){
+  localStorage.setItem('ops_towers', JSON.stringify(S.towers.permanent));
+  if(fbReady) fbDb.ref('settings/towers').set(S.towers.permanent).catch(e=>console.warn('Towers save error:',e));
+}
+function saveTrainees(){
+  localStorage.setItem('ops_trainees', JSON.stringify(S.trainees.permanent));
+  if(fbReady) fbDb.ref('settings/trainees').set(S.trainees.permanent).catch(e=>console.warn('Trainees save error:',e));
+}
+
+async function loadTowers(){
+  if(!fbReady) return;
+  try {
+    const snap=await fbDb.ref('settings/towers').get();
+    if(snap.exists()){
+      const cloud=snap.val();
+      if(Array.isArray(cloud)&&cloud.length){
+        S.towers.permanent=cloud;
+        localStorage.setItem('ops_towers',JSON.stringify(cloud));
+        renderAll();
+      }
+    }
+  } catch(e){ console.warn('Towers load error:',e); }
+}
+
+function openExclusionsModal(){
+  const el=document.getElementById('excl-body');
+  const excl=S.exclusions||[];
+  if(!excl.length){
+    el.innerHTML=`<div style="color:var(--txt2);font-size:11px;text-align:center;padding:20px">No staff permanently hidden.</div>`;
+  } else {
+    // Try to find staff names from nicknames or full name lookup
+    el.innerHTML=`<div style="font-size:9px;color:var(--txt2);margin-bottom:10px">These staff are permanently hidden from all lists. Click RESTORE to bring them back.</div>`+
+    excl.map((id,i)=>{
+      const knownName=S.nicknames[id]||id;
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:var(--surf2);border-radius:4px;margin-bottom:4px">
+        <span style="font-size:11px;font-weight:600;color:var(--txt)">${knownName}</span>
+        <button class="btn btn-sm" style="font-size:9px;background:#EFF6FF;border:1px solid #2563EB;color:#2563EB;padding:2px 8px"
+          onclick="restoreStaff('${id}',${i})">↩ RESTORE</button>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('excl-ov').classList.add('show');
+}
+
+function restoreStaff(id, idx){
+  S.exclusions=(S.exclusions||[]).filter(e=>e!==id);
+  saveExclusions();
+  openExclModal();
+  if(S.loaded) loadRoster();
+}
+
+function closeExclModal(){ document.getElementById('excl-ov').classList.remove('show'); }
+
+function saveExclusions(){
+  if(fbReady) fbDb.ref('settings/exclusions').set(S.exclusions).catch(e=>console.warn('Exclusions save error:',e));
+}
+async function loadExclusions(){
+  if(!fbReady) return;
+  try {
+    const snap=await fbDb.ref('settings/exclusions').get();
+    if(snap.exists()){ const d=snap.val(); if(Array.isArray(d)) S.exclusions=d; }
+  } catch(e){ console.warn('Exclusions load error:',e); }
+}
+async function loadTrainees(){
+  if(!fbReady) return;
+  try {
+    const snap=await fbDb.ref('settings/trainees').get();
+    if(snap.exists()){
+      const cloud=snap.val();
+      if(Array.isArray(cloud)&&cloud.length){
+        S.trainees.permanent=cloud;
+        localStorage.setItem('ops_trainees', JSON.stringify(cloud));
+      }
+    }
+  } catch(e){ console.warn('Trainees load error:',e); }
+}
+
+function open_setup(){
+  document.getElementById('su-key').value = S.cfg.key;
+  document.getElementById('su-sid').value = S.cfg.sid;
+  document.getElementById('su-tab').value = S.cfg.tab;
+  document.getElementById('setup-ov').classList.add('show');
+}
+function close_setup(){ document.getElementById('setup-ov').classList.remove('show'); }
+function openSettings(){
+  document.getElementById('cfg-key').value = S.cfg.key;
+  document.getElementById('cfg-sid').value = S.cfg.sid;
+  document.getElementById('cfg-tab').value = S.cfg.tab;
+  document.getElementById('cfg-ov').classList.add('show');
+}
+function closeCfg(){ document.getElementById('cfg-ov').classList.remove('show'); }
+
+// ═══════════════════════════════════
+// ROSTER HISTORY
+// ═══════════════════════════════════
+function loadRosterHistory(){ try{ return JSON.parse(localStorage.getItem('ops_roster_history')||'[]'); }catch(e){ return []; } }
+function saveRosterHistory(h){ localStorage.setItem('ops_roster_history', JSON.stringify(h)); }
+
+function populateRosterDropdown(){
+  const sel = document.getElementById('roster-sel');
+  if(!sel) return;
+  const history = loadRosterHistory();
+  const cur = S.cfg.sid+'|'+S.cfg.tab;
+  sel.innerHTML = '<option value="">— saved rosters —</option>' +
+    history.map((r,i)=>`<option value="${i}" ${r.sid+'|'+r.tab===cur?'selected':''}>${r.label}</option>`).join('');
+}
+
+function switchSavedRoster(idx){
+  if(idx==='') return;
+  const history = loadRosterHistory();
+  const r = history[parseInt(idx)];
+  if(!r) return;
+  S.cfg.sid = r.sid;
+  S.cfg.tab = r.tab;
+  S.cfg.key = r.key || S.cfg.key; // keep existing key if not stored
+  localStorage.setItem('ops_cfg', JSON.stringify(S.cfg));
+  loadRoster();
+}
+
+function openRosterHistory(){
+  renderRosterHistoryModal();
+  document.getElementById('roster-hist-ov').classList.add('show');
+}
+function closeRosterHistory(){ document.getElementById('roster-hist-ov').classList.remove('show'); populateRosterDropdown(); }
+
+function renderRosterHistoryModal(){
+  const el = document.getElementById('roster-hist-body');
+  const history = loadRosterHistory();
+
+  el.innerHTML = `
+    <div style="font-size:10px;color:var(--txt2);margin-bottom:16px;line-height:1.8">
+      Save each month's roster link here. When a new roster is shared, add it below and switch between months anytime.
+    </div>
+
+    <!-- Saved entries -->
+    <div id="rh-list" style="margin-bottom:16px">
+      ${history.length===0?`<div style="font-size:11px;color:var(--txt3);padding:8px 0">No saved rosters yet. Add the current one below.</div>`:''}
+      ${history.map((r,i)=>`
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:10px 12px;background:var(--bg);border:1px solid ${r.sid===S.cfg.sid&&r.tab===S.cfg.tab?'var(--amber)':'var(--b)'};border-radius:6px">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:700;color:${r.sid===S.cfg.sid&&r.tab===S.cfg.tab?'var(--amber)':'var(--txt)'};margin-bottom:2px">${r.label} ${r.sid===S.cfg.sid&&r.tab===S.cfg.tab?'<span style="font-size:9px;color:var(--amber)">● ACTIVE</span>':''}</div>
+            <div style="font-size:9px;color:var(--txt3);font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Tab: ${r.tab} · ${r.sid.substring(0,28)}…</div>
+          </div>
+          <button class="btn btn-amber btn-sm" onclick="loadSavedRoster(${i})">LOAD</button>
+          <button class="btn btn-red btn-sm" onclick="deleteSavedRoster(${i})">✕</button>
+        </div>`).join('')}
+    </div>
+
+    <!-- Add new -->
+    <div style="background:var(--bg);border:1px solid var(--b);border-radius:6px;padding:14px">
+      <div style="font-size:9px;color:var(--amber);letter-spacing:2px;font-weight:700;margin-bottom:12px">ADD ROSTER</div>
+      <div style="display:grid;gap:8px">
+        <div>
+          <div style="font-size:8px;color:var(--txt3);margin-bottom:3px">LABEL (e.g. Jun 2026 KUL)</div>
+          <input id="rh-label" type="text" placeholder="Jun 2026 KUL" style="width:100%;background:var(--surf);border:1px solid var(--b);border-radius:4px;color:var(--txt);padding:6px 10px;font-family:var(--mono);font-size:12px;outline:none;box-sizing:border-box">
+        </div>
+        <div>
+          <div style="font-size:8px;color:var(--txt3);margin-bottom:3px">GOOGLE SHEET ID</div>
+          <input id="rh-sid" type="text" placeholder="1bdJVm15vGk7Av..." style="width:100%;background:var(--surf);border:1px solid var(--b);border-radius:4px;color:var(--txt);padding:6px 10px;font-family:var(--mono);font-size:11px;outline:none;box-sizing:border-box">
+        </div>
+        <div>
+          <div style="font-size:8px;color:var(--txt3);margin-bottom:3px">TAB NAME (station tab, e.g. KUL/0626/R0)</div>
+          <input id="rh-tab" type="text" placeholder="KUL/0626/R0" style="width:100%;background:var(--surf);border:1px solid var(--b);border-radius:4px;color:var(--txt);padding:6px 10px;font-family:var(--mono);font-size:12px;outline:none;box-sizing:border-box">
+        </div>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <button class="btn btn-amber" style="flex:1" onclick="addAndLoadRoster()">SAVE & LOAD</button>
+          <button class="btn btn-ghost" onclick="saveCurrentAsRoster()">SAVE CURRENT CONFIG</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function loadSavedRoster(i){
+  const history = loadRosterHistory();
+  const r = history[i];
+  if(!r) return;
+  S.cfg.sid=r.sid; S.cfg.tab=r.tab;
+  if(r.key) S.cfg.key=r.key;
+  localStorage.setItem('ops_cfg',JSON.stringify(S.cfg));
+  closeRosterHistory();
+  loadRoster();
+}
+
+function deleteSavedRoster(i){
+  const history = loadRosterHistory();
+  history.splice(i,1);
+  saveRosterHistory(history);
+  renderRosterHistoryModal();
+  populateRosterDropdown();
+}
+
+function addAndLoadRoster(){
+  const label = (document.getElementById('rh-label').value||'').trim();
+  const sid   = (document.getElementById('rh-sid').value||'').trim();
+  const tab   = (document.getElementById('rh-tab').value||'').trim();
+  if(!label||!sid||!tab){ alert('Please fill in all fields.'); return; }
+  const history = loadRosterHistory();
+  history.unshift({ label, sid, tab, key: S.cfg.key, addedAt: new Date().toISOString() });
+  saveRosterHistory(history);
+  S.cfg.sid=sid; S.cfg.tab=tab;
+  localStorage.setItem('ops_cfg',JSON.stringify(S.cfg));
+  closeRosterHistory();
+  loadRoster();
+}
+
+function saveCurrentAsRoster(){
+  const label = (document.getElementById('rh-label').value||'').trim() ||
+    prompt('Label for current roster (e.g. May 2026 KUL):','');
+  if(!label) return;
+  const history = loadRosterHistory();
+  // Don't duplicate
+  if(history.some(r=>r.sid===S.cfg.sid&&r.tab===S.cfg.tab)){
+    alert('This roster is already saved.'); return;
+  }
+  history.unshift({ label, sid:S.cfg.sid, tab:S.cfg.tab, key:S.cfg.key, addedAt:new Date().toISOString() });
+  saveRosterHistory(history);
+  renderRosterHistoryModal();
+  populateRosterDropdown();
+}
+
+function saveCfg(fromSetup){
+  const [kEl,sEl,tEl] = fromSetup
+    ? ['su-key','su-sid','su-tab']
+    : ['cfg-key','cfg-sid','cfg-tab'];
+  S.cfg.key = document.getElementById(kEl).value.trim();
+  S.cfg.sid = document.getElementById(sEl).value.trim();
+  S.cfg.tab = document.getElementById(tEl).value.trim();
+  if(!S.cfg.key){ alert('Please enter your API key.'); return; }
+  localStorage.setItem('ops_cfg', JSON.stringify(S.cfg));
+  close_setup(); closeCfg();
+  loadRoster();
+  populateRosterDropdown();
+}
+
+function dateChanged(){ if(S.loaded) loadRoster(); }
+
+// ═══════════════════════════════════
+// FETCH & PARSE
+// ═══════════════════════════════════
+let _rosterGen=0; // increment on each call; stale calls abort on completion
+async function loadRoster(){
+  if(!S.cfg.key){ open_setup(); return; }
+  const gen=++_rosterGen; // capture this call's generation
+  const dateStr = fmtDate(document.getElementById('dp').value);
+  const shift   = document.getElementById('shift-sel').value;
+  setSt(`Fetching ${dateStr}...`);
+  showLoading();
+  try{
+    const rows = await fetchSheet();
+    if(gen!==_rosterGen) return; // a newer loadRoster started — abort this one
+    const staff = parseRoster(rows, dateStr, shift);
+    S.staff = staff;
+    // Reset shift-specific state before loading saved data
+    S.overrides={}; S.swaps=[]; S.transfers=[];
+    S.backups={lo:[],irreg:[],wo:[],cim:[],moc:[]};
+    S.ssTechs=[]; S.soc=[{flight:'',name:'',time:'',remark:''}];
+    S.pdsc=[{reg:'',certifier:''}]; S.fgs=[{reg:'',remark:''}];
+    S.ops={ARR:'',DEP:'',TOW:''}; S.roles={
+      mocChaser:'',mojo:['','',''],
+      wc:[{primary:'',asst:''},{primary:'',asst:''}],
+      runners:[{name:'',timing:'0600-1200 / 1800-0000'},{name:'',timing:'0700-1300 / 1900-0100'},{name:'',timing:'1200-1800 / 0000-0600'},{name:'',timing:'1300-1900 / 0100-0700'}],
+      towerSlots:[{a:'',b:'',backup:''},{a:'',b:'',backup:''},{a:'',b:'',backup:''},{a:'',b:'',backup:''}]
+    };
+    S.loaded = true;
+    setSt(`${staff.length} staff · ${dateStr} · ${shift}`);
+    hideLoading();
+    renderAll();
+    // Load saved Firebase state — if not ready yet, fbSignIn will call fbLoad when auth completes
+    if(fbReady) fbLoad();
+  }catch(err){
+    hideLoading();
+    showErr(err.message);
+    setSt('Failed to load');
+    console.error(err);
+  }
+}
+
+async function fetchSheet(){
+  // Route through the backend proxy — API key stays server-side
+  const params = new URLSearchParams({ sid: S.cfg.sid, tab: S.cfg.tab });
+  const headers = _sessionToken ? { 'Authorization': `Bearer ${_sessionToken}` } : {};
+  const r = await fetch(`/api/sheets?${params}`, { headers });
+  if(!r.ok){
+    let msg = `HTTP ${r.status}`;
+    try{ const j=await r.json(); msg=j.error||msg; }catch(_){}
+    throw new Error(msg);
+  }
+  const d = await r.json();
+  return d.values||[];
+}
+
+function fmtDate(iso){
+  if(!iso) return '';
+  const d = new Date(iso+'T00:00:00');
+  const M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${String(d.getDate()).padStart(2,'0')} ${M[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function parseRoster(rows, targetDate, shiftType){
+  const sn = parseShortNames(rows);
+
+  // 1. Find date column using anchor-offset approach
+  // Find "30 Apr 2026" (or nearby known date) in the REAL roster header row
+  // Validate: next cell must be "01 May 2026" (consecutive days confirm real header)
+  let dateCol = -1, dateRow = -1;
+  const DAYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+  const tdLower = targetDate.toLowerCase();
+
+  const anchorStr  = '30 apr 2026';
+  const anchorNext = '01 may 2026'; // must follow immediately
+  const anchorDate = new Date('2026-04-30T12:00:00');
+  const targetDate0= new Date(targetDate+'T12:00:00');
+  const dayOffset  = Math.round((targetDate0-anchorDate)/(864e5));
+
+  // Find anchor cell where NEXT cell is the consecutive date (confirms real header)
+  let anchorCol=-1, anchorRow=-1;
+  for(let i=0;i<rows.length&&anchorCol===-1;i++){
+    const row=rows[i]||[];
+    for(let j=0;j<row.length-1;j++){
+      const v =String(row[j]  ||'').trim().toLowerCase();
+      const vn=String(row[j+1]||'').trim().toLowerCase();
+      if(v.includes(anchorStr) && vn.includes(anchorNext)){
+        anchorCol=j; anchorRow=i; break;
+      }
+    }
+  }
+
+  if(anchorCol>=0 && dayOffset>=0){
+    dateCol = anchorCol + dayOffset;
+    dateRow = anchorRow;
+    // Verify ±2 columns in case of merged cells
+    if(!String((rows[dateRow]||[])[dateCol]||'').toLowerCase().includes(tdLower)){
+      for(let d=-2;d<=2;d++){
+        if(String((rows[dateRow]||[])[dateCol+d]||'').toLowerCase().includes(tdLower)){
+          dateCol+=d; break;
+        }
+      }
+    }
+  }
+
+  // Fallback: score all occurrences, pick best
+  if(dateCol===-1){
+    const SCHED=/^(day|night|al|el|mc|od|rd|stby|lil|normal|exam|\(f|\(c|\(n|\(d|hosp|mia)/i;
+    const cands=[];
+    for(let i=0;i<rows.length;i++)
+      for(let j=0;j<(rows[i]||[]).length;j++)
+        if(String(rows[i][j]||'').toLowerCase().includes(tdLower)) cands.push([i,j]);
+    let best=-999;
+    for(const [ci,cj] of cands){
+      let sc=0;
+      for(let r=ci+1;r<Math.min(ci+300,rows.length);r++){
+        const v=String((rows[r]||[])[cj]||'').trim();
+        if(SCHED.test(v)) sc+=2; else if(v==='0'||/^\d+(\.\d+)?$/.test(v)) sc-=2;
+      }
+      if(sc>best){best=sc;dateCol=cj;dateRow=ci;}
+    }
+  }
+
+  if(dateCol===-1) throw new Error(`Date "${targetDate}" not found in sheet.\n\nCheck:\n· Date exists in tab "${S.cfg.tab}"\n· Tab name is spelled exactly right`);
+
+  // Fallback: search all rows for day-name prefixed cell
+  if(dateCol===-1){
+    for(let i=0;i<rows.length&&dateCol===-1;i++){
+      const row=rows[i]||[];
+      for(let j=0;j<row.length;j++){
+        const v=String(row[j]||'').trim().toLowerCase();
+        if(v.includes(tdLower)&&DAYS.some(d=>v.startsWith(d))){
+          dateCol=j; dateRow=i; break;
+        }
+      }
+    }
+  }
+
+  if(dateCol===-1) throw new Error(`Date "${targetDate}" not found in sheet.\n\nCheck:\n· Date exists in tab "${S.cfg.tab}"\n· Tab name is spelled exactly right`);
+
+  // 2. Section title detection — maps row text → internal team key
+  const SECTION_MAP = [
+    { key:'LO',  pats:['LINE OPERATIONS'] },
+    { key:'IRR', pats:['IRREGULARITIES','DMI','TROUBLESHOOTING'] },
+    { key:'WO',  pats:['WORK ORDER'] },
+    { key:'CIM', pats:['CABIN MAINTENANCE','CABIN'] },
+    { key:'MOC', pats:['MOC SHIFT','MOC '] },
+  ];
+  function detectSection(row){
+    const txt = row.map(v=>String(v||'').toUpperCase()).join(' ');
+    // Must explicitly say "SHIFT C" — ignores Shift A, B, D rows
+    if(!txt.includes('SHIFT C')) return null;
+    for(const {key,pats} of SECTION_MAP){
+      for(const p of pats){ if(txt.includes(p)) return key; }
+    }
+    return null;
+  }
+
+  // 3. Detect column positions from any header row (row containing "Designation" or "Staff")
+  let cols = { id:null, name:null, desig:null, acType:null, desigCode:null, fleet:null };
+  for(let i=0;i<rows.length;i++){
+    const row=rows[i];
+    const joined=row.map(v=>String(v||'').toLowerCase()).join('|');
+    if(!joined.includes('designation')&&!(joined.includes('staff')&&joined.includes('name'))) continue;
+    row.forEach((cell,j)=>{
+      const v=String(cell||'').toLowerCase().trim();
+      if(/^staff.?id$|^id$/.test(v)             && cols.id===null)       cols.id=j;
+      if(/staff.?name|full.?name|^name$/.test(v) && cols.name===null)     cols.name=j;
+      if(v==='designation'                        && cols.desig===null)    cols.desig=j;
+      if((v.includes('aircraft')||v.includes('certif')) && cols.acType===null) cols.acType=j;
+      if(v.includes('desig code')                && cols.desigCode===null) cols.desigCode=j;
+      if(v==='type'                               && cols.fleet===null)    cols.fleet=j;
+    });
+    if(cols.id!==null||cols.name!==null) break;
+  }
+  // Fallback: find id col from first M##### occurrence
+  if(cols.id===null){
+    outer: for(let i=10;i<rows.length;i++){
+      for(let j=0;j<rows[i].length;j++){
+        if(/^M\d{4,}/i.test(String(rows[i][j]||'').trim())){
+          cols.id=j; if(cols.name===null) cols.name=j+1;
+          if(cols.desig===null) cols.desig=j+2;
+          if(cols.desigCode===null) cols.desigCode=j+3;
+          break outer;
+        }
+      }
+    }
+  }
+
+  // Also detect any SHIFT A/B/D header so we can stop collecting
+  function isOtherShiftHeader(row){
+    const txt = row.map(v=>String(v||'').toUpperCase()).join(' ');
+    return /SHIFT\s+[ABD]/.test(txt) && !txt.includes('SHIFT C');
+  }
+
+  // ── Backup code parser ──
+  // Matches exact patterns seen in sheet. Returns {matchesShift, dept} or null.
+  // STBY and plain DAY/NIGHT are NOT backup — those are own-shift or standby.
+  function parseBkCode(raw, selectedShift){
+    const v = raw.toUpperCase().trim();
+
+    // Extract dept suffix: (LO), (IRR), (IRREG), (WO)
+    const deptMatch = v.match(/\((LO|IRR|IRREG|WO)\)/);
+    const dept = deptMatch ? (deptMatch[1]==='LO'?'LO':deptMatch[1]==='WO'?'WO':'IRR') : null;
+
+    // ── Pattern 1: DAY (MD) / NIGHT (MD) — mandatory duty ──
+    // e.g. "DAY (MD)", "NIGHT (MD)"
+    if(/^DAY\s*\(MD\)/.test(v))   return { matchesShift: selectedShift==='DAY',   dept };
+    if(/^NIGHT\s*\(MD\)/.test(v)) return { matchesShift: selectedShift==='NIGHT', dept };
+
+    // ── Pattern 2: (D1)/(N1) etc prefix + B/U DAY/NIGHT ──
+    // e.g. "(N1) B/U NIGHT (LO)", "(D2) B/U DAY (IRR)"
+    if(/B\/U\s+DAY/.test(v)||/BU\s+DAY/.test(v)||/B\/UP\s+DAY/.test(v)||/BACKUP\s+DAY/.test(v))
+      return { matchesShift: selectedShift==='DAY',   dept };
+    if(/B\/U\s+NIGHT/.test(v)||/BU\s+NIGHT/.test(v)||/B\/UP\s+NIGHT/.test(v)||/BACKUP\s+NIGHT/.test(v))
+      return { matchesShift: selectedShift==='NIGHT', dept };
+
+    // ── Pattern 3: Old bracket codes (D1)-(D6) / (N1)-(N5) standalone ──
+    if(/^\(D[1-6]\)(?:\*|\s*$)/.test(v)) return { matchesShift: selectedShift==='DAY',   dept };
+    if(/^\(N[1-5]\)(?:\*|\s*$)/.test(v)) return { matchesShift: selectedShift==='NIGHT', dept };
+
+    // ── Pattern 4: (1),(2),(3) etc — generic backup slot for current shift ──
+    // e.g. "(2) B737NG REC (CGK)" = backup slot 2
+    if(/^\(\d+\)/.test(v)) return { matchesShift: true, dept };
+
+    return null; // plain DAY, NIGHT, STBY etc → not backup
+  }
+
+  // 4. Walk rows — TWO passes in one loop:
+  //    Pass A: collect Shift C own staff (existing logic)
+  //    Pass B: collect backup staff from other shifts with matching backup code
+  const staff=[], dbgSections={};
+  let curSection=null;       // current Shift C section
+  let curOtherSection=null;  // current other-shift section (for backup detection)
+  let curOtherShift=null;    // 'A'|'B'|'D'
+
+  for(let i=0;i<rows.length;i++){
+    const row=rows[i];
+    if(!row||!row.length) continue;
+    const txt = row.map(v=>String(v||'').toUpperCase()).join(' ');
+
+    // Detect SHIFT C section headers
+    const sec=detectSection(row);
+    if(sec!==null){
+      curSection=sec; curOtherSection=null; curOtherShift=null;
+      if(!dbgSections[sec]) dbgSections[sec]={startRow:i,count:0};
+      continue;
+    }
+
+    // Detect other-shift section headers (A/B/D)
+    const otherM = txt.match(/\bSHIFT\s+([ABD])\b/);
+    if(otherM && txt.includes('SHIFT '+otherM[1]) && !txt.includes('SHIFT C')){
+      // Which dept is this?
+      let otherTeam=null;
+      for(const {key,pats} of SECTION_MAP){
+        for(const p of pats){ if(txt.includes(p)){ otherTeam=key; break; } }
+        if(otherTeam) break;
+      }
+      curOtherSection=otherTeam; curOtherShift=otherM[1]; curSection=null;
+      continue;
+    }
+
+    // Staff row must have valid ID
+    const idRaw=cols.id!==null?String(row[cols.id]||'').trim():'';
+    if(!/^M\d{4,}/i.test(idRaw)) continue;
+
+    const id        = idRaw.toUpperCase();
+    const fullName  = cols.name!==null      ? c(row[cols.name])      : '';
+    const desig     = cols.desig!==null     ? c(row[cols.desig])     : '';
+    const desigCode = cols.desigCode!==null ? c(row[cols.desigCode]) : '';
+    const acType    = cols.acType!==null    ? c(row[cols.acType]||''): '';
+    const fleet     = cols.fleet!==null     ? c(row[cols.fleet]||''): '';
+    const schedVal  = dateCol<row.length    ? c(row[dateCol])        : '';
+
+    // Exclude non-technical roles from ALL paths
+    const excl=desigCode.toUpperCase();
+    const exclDesig=desig.toUpperCase();
+    const isExcluded=
+      excl.includes('PPC')||excl.includes('PPCC')||excl.includes('PPCO')||
+      excl==='TC'||excl==='TCR'||excl==='TCT'||excl.includes('TOOLCRIB')||exclDesig.includes('TOOL CRIB')||
+      excl==='SL'||excl==='SNL'||excl==='STO'||exclDesig.includes('STORE')||exclDesig.includes('LOGISTIC')||
+      (S.exclusions||[]).includes(id); // permanently excluded staff
+    if(isExcluded) continue;
+
+    // ── SHIFT C own staff ──
+    if(curSection){
+      if(dbgSections[curSection]) dbgSections[curSection].count++;
+      staff.push({ id, fullName,
+        shortName: sn[fullName]||shortify(fullName),
+        desig, acType, desigCode, fleet,
+        team: curSection, schedVal,
+        category: catOf(desigCode,desig),
+        avail: availOf(schedVal,shiftType),
+        fromShift: null,
+        isBackup:false });
+    }
+
+    // ── Cross-shift backup detection ──
+    else if(curOtherSection){
+      const schedUpper=schedVal.toUpperCase().trim();
+      const bk=parseBkCode(schedVal, shiftType);
+      // Include if: specific backup code OR plain NIGHT/DAY matching current shift
+      const isPlainMatch=schedUpper===shiftType||schedUpper===shiftType+' (MD)';
+      if((!bk||!bk.matchesShift)&&!isPlainMatch) continue;
+      if(staff.some(s=>s.id===id||s.id===id+'_BK')) continue; // already in Shift C
+      const targetTeam=(bk&&bk.dept)||curOtherSection;
+      staff.push({ id: id+'_BK', fullName,
+        shortName: sn[fullName]||shortify(fullName),
+        desig, acType, desigCode, fleet,
+        team: targetTeam, schedVal,
+        category: catOf(desigCode,desig),
+        avail: { st:'WORKING', lbl:`BK-${curOtherShift||'?'}`, cls:'standby', badge:'bst', raw:schedVal },
+        fromShift: curOtherShift||'?',
+        isBackup: true });
+    }
+    // Only scan within known LO/IRREG/WO/CIM/MOC sections — no fallback for unknown sections
+  }
+
+  // Debug info
+  const xsBkFound = staff.filter(s=>s.isBackup);
+  const dbgOtherSamples = [];
+
+  // Re-scan to collect samples of other-shift rows with their raw schedule values
+  let dbgOtherSec=null;
+  for(let i=0;i<rows.length&&dbgOtherSamples.length<30;i++){
+    const row=rows[i];
+    if(!row||!row.length) continue;
+    const txt=row.map(v=>String(v||'').toUpperCase()).join(' ');
+    const otherM=txt.match(/\bSHIFT\s+([ABD])\b/);
+    if(otherM&&!txt.includes('SHIFT C')){ dbgOtherSec='SHIFT '+otherM[1]; continue; }
+    if(!dbgOtherSec) continue;
+    const idRaw=cols.id!==null?String(row[cols.id]||'').trim():'';
+    if(!/^M\d{4,}/i.test(idRaw)) continue;
+    const sv=dateCol<row.length?c(row[dateCol]):'';
+    if(sv) dbgOtherSamples.push({ shift:dbgOtherSec, id:idRaw, name:cols.name!==null?c(row[cols.name]):'', schedVal:sv });
+  }
+
+  S.debug = { totalRows:rows.length, staffFound:staff.filter(s=>!s.isBackup).length,
+    xsBkFound: xsBkFound.length, xsBkSamples: xsBkFound.slice(0,5).map(s=>({name:s.shortName,team:s.team,schedVal:s.schedVal,fromShift:s.fromShift})),
+    otherShiftSamples: dbgOtherSamples,
+    dateCol, dateRow,
+    dateHeaderCell: rows[dateRow]?.[dateCol]||'(empty)',
+    dateAdjacentPrev: rows[dateRow]?.[dateCol-1]||'(empty)',
+    dateAdjacentNext: rows[dateRow]?.[dateCol+1]||'(empty)',
+    sampleSchedVals: staff.filter(s=>!s.isBackup).slice(0,5).map(s=>({name:s.shortName,schedVal:s.schedVal})),
+    // Show row 5 columns 38-55 to find actual date header format
+    row5cols: (rows[5]||[]).slice(38,56).map((v,i)=>({col:i+38,val:String(v||'')})).filter(x=>x.val),
+    headerFound:cols.id!==null, cols,
+    sections:dbgSections,
+    sample: staff.filter(s=>!s.isBackup).slice(0,20).map(s=>({
+      team:s.team, id:s.id, name:s.shortName,
+      shift:s.schedVal, colShift:dateCol, rawRow:[]
+    }))
+  };
+
+  return staff;
+}
+
+function c(v){ return String(v||'').trim().toUpperCase(); }
+
+function parseShortNames(rows){
+  const map={};
+  let on=false;
+  for(const row of rows){
+    const a=String(row[0]||'').trim(), b=String(row[1]||'').trim();
+    if(a==='NAME'&&(b==='SHORT NAME'||b==='SHORTNAME')){ on=true; continue; }
+    if(on&&a&&b&&!/^(TYPE|STATION|CODE|WEEK|FLEET|DESIG|AVERAGE|SP |NO_)/i.test(a)){
+      map[a.toUpperCase()]=b;
+    }
+  }
+  return map;
+}
+
+function shortify(name){
+  const pre=new Set(['MOHD','MUHAMMAD','MUHAMAD','MOHAMAD','NUR','WAN','TENGKU','SITI','NURUL','MOHD.']);
+  const con=new Set(['BIN','BINTI','A/L','A/P','@']);
+  const words=name.split(/\s+/);
+  for(let i=0;i<words.length;i++){
+    if(con.has(words[i])) break;
+    if(!pre.has(words[i])) return words[i];
+  }
+  return words[0]||name;
+}
+
+function catOf(dc, desig){
+  const dcc = dc.replace(/\s+/g,'').toUpperCase();
+  if(dc==='LT'||desig.includes('GROUP LEADER')) return 'GL';
+  if(dc==='LAT') return 'LAT';
+  // Check TECH codes FIRST before any (B1)/(B2) text matching
+  if(['LATNCS','LAENCS','LAENCSB1','LAENCSB2'].includes(dcc)) return 'TECH';
+  if(['TECH','TECHB1','TECHB2'].includes(dcc)) return 'TECH';
+  if(desig.includes('AIRCRAFT TECHNICIAN')) return 'TECH';
+  // LAE B1 / B2 only for actual licensed engineers
+  if(dc==='LAEB1'||desig.includes('(B1.1)')) return 'LAE B1';
+  if(dc==='LAEB2') return 'LAE B2';
+  if(dc==='SM') return 'SM';
+  return 'OTHER';
+}
+
+const OVERRIDE_MAP = {
+  'WORKING':     { st:'WORKING',     lbl:'WORKING',  cls:'working', badge:'bwk' },
+  'AL/OFF':      { st:'LEAVE',       lbl:'AL/OFF',   cls:'leave',   badge:'blv' },
+  'MC/EL':       { st:'ABSENT',      lbl:'MC/EL',    cls:'absent',  badge:'bab' },
+  'FLYING':      { st:'FLYING',      lbl:'FLYING',   cls:'flying',  badge:'bfl' },
+  'CRS/PROJECT': { st:'COURSE',      lbl:'CRS/PRJ',  cls:'course',  badge:'bcr' },
+  'TRANSFERRED': { st:'TRANSFERRED', lbl:'TRANSFER', cls:'xfer',    badge:'bxf' },
+};
+const OVR_CYCLE = ['WORKING','AL/OFF','MC/EL','FLYING','CRS/PROJECT','TRANSFERRED'];
+
+// Codes that mean the person is physically NOT in your dept this shift
+const XFER_DEST = {
+  // Posting shift / general department transfer
+  'PG': 'POSTING SHIFT',
+  // Tool Crib
+  'TC': 'TOOL CRIB', 'TCR': 'TOOL CRIB',
+  // Store & Logistics
+  'SL': 'STORE & LOG', 'SNL': 'STORE & LOG', 'STO': 'STORE & LOG',
+  // CIM / other
+  'CIM': 'CIM',
+};
+
+function isXferCode(raw){
+  // Match patterns like (PG) REMARK, (TC), (SL) ..., (TC1), etc.
+  const m = raw.match(/^\(([A-Z0-9]+)\)/);
+  if(!m) return null;
+  const code = m[1];
+  // Direct match
+  if(XFER_DEST[code]) return XFER_DEST[code];
+  // Prefix match e.g. TC1, SL2
+  for(const k of Object.keys(XFER_DEST)){
+    if(code.startsWith(k)) return XFER_DEST[k];
+  }
+  return null;
+}
+
+function availOf(v, shift){
+  const raw=v.toUpperCase().trim();
+  if(!raw||raw==='-'||raw==='0'||raw==='FALSE') return { st:'UNKNOWN', lbl:'—', cls:'off', badge:'bof', raw };
+  if(raw===shift) return { st:'WORKING', lbl:shift, cls:'working', badge:'bwk', raw };
+  if(raw===`(1/2) ${shift}`) return { st:'WORKING', lbl:'½', cls:'working', badge:'bwk', raw, half:true };
+  // If cell contains the shift word but also has a course/task code, treat as WORKING
+  if(raw.includes(shift)&&(raw.includes('(C')||raw.includes('COURSE')||raw.includes('TRNG')||raw.includes('REC')||raw.includes('(T')))
+    return { st:'WORKING', lbl:shift+' (C)', cls:'working', badge:'bwk', raw };
+  // If cell starts with NIGHT/DAY regardless of suffix, treat as working for that shift
+  if(raw.startsWith(shift)) return { st:'WORKING', lbl:shift, cls:'working', badge:'bwk', raw };
+  if(/^DAY\s*\(MD\)/.test(raw)&&shift==='DAY')   return { st:'WORKING', lbl:'DAY MD',   cls:'working', badge:'bwk', raw };
+  if(/^NIGHT\s*\(MD\)/.test(raw)&&shift==='NIGHT') return { st:'WORKING', lbl:'NIGHT MD', cls:'working', badge:'bwk', raw };
+  // B/U codes on own staff
+  if((/B\/U\s+DAY|BACKUP\s+DAY/.test(raw))&&shift==='DAY')   return { st:'WORKING', lbl:'BK DAY', cls:'working', badge:'bwk', raw };
+  if((/B\/U\s+NIGHT|BACKUP\s+NIGHT/.test(raw))&&shift==='NIGHT') return { st:'WORKING', lbl:'BK NIGHT', cls:'working', badge:'bwk', raw };
+  // Detect opposite shift
+  const SHIFTS=['DAY','NIGHT','AM','PM'];
+  if(SHIFTS.includes(raw)&&raw!==shift) return { st:'OTHER_SHIFT', lbl:raw, cls:'course', badge:'bcr', raw };
+  if(raw==='STBY') return { st:'STANDBY', lbl:'STBY', cls:'standby', badge:'bst', raw };
+  if(/^\(D[1-6]\)\*?/.test(raw)||/^\(N[1-5]\)\*?/.test(raw)) return { st:'BACKUP_SHIFT', lbl:raw.substring(0,4), cls:'standby', badge:'bst', raw };
+  if(/^\(F[0-8]\)/.test(raw)||/^\(P[01]\)/.test(raw)) return { st:'FLYING', lbl:'FLYING', cls:'flying', badge:'bfl', raw };
+  const xdest = isXferCode(raw);
+  if(xdest) return { st:'TRANSFERRED', lbl:xdest, cls:'xfer', badge:'bxf', raw };
+  if(/^\(C[1-9T]\)/.test(raw)||/^\(Q[AO]\)/.test(raw)) return { st:'COURSE', lbl:'COURSE', cls:'course', badge:'bcr', raw };
+  if(/^\(T[1-5]\)/.test(raw)) return { st:'TASK', lbl:'TASK', cls:'course', badge:'bcr', raw };
+  const LV=['AL','LIL','EL','PIL','PTL','MTL','MRG','EXAM','CL','UPL','MRGL','ADML'];
+  if(LV.includes(raw)||raw.startsWith('(1/2) AL')||raw.startsWith('(1/2) LIL')||raw.startsWith('OFF: RPL'))
+    return { st:'LEAVE', lbl:raw.substring(0,8), cls:'leave', badge:'blv', raw };
+  if(['MC','HOSP','MIA','SOCSO'].includes(raw)) return { st:'ABSENT', lbl:raw, cls:'absent', badge:'bab', raw };
+  if(['OD','RD'].includes(raw)) return { st:'OFF', lbl:raw, cls:'off', badge:'bof', raw };
+  if(raw==='NORMAL'||raw==='(1/2) NORMAL') return { st:'OFFICE', lbl:'NORMAL', cls:'off', badge:'bof', raw };
+  return { st:'OTHER', lbl:raw.substring(0,10), cls:'course', badge:'bcr', raw };
+}
+
+function isTransferred(s){ return effAvail(s).st === 'TRANSFERRED'; }
+
+function effAvail(s){
+  if(!s) return {st:'OFF',lbl:'?',cls:'off',badge:'bof',raw:'',half:false};
+  const ov=S.overrides[s.id];
+  if(ov) return OVERRIDE_MAP[ov]||{st:'OFF',lbl:ov,cls:'off',badge:'bof',raw:ov,half:false};
+  return s.avail||{st:'OFF',lbl:'?',cls:'off',badge:'bof',raw:'',half:false};
+}
+
+function isActive(a){ return ['WORKING','STANDBY','BACKUP_SHIFT'].includes(a.st); }
+
+// ═══════════════════════════════════
+// RENDER
+// ═══════════════════════════════════
+const CAT_ORD = ['GL','LAT','LAE B1','LAE B2','TECH','SM','OTHER'];
+
+function renderAll(){
+  renderDept('cl','LO','lo');
+  renderDept('ci','IRR','irreg');
+  renderDept('cw','WO','wo');
+  renderDept('cc','CIM','cim');
+  renderSummary();
+  updateCounts();
+  scheduleSave();
+}
+
+// Returns the dept a person is actually working in (after swaps/transfers)
+function effectiveDept(s){
+  if(!s) return null;
+  // Check transfers first
+  const tr = S.transfers.find(t=>t.id===s.id);
+  if(tr) return tr.toDept;
+  // Check swaps — swap means they go to the OTHER person's original team
+  for(const sw of S.swaps){
+    if(sw.id1===s.id){ const other=S.staff.find(x=>x.id===sw.id2); return other?other.team:s.team; }
+    if(sw.id2===s.id){ const other=S.staff.find(x=>x.id===sw.id1); return other?other.team:s.team; }
+  }
+  return s.team;
+}
+
+// Returns tag info if person was moved into this dept from elsewhere
+function movedFrom(s){
+  const tr = S.transfers.find(t=>t.id===s.id);
+  if(tr) return { type:'transfer', from:s.team };
+  for(const sw of S.swaps){
+    if(sw.id1===s.id||sw.id2===s.id) return { type:'swap', from:s.team };
+  }
+  return null;
+}
+
+function renderDept(elId, teamKey, dk){
+  const el = document.getElementById(elId);
+  if(!el) return;
+
+  if(!S.staff.length){
+    el.innerHTML='<div style="padding:30px;color:var(--txt2);font-size:12px">No staff loaded. Click ⟳ LOAD ROSTER.</div>';
+    return;
+  }
+
+  // Staff showing in this dept = own staff (not moved out) + staff moved IN from other depts
+  const allTeams = [...new Set(S.staff.map(s=>s.team))];
+  const ownOriginal = S.staff.filter(s=>s.team===teamKey);
+
+  if(!ownOriginal.length){
+    el.innerHTML=`<div style="padding:20px;font-size:12px">
+      <div style="color:var(--orange);margin-bottom:10px">⚠ No staff found with team = "${teamKey}"</div>
+      <div style="color:var(--txt2);margin-bottom:6px">Total staff in S.staff: <b style="color:var(--amber)">${S.staff.length}</b></div>
+      <div style="color:var(--txt2);margin-bottom:6px">Team values found: <b style="color:var(--amber)">${allTeams.join(', ')||'(none)'}</b></div>
+      ${S.staff.slice(0,3).map(s=>`<div style="color:var(--txt3);font-size:10px;margin-left:10px">team="${s.team}" name="${s.shortName}"</div>`).join('')}
+    </div>`;
+    return;
+  }
+
+  // All staff whose effectiveDept is this teamKey
+  const ds = S.staff.filter(s => effectiveDept(s) === teamKey);
+
+  const grouped={};
+  CAT_ORD.forEach(c=>grouped[c]=[]);
+  const visible  = ds.filter(s => !isTransferred(s));
+  const xferred  = ownOriginal.filter(s => isTransferred(s)); // physically absent (tool crib etc.)
+  // Staff moved OUT of this dept via swap/transfer (hide from here)
+  const movedOut = ownOriginal.filter(s => effectiveDept(s) !== teamKey && !isTransferred(s));
+
+  visible.forEach(s=>{ const k=CAT_ORD.includes(s.category)?s.category:'OTHER'; grouped[k].push(s); });
+
+  const avail = visible.filter(s=>isActive(effAvail(s))).length;
+  const pct   = visible.length?Math.round(avail/visible.length*100):0;
+
+  let h='';
+
+  // ASSIGN ROLES button — only in IRREG
+  if(teamKey==='IRR'){
+    h+=`<div style="margin-bottom:14px" class="np">
+      <button class="btn btn-amber" style="width:100%;font-size:13px;padding:10px;letter-spacing:2px" onclick="openRolesModal()">
+        ✎ ASSIGN ROLES FOR THIS SHIFT
+      </button>
+    </div>`;
+  }
+
+  // Moved-out notice
+  if(movedOut.length){
+    h+=`<div style="background:#0A1224;border:1px solid #1A2A44;border-radius:var(--r);padding:8px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="background:#1A2A44;color:#60A5FA;border:1px solid #1D4ED8;border-radius:3px;padding:1px 7px;font-size:9px;font-weight:700;letter-spacing:1px">${movedOut.length} MOVED OUT</span>
+      <span style="font-size:10px;color:var(--txt2)">${movedOut.map(s=>{const ed=effectiveDept(s);return`${displayName(s)} → ${ed}`;}).join(' · ')}</span>
+      <button class="btn btn-ghost btn-sm np" style="margin-left:auto;font-size:9px" onclick="openSwapModal()">⇄ MANAGE</button>
+    </div>`;
+  }
+
+  // Transferred-out notice (tool crib etc.)
+  if(xferred.length){
+    const destStr = xferred.map(s=>{
+      const a=effAvail(s);
+      return `<span onclick="cycleOvr('${s.id}')" title="Click to restore ${s.shortName}" style="cursor:pointer;text-decoration:underline dotted;color:#86EFAC">${s.shortName}</span> <span style="color:var(--txt3)">(${a.lbl})</span>`;
+    }).join(' &nbsp;·&nbsp; ');
+    h+=`<div style="background:#0D1A0A;border:1px solid #1A3A14;border-radius:var(--r);padding:8px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="background:#1A3A14;color:#4ade80;border:1px solid #2A5A24;border-radius:3px;padding:1px 7px;font-size:9px;font-weight:700;letter-spacing:1px">${xferred.length} HIDDEN</span>
+        <span style="font-size:10px;color:var(--txt2)">Transferred out · not counted</span>
+        <span style="font-size:9px;color:var(--txt3)">(click name to restore)</span>
+      </div>
+      <span style="font-size:9px;font-style:italic">${destStr}</span>
+    </div>`;
+  }
+
+  if(pct<60&&visible.length) h+=`<div class="alert np">⚠ Only ${avail}/${visible.length} (${pct}%) available tonight</div>`;
+
+  for(const cat of CAT_ORD){
+    const m=grouped[cat]; if(!m.length) continue;
+    const ca=m.filter(s=>isActive(effAvail(s))).length;
+    h+=`<div class="cat-sec">
+      <div class="cat-hdr">
+        <span class="cat-lbl">${cat}</span>
+        <div class="cat-div"></div>
+        <span class="cat-cnt">${ca}/${m.length}</span>
+      </div>
+      <div class="grid">${m.map(s=>cardHTML(s,teamKey)).join('')}</div>
+    </div>`;
+  }
+
+  // Backup section
+  const bk=S.backups[dk]||[];
+  h+=`<div class="bk-sec">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="bk-title" style="margin-bottom:0">BACKUP MANPOWER</div>
+      <button class="btn btn-teal btn-sm np" onclick="openSwapModal('${teamKey}')">⇄ SWAP / TRANSFER</button>
+    </div>
+    ${bk.length?`<div class="grid" style="margin-bottom:12px">${bk.map((b,i)=>bkCardHTML(b,dk,i)).join('')}</div>`:''}
+    <div class="bk-form np">
+      <input type="text" id="bn-${dk}" placeholder="Name" style="width:110px" onkeydown="if(event.key==='Enter')addBk('${dk}')">
+      <select id="bp-${dk}">
+        <option>GL</option><option>LAT</option><option>LAE B1</option>
+        <option>LAE B2</option><option>TECH</option><option>TECH B1</option><option>TECH B2</option>
+      </select>
+      <input type="text" id="bt-${dk}" placeholder="A/C Type" style="width:90px" onkeydown="if(event.key==='Enter')addBk('${dk}')">
+      <button class="btn btn-amber btn-sm" onclick="addBk('${dk}')">+ ADD</button>
+    </div>
+  </div>`;
+
+  // TOWERS — only shown in IRREG tab, not counted in headcount
+  if(teamKey==='IRR'){
+    h += renderTowersSection();
+    h += renderTraineesSection();
+  }
+
+  // MOC — only shown in LO tab
+  if(teamKey==='LO') h += renderMocSection();
+
+  el.innerHTML=h;
+}
+
+function saveNicknames(){
+  localStorage.setItem('ops_nicknames', JSON.stringify(S.nicknames));
+  // Also save to Firebase permanently (not date-specific)
+  if(fbReady){
+    fbDb.ref('settings/nicknames').set(S.nicknames)
+      .catch(e=>console.warn('Nickname save error:',e));
+  }
+}
+
+async function loadNicknames(){
+  if(!fbReady) return;
+  try {
+    const snap=await fbDb.ref('settings/nicknames').get();
+    if(snap.exists()){
+      const cloud=snap.val()||{};
+      S.nicknames=Object.assign({}, S.nicknames, cloud);
+      localStorage.setItem('ops_nicknames', JSON.stringify(S.nicknames));
+      if(S.loaded) renderAll(); // only re-render if roster is already loaded
+    }
+  } catch(e){ console.warn('Nickname load error:',e); }
+}
+function displayName(s){ return S.nicknames[s.id] || s.shortName; }
+
+function editNickname(id, currentName, event){
+  event.stopPropagation();
+  const baseId=id.replace('_BK','');
+  const isExcluded=(S.exclusions||[]).includes(baseId);
+  const input=prompt(
+    `Nickname for ${currentName} (leave blank to reset):\n\nType "EXCLUDE" to permanently hide this staff from all lists.\n${isExcluded?'Currently EXCLUDED — type "RESTORE" to show again.':''}`,
+    S.nicknames[id]||''
+  );
+  if(input===null) return;
+  if(input.trim().toUpperCase()==='EXCLUDE'){
+    if(!S.exclusions) S.exclusions=[];
+    if(!S.exclusions.includes(baseId)) S.exclusions.push(baseId);
+    saveExclusions();
+    renderAll();
+    if(S.loaded) loadRoster(); // reload to apply exclusion
+    return;
+  }
+  if(input.trim().toUpperCase()==='RESTORE'){
+    S.exclusions=(S.exclusions||[]).filter(e=>e!==baseId);
+    saveExclusions();
+    renderAll();
+    if(S.loaded) loadRoster();
+    return;
+  }
+  if(input.trim()===''){
+    delete S.nicknames[id];
+  } else {
+    S.nicknames[id]=input.trim().toUpperCase();
+  }
+  saveNicknames();
+  renderAll();
+}
+
+function cardHTML(s, viewingDept){
+  const a   = effAvail(s);
+  const ov  = !!S.overrides[s.id];
+  const mv  = movedFrom(s);
+  const nm  = displayName(s);
+  const hasCustomNick = !!S.nicknames[s.id];
+  const raw = s.schedVal&&s.schedVal!==a.lbl?`<span style="font-size:8px;color:var(--txt3);margin-left:4px">${s.schedVal.substring(0,10)}</span>`:'';
+  const fromTag = (mv && viewingDept && effectiveDept(s)===viewingDept && s.team!==viewingDept)
+    ? `<span style="display:inline-block;margin-left:4px;padding:1px 5px;background:#0A1929;color:#93C5FD;border:1px solid #1D4ED8;border-radius:2px;font-size:8px;font-weight:700;letter-spacing:.5px">FROM ${s.team}</span>`
+    : '';
+  return `<div class="card ${a.cls}${mv?' card-moved':''}" onclick="cycleOvr('${s.id}')" title="${s.fullName}\n${s.desig}\n${s.acType}\nScheduled: ${s.schedVal||'—'}\nClick to cycle status">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2px">
+      <div class="cname">${nm}${hasCustomNick?`<span style="font-size:7px;color:var(--txt3);margin-left:3px" title="Custom nickname">✎</span>`:''}${ov?` <span class="ovr-star">✱</span>`:''}</div>
+      <div style="display:flex;gap:3px;flex-shrink:0">
+        <button onclick="setStatus('${s.id}','MCEL',event)" class="np" title="Mark MC/EL" style="background:${ov==='MC/EL'?'#DC2626':'transparent'};border:1px solid ${ov==='MC/EL'?'#DC2626':'var(--b2)'};color:${ov==='MC/EL'?'#fff':'var(--txt3)'};border-radius:3px;font-size:7px;font-weight:700;cursor:pointer;padding:1px 4px;line-height:1">MC/EL</button>
+        <button onclick="setStatus('${s.id}','AL',event)" class="np" title="Mark AL/OFF" style="background:${ov==='AL/OFF'?'#D97706':'transparent'};border:1px solid ${ov==='AL/OFF'?'#D97706':'var(--b2)'};color:${ov==='AL/OFF'?'#fff':'var(--txt3)'};border-radius:3px;font-size:7px;font-weight:700;cursor:pointer;padding:1px 4px;line-height:1">AL</button>
+        <button onclick="editNickname('${s.id}','${s.fullName}',event)" class="np" title="Edit nickname" style="background:transparent;border:none;color:var(--txt3);font-size:10px;cursor:pointer;padding:0;line-height:1">✎</button>
+      </div>
+    </div>
+    <div class="cmeta">${s.desigCode||s.desig} · ${s.acType||s.fleet||'—'}</div>
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:3px;margin-top:5px">
+      <span class="badge ${a.badge}">${a.lbl}</span>${raw}${fromTag}
+    </div>
+  </div>`;
+}
+
+function bkCardHTML(b, dk, i){
+  const mcEl = b.mcEl===true;
+  return `<div class="card bkcard" style="position:relative;${mcEl?'opacity:.45;filter:grayscale(.5)':''}">
+    <div class="cname">${b.name} <span class="bktag">BK</span></div>
+    <div class="cmeta">${b.pos}${b.type?' · '+b.type:''}</div>
+    <div style="display:flex;align-items:center;gap:5px;margin-top:5px;flex-wrap:wrap">
+      ${mcEl
+        ? `<span class="badge bab">MC/EL</span>`
+        : `<span class="badge bbk">BACKUP</span>`}
+      <button class="btn btn-sm np" onclick="event.stopPropagation();toggleBkMcEl('${dk}',${i})"
+        style="font-size:8px;padding:1px 6px;${mcEl
+          ? 'background:var(--gbg);color:var(--green);border:1px solid #0D3A24'
+          : 'background:var(--rbg);color:var(--red);border:1px solid #3A0D0D'}"
+        title="${mcEl?'Mark as available':'Mark as MC/EL'}">
+        ${mcEl?'✓ RESTORE':'MC/EL'}
+      </button>
+    </div>
+    <button class="btn btn-red btn-sm np" style="position:absolute;top:6px;right:6px;padding:1px 5px;font-size:9px" onclick="event.stopPropagation();removeBk('${dk}',${i})">✕</button>
+  </div>`;
+}
+
+function cycleOvr(id){
+  const cur=S.overrides[id];
+  const idx=OVR_CYCLE.indexOf(cur);
+  if(idx===-1||idx===OVR_CYCLE.length-1){ delete S.overrides[id]; }
+  else{ S.overrides[id]=OVR_CYCLE[idx+1]; }
+  renderAll(); scheduleSave();
+}
+
+function setStatus(id, type, event){
+  event.stopPropagation();
+  const map={'MCEL':'MC/EL','AL':'AL/OFF'};
+  const key=map[type];
+  if(S.overrides[id]===key){ delete S.overrides[id]; }
+  else { S.overrides[id]=key; }
+  renderAll(); scheduleSave();
+}
+
+// Only include staff whose designation is actually MOC (exclude PPCC, PPC etc.)
+function isMocStaff(s){
+  if(s.team!=='MOC') return false;
+  const d=(s.desigCode||s.desig||'').toUpperCase();
+  const name=(s.fullName||'').toUpperCase();
+  // Exclude known non-MOC roles in the MOC section
+  if(d.includes('PPCC')||d.includes('PPC')||d.includes('PPCO')) return false;
+  // Include if desig contains MOC or is a known MOC role
+  return d.includes('MOC')||d.includes('MANAGER ON CALL')||d.includes('CERTIFYING STAFF');
+}
+
+function getAssignedNames(){
+  const r=S.roles;
+  if(!r) return new Set();
+  const ns=new Set();
+  if(r.mocChaser) ns.add(r.mocChaser);
+  (r.mojo||[]).forEach(n=>n&&ns.add(n));
+  (r.wc||[]).forEach(w=>{w.primary&&ns.add(w.primary);w.asst&&ns.add(w.asst);});
+  (r.runners||[]).forEach(rn=>rn.name&&ns.add(rn.name));
+  (r.towerSlots||[]).forEach(ts=>{ts.a&&ns.add(ts.a);ts.b&&ns.add(ts.b);ts.backup&&ns.add(ts.backup);});
+  // Acting GLs should not appear in staff lists
+  if(S.actingGL){ Object.values(S.actingGL).forEach(n=>n&&ns.add(n)); }
+  return ns;
+}
+
+function toggleSS(id){
+  const idx=S.ssTechs.indexOf(id);
+  if(idx>=0) S.ssTechs.splice(idx,1);
+  else if(S.ssTechs.length<3) S.ssTechs.push(id);
+  renderSummary();
+  scheduleSave();
+}
+
+function renderSummary(){
+  const el=document.getElementById('cs');
+  if(!el) return;
+  try {
+    _renderSummaryInner(el);
+  } catch(err){
+    el.innerHTML=`<div style="padding:20px;max-width:600px">
+      <div style="background:#1A0A0A;border:1px solid #3A0D0D;border-radius:8px;padding:16px 20px">
+        <div style="color:var(--red);font-weight:700;font-size:13px;margin-bottom:6px">⚠ Summary render error</div>
+        <div style="color:var(--orange);font-size:11px;margin-bottom:8px">${err.message}</div>
+        <button class="btn btn-amber btn-sm" onclick="_renderSummaryInner(document.getElementById('cs'))">⟳ RETRY</button>
+      </div></div>`;
+    console.error('renderSummary crash:', err);
+  }
+}
+
+function _renderSummaryInner(el){
+  const dateStr=fmtDate(document.getElementById('dp').value);
+  const shift=document.getElementById('shift-sel').value;
+  const isDay=shift==='DAY';
+  if(!S.roles||!Array.isArray(S.roles.mojo)){
+    S.roles = {
+      mocChaser:'', mojo:['','',''],
+      wc:[{primary:'',asst:''},{primary:'',asst:''}],
+      runners:[
+        {name:'',timing:'0600-1200 / 1800-0000'},{name:'',timing:'0700-1300 / 1900-0100'},
+        {name:'',timing:'1200-1800 / 0000-0600'},{name:'',timing:'1300-1900 / 0100-0700'}
+      ],
+      towerSlots:[{a:'',b:'',backup:''},{a:'',b:'',backup:''},{a:'',b:'',backup:''},{a:'',b:'',backup:''}]
+    };
+  }
+  const r = S.roles;
+
+  // ── helpers ──
+  const getDept = (team,dk) => {
+    const own = S.staff.filter(s=>effectiveDept(s)===team&&!isTransferred(s));
+    const bk  = S.backups[dk]||[];
+    let mc=0,lv=0,cr=0,fl=0;
+    own.forEach(s=>{ const a=effAvail(s);
+      if(a.st==='ABSENT')mc++; else if(a.st==='LEAVE'||a.st==='OFF')lv++;
+      else if(a.st==='COURSE'||a.st==='TASK'||a.st==='OTHER_SHIFT')cr++; else if(a.st==='FLYING')fl++;
+    });
+    return {own,bk,mc,lv,cr,fl};
+  };
+  const lo=getDept('LO','lo'), irr=getDept('IRR','irreg'), wo=getDept('WO','wo'), cim=getDept('CIM','cim');
+  const TEAM_KEY = { lo:'LO', irreg:'IRR', wo:'WO', cim:'CIM' };
+
+  const glNames = team => {
+    const dk = {LO:'lo',IRR:'irreg',WO:'wo',CIM:'cim'}[team]||'lo';
+    const key = {LO:'lo',IRR:'irreg',WO:'wo'}[team]||'lo';
+    // Check acting GL override first
+    if(S.actingGL[key]) return S.actingGL[key];
+    const rosterGL = S.staff.filter(s=>effectiveDept(s)===team&&s.category==='GL');
+    const bkGL     = (S.backups[dk]||[]).filter(b=>normCat(b.pos)==='GL');
+    const all = [
+      ...rosterGL.map(s=>displayName(s)+(isActive(effAvail(s))?'':' ⚠')),
+      ...bkGL.map(b=>b.name+' (BK)')
+    ];
+    return all.length ? all.join(' / ') : 'TBA';
+  };
+
+  const glBtn = team => {
+    const key={LO:'lo',IRR:'irreg',WO:'wo'}[team]||'lo';
+    return `<button class="btn btn-ghost btn-sm np" style="font-size:8px;padding:1px 5px;margin-left:4px" onclick="openActingGLModal('${team}','${key}')">✎</button>`;
+  };
+  const mocStaff   = S.staff.filter(s=>isMocStaff(s)&&isActive(effAvail(s)));
+  const mocNames   = mocStaff.length?mocStaff.map(s=>displayName(s)).join(' / '):'—';
+
+  // Staff lists — own + cross-shift backups + manual backups
+  const xsBk = S.staff.filter(s=>s.isBackup&&isActive(effAvail(s)));
+
+  const bycat = (teamKey, cat, manualBk=[]) => {
+    const isOnShift = s => { const a=effAvail(s); if(a.st==='WORKING'||a.st==='STANDBY'||a.st==='BACKUP_SHIFT') return true; if(S.overrides[s.id]) return false; const raw=(s.schedVal||'').toUpperCase().trim(); return raw.startsWith(shift.toUpperCase()); };
+    const own = S.staff.filter(s=>!s.isBackup&&effectiveDept(s)===teamKey&&s.category===cat&&isOnShift(s));
+    const xs  = xsBk.filter(s=>effectiveDept(s)===teamKey&&s.category===cat);
+    const mb  = manualBk.filter(b=>normCat(b.pos)===cat&&!b.mcEl);
+    return [...own, ...xs, ...mb.map(b=>({id:'mb_'+b.name, shortName:b.name, fullName:b.name, desigCode:b.pos, acType:b.type||'', fleet:'', isManualBk:true}))];
+  };
+
+  const loTech=bycat('LO','TECH', lo.bk), loLat=bycat('LO','LAT', lo.bk);
+  const irTech=bycat('IRR','TECH', irr.bk), irB1=bycat('IRR','LAE B1', irr.bk), irB2=bycat('IRR','LAE B2', irr.bk);
+  const woTech=bycat('WO','TECH', wo.bk), woB1=bycat('WO','LAE B1', wo.bk), woB2=bycat('WO','LAE B2', wo.bk);
+  const cimTech=bycat('CIM','TECH', cim.bk), cimLat=bycat('CIM','LAT', cim.bk), cimB1=bycat('CIM','LAE B1', cim.bk), cimB2=bycat('CIM','LAE B2', cim.bk);
+
+  const avTbl = (rows) => `
+    <table style="width:100%;border-collapse:collapse;font-size:10px">
+      <tr style="background:var(--surf2)">
+        <th style="padding:2px 5px;font-size:8px;color:var(--txt3);font-weight:400;text-align:left;border:1px solid var(--b)"> </th>
+        <th style="padding:2px 5px;font-size:8px;color:var(--txt3);font-weight:400;text-align:center;border:1px solid var(--b)">MC/EL</th>
+        <th style="padding:2px 5px;font-size:8px;color:var(--txt3);font-weight:400;text-align:center;border:1px solid var(--b)">AL/OFF</th>
+        <th style="padding:2px 5px;font-size:8px;color:var(--txt3);font-weight:400;text-align:center;border:1px solid var(--b)">CRS/PRO</th>
+        <th style="padding:2px 5px;font-size:8px;color:var(--txt3);font-weight:400;text-align:center;border:1px solid var(--b)">FLYING</th>
+      </tr>
+      ${rows.map(([lbl,dept,cat])=>{
+        const staff=dept.own.filter(s=>s.category===cat);
+        let mc=0,lv=0,cr=0,fl=0;
+        staff.forEach(s=>{const a=effAvail(s);
+          if(a.st==='ABSENT')mc++; else if(a.st==='LEAVE'||a.st==='OFF')lv++;
+          else if(a.st==='COURSE'||a.st==='TASK'||a.st==='OTHER_SHIFT')cr++; else if(a.st==='FLYING')fl++;
+        });
+        // Add MC/EL manual backups for this category
+        mc += (dept.bk||[]).filter(b=>normCat(b.pos)===cat&&b.mcEl===true).length;
+        return `<tr>
+          <td style="padding:2px 5px;color:var(--txt2);border:1px solid var(--b)">${lbl}</td>
+          <td style="padding:2px 5px;text-align:center;color:${mc?'var(--red)':'var(--txt3)'};border:1px solid var(--b)">${mc}</td>
+          <td style="padding:2px 5px;text-align:center;color:${lv?'var(--orange)':'var(--txt3)'};border:1px solid var(--b)">${lv}</td>
+          <td style="padding:2px 5px;text-align:center;color:${cr?'var(--yellow)':'var(--txt3)'};border:1px solid var(--b)">${cr}</td>
+          <td style="padding:2px 5px;text-align:center;color:${fl?'var(--blue)':'var(--txt3)'};border:1px solid var(--b)">${fl}</td>
+        </tr>`;
+      }).join('')}
+    </table>`;
+
+  const assigned = getAssignedNames();
+  const ssSet    = new Set(S.ssTechs);
+  const traineeNames = new Set([...(S.trainees?.permanent||[]),...(S.trainees?.backups||[])].map(t=>(t.name||'').toUpperCase()));
+
+  // Build role lookup: name → role label
+  const roleMap={};
+  const r2=S.roles;
+  if(r2){
+    if(r2.mocChaser) roleMap[r2.mocChaser]='MOC';
+    (r2.mojo||[]).forEach((n,i)=>{ if(n) roleMap[n]=i===0?'MOJO':'MOJO'; });
+    (r2.wc||[]).forEach((wc,i)=>{ if(wc.primary) roleMap[wc.primary]=`WC${i+1}`; if(wc.asst) roleMap[wc.asst]=`WC${i+1}`; });
+    (r2.runners||[]).forEach((rn,i)=>{ if(rn.name) roleMap[rn.name]=`RNR${i+1}`; });
+    (r2.towerSlots||[]).forEach((ts,i)=>{ if(ts.a) roleMap[ts.a]=`TWR${i+1}`; if(ts.b) roleMap[ts.b]=`TWR${i+1}`; });
+    if(r2.actingGL){ Object.entries(r2.actingGL||{}).forEach(([k,n])=>{ if(n) roleMap[n]='GL'; }); }
+    if(S.actingGL){ Object.entries(S.actingGL||{}).forEach(([k,n])=>{ if(n) roleMap[n]='GL'; }); }
+  }
+  const roleBadge=name=>{
+    const label=roleMap[name];
+    if(!label) return '';
+    const colors={'MOC':'var(--amber)','MOJO':'#0369A1','WC1':'#1D4ED8','WC2':'#1D4ED8','RNR1':'#1D4ED8','RNR2':'#555','RNR3':'#1D4ED8','RNR4':'#555','TWR1':'var(--amber)','TWR2':'var(--amber)','TWR3':'var(--amber)','TWR4':'var(--amber)','GL':'var(--amber)'};
+    const c=colors[label]||'#555';
+    return `<span style="font-size:7px;font-weight:800;color:#fff;background:${c};border-radius:3px;padding:0 4px;margin-left:4px;letter-spacing:0.5px;vertical-align:middle">${label}</span>`;
+  };
+
+  const numList = (own, bkList=[], opts={}) => {
+    const fOwn = own.filter(s => !assigned.has(displayName(s)));
+    const fBk  = bkList.filter(b => !assigned.has(b.name+' (BK)'));
+
+    if(opts.ss){
+      const ssOwn = fOwn.filter(s=>ssSet.has(s.id));
+      const nmOwn = fOwn.filter(s=>!ssSet.has(s.id));
+      let h='';
+      h+=`<div style="font-size:8px;color:var(--amber);letter-spacing:1px;margin-bottom:2px;font-weight:700">SS</div>`;
+      ssOwn.forEach((s,i)=>{ const tp=s.acType||s.fleet||''; const dn=displayName(s); h+=`<div onclick="toggleSS('${s.id}')" title="Click to unmark SS" style="display:flex;gap:3px;cursor:pointer;padding:1px 0"><span style="font-size:9px;color:#1D4ED8;width:13px;flex-shrink:0;text-align:right">${i+1}</span><span style="font-size:10px;color:#1D4ED8;font-weight:700;line-height:1.6">${dn}${tp?` <span style="font-size:8px;color:#3B82F6">(${tp})</span>`:''}${roleBadge(dn)}</span></div>`; });
+      for(let i=ssOwn.length;i<3;i++) h+=`<div style="display:flex;gap:3px;padding:1px 0"><span style="font-size:9px;color:#999;width:13px;text-align:right">${i+1}</span><span style="font-size:9px;color:#999;font-style:italic">click ↓ to assign</span></div>`;
+      if(nmOwn.length||fBk.length){
+        h+=`<div style="font-size:8px;color:#555;font-weight:700;letter-spacing:1px;margin:5px 0 2px">NORMAL</div>`;
+        nmOwn.forEach((s,i)=>{ const tp=s.acType||s.fleet||''; const dn=displayName(s); h+=`<div onclick="toggleSS('${s.id}')" title="Click to mark as SS" style="display:flex;gap:3px;cursor:pointer;padding:1px 0"><span style="font-size:9px;color:#555;width:13px;text-align:right">${ssOwn.length+i+1}</span><span style="font-size:10px;color:#000;font-weight:600;line-height:1.6">${dn}${tp?` <span style="font-size:8px;color:#555">(${tp})</span>`:''}${roleBadge(dn)}</span></div>`; });
+        fBk.forEach((b,i)=>{ h+=`<div style="display:flex;gap:3px;padding:1px 0"><span style="font-size:9px;color:#555;width:13px;text-align:right">${ssOwn.length+nmOwn.length+i+1}</span><span style="font-size:10px;color:#000;font-weight:600">${b.name}${b.type?` <span style="font-size:8px;color:#555">(${b.type})</span>`:''} <span style="font-size:8px;color:#555">(BK)</span></span></div>`; });
+      }
+      return h||'<div style="font-size:9px;color:var(--txt3)">—</div>';
+    }
+
+    const all=[...fOwn,...fBk];
+    if(!all.length) return '<div style="font-size:9px;color:var(--txt3);padding:2px 0">—</div>';
+    return all.map((s,i)=>{
+      const isBk  = i>=fOwn.length || s.isManualBk;
+      const isXsBk = s.isBackup && s.fromShift;
+      const isMoved = !isBk && !isXsBk && s.team && effectiveDept(s)!==s.team;
+      const base  = isBk ? (s.name||s.shortName)+' (BK)' : displayName(s);
+      const tp    = isBk ? (s.acType||s.type||'') : (s.acType||s.fleet||'');
+      const isHalf = !isBk && !isXsBk && effAvail(s).half;
+      const tag   = isXsBk
+        ? `<span style="font-size:8px;color:#555;font-weight:700;margin-left:2px">BK-${s.fromShift}</span>`
+        : isMoved
+        ? `<span style="font-size:8px;color:#555;margin-left:2px">↔</span>`
+        : isHalf
+        ? `<span style="font-size:8px;color:#C2410C;font-weight:700;margin-left:4px;background:#FFF7ED;border:1px solid #C2410C;border-radius:3px;padding:0 3px">½ NIGHT</span>`
+        : '';
+      const rb = isBk ? '' : roleBadge(base);
+      const nm = tp ? `${base} <span style="font-size:8px;color:#555">(${tp})</span>${tag}${rb}` : `${base}${tag}${rb}`;
+      return `<div style="display:flex;gap:3px;padding:1px 0"><span style="font-size:9px;color:#555;width:13px;flex-shrink:0;text-align:right">${i+1}</span><span style="font-size:10px;font-weight:600;color:#000;line-height:1.6">${nm}</span></div>`;
+    }).join('');
+  };
+
+  const col  = `background:var(--surf);border:1px solid var(--b);border-radius:var(--r);padding:8px 10px`;
+  const chdr = (t,n,c='#000') => `<div style="font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:2px;color:${c};margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--b)">${t} <span style="color:#555;font-size:9px">${n}</span></div>`;
+
+  const loTechAvail = loTech.filter(s=>!assigned.has(displayName(s))).length;
+  const irTechAvail = irTech.filter(s=>!assigned.has(displayName(s))).length;
+  const woTechAvail = woTech.filter(s=>!assigned.has(displayName(s))).length;
+
+  // ── MIDDLE PANEL: TECH side | CERTIFIER side ──
+  const midPanel = `<div>
+    <div style="font-size:9px;color:#000;letter-spacing:2px;font-weight:700;margin-bottom:6px;padding-bottom:4px;border-bottom:2px solid #000">TECHNICIANS</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
+      <div style="${col}">
+        <div style="font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:2px;color:#000;margin-bottom:4px;padding-bottom:4px;border-bottom:1px solid var(--b)">TECH (L/O) <span style="color:#555;font-size:9px">${loTechAvail}</span></div>
+        <div style="font-size:8px;color:#555;margin-bottom:4px">Click name to toggle SS (3 max)</div>
+        ${numList(loTech, [], {ss:true})}
+      </div>
+      <div style="${col}">
+        <div style="font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:2px;color:#000;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--b)">IRR <span style="color:#555;font-size:9px">${irTechAvail}</span></div>
+        ${numList(irTech)}
+      </div>
+      <div style="${col}">
+        <div style="font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:2px;color:#000;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--b)">WO <span style="color:#555;font-size:9px">${woTechAvail}</span></div>
+        ${numList(woTech)}
+      </div>
+      <div style="${col}">
+        <div style="font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:2px;color:#000;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--b)">CIM <span style="color:#555;font-size:9px">${cimTech.filter(s=>!assigned.has(displayName(s))).length}</span></div>
+        ${numList(cimTech)}
+      </div>
+    </div>
+    <div style="font-size:9px;color:#000;letter-spacing:2px;font-weight:700;margin-bottom:6px;padding-bottom:4px;border-bottom:2px solid #000">CERTIFIERS</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+      <div style="${col}">
+        ${chdr('LAT',[...loLat,...cimLat].filter(s=>!assigned.has(displayName(s))).length)}
+        ${numList([...loLat,...cimLat])}
+      </div>
+      <div style="${col}">
+        ${chdr('LAE B1',[...irB1,...woB1,...cimB1].filter(s=>!assigned.has(displayName(s))).length)}
+        ${numList([...irB1,...woB1,...cimB1])}
+      </div>
+      <div style="${col}">
+        ${chdr('LAE B2',[...irB2,...woB2,...cimB2].filter(s=>!assigned.has(displayName(s))).length)}
+        ${numList([...irB2,...woB2,...cimB2])}
+      </div>
+    </div>
+  </div>`;
+  // ── AVAILABILITY CONFLICT CHECK ──
+  const conflictBanner = (()=>{
+    const r=S.roles;
+    if(!r) return '';
+    const conflicts=[];
+
+    const statusLabel=st=>({'LEAVE':'AL/OFF','OFF':'AL/OFF','ABSENT':'MC/EL',
+      'COURSE':'COURSE','TASK':'TASK','FLYING':'FLYING'}[st]||st||'UNAVAILABLE');
+
+    const isUnavail=s=>{ const a=effAvail(s); return a.st!=='WORKING'&&a.st!=='STANDBY'&&a.st!=='BACKUP_SHIFT'; };
+    const findStaff=name=>S.staff.find(s=>displayName(s)===name||s.shortName===name);
+
+    // 1. Direct role assignment conflicts
+    const roleEntries=[
+      {name:r.mocChaser, role:'MOC CHASER'},
+      ...(r.mojo||[]).filter(Boolean).map((n,i)=>({name:n,role:`MOJO ${i+1}`})),
+      ...(r.wc||[]).flatMap((wc,i)=>[
+        {name:wc.primary,role:`WC ${i+1} PRIMARY`},
+        {name:wc.asst,role:`WC ${i+1} ASST`}
+      ]),
+      ...(r.runners||[]).filter(rn=>rn.name).map((rn,i)=>({name:rn.name,role:`RUNNER ${i+1}`})),
+      ...(r.towerSlots||[]).flatMap((ts,i)=>[
+        {name:ts.a,role:`TOWER ${i+1}A`},
+        {name:ts.b,role:`TOWER ${i+1}B`}
+      ])
+    ].filter(e=>e.name);
+
+    roleEntries.forEach(({name,role})=>{
+      const s=findStaff(name);
+      if(s&&isUnavail(s)) conflicts.push({
+        type:'role', name, role,
+        status:statusLabel(effAvail(s).st),
+        msg:`<b>${name}</b> is <b>${statusLabel(effAvail(s).st)}</b> — assigned as <b>${role}</b>`
+      });
+    });
+
+    // 2. Swap chain conflicts
+    // If a swap partner is unavailable AND the other party has a role, flag it
+    (S.swaps||[]).forEach(sw=>{
+      const s1=S.staff.find(s=>s.id===sw.id1);
+      const s2=S.staff.find(s=>s.id===sw.id2);
+      if(!s1||!s2) return;
+      const dn1=displayName(s1), dn2=displayName(s2);
+      const hasRole1=roleEntries.some(e=>e.name===dn1);
+      const hasRole2=roleEntries.some(e=>e.name===dn2);
+      // s1 is unavailable and s2 has a role → swap breaks s2's situation
+      if(isUnavail(s1)&&hasRole2) conflicts.push({
+        type:'swap', name:dn1, partner:dn2, partnerDept:effectiveDept(s2),
+        msg:`<b>${dn1}</b> is <b>${statusLabel(effAvail(s1).st)}</b> — swap partner of <b>${dn2}</b> who is assigned a role. Replacement needed`
+      });
+      // s2 is unavailable and s1 has a role
+      if(isUnavail(s2)&&hasRole1) conflicts.push({
+        type:'swap', name:dn2, partner:dn1, partnerDept:effectiveDept(s1),
+        msg:`<b>${dn2}</b> is <b>${statusLabel(effAvail(s2).st)}</b> — swap partner of <b>${dn1}</b> who is assigned a role. Replacement needed`
+      });
+      // Either party unavailable regardless of role
+      if(isUnavail(s1)&&!hasRole2) conflicts.push({
+        type:'swap', name:dn1, partner:dn2, partnerDept:effectiveDept(s2),
+        msg:`<b>${dn1}</b> is <b>${statusLabel(effAvail(s1).st)}</b> — existing swap with <b>${dn2}</b> affected`
+      });
+      if(isUnavail(s2)&&!hasRole1) conflicts.push({
+        type:'swap', name:dn2, partner:dn1, partnerDept:effectiveDept(s1),
+        msg:`<b>${dn2}</b> is <b>${statusLabel(effAvail(s2).st)}</b> — existing swap with <b>${dn1}</b> affected`
+      });
+    });
+
+    const isOnShiftFn=s=>{const a=effAvail(s);return a.st==='WORKING'||a.st==='STANDBY'||a.st==='BACKUP_SHIFT';};
+    const assignedNames=new Set(roleEntries.map(e=>e.name));
+
+    if(!conflicts.length) return '';
+    const roleConflicts=conflicts.filter(c=>c.type==='role');
+    const swapConflicts=conflicts.filter(c=>c.type==='swap');
+    return `<div style="background:#FEF2F2;border:2px solid #DC2626;border-radius:6px;padding:10px 14px;margin-bottom:10px">
+      <div style="font-size:10px;font-weight:700;color:#DC2626;letter-spacing:1px;margin-bottom:8px">⚠ ${conflicts.length} CONFLICT${conflicts.length>1?'S':''} DETECTED</div>
+      ${roleConflicts.length?`<div style="font-size:9px;font-weight:700;color:#991B1B;margin-bottom:4px">ROLE ASSIGNMENTS AFFECTED:</div>
+        ${roleConflicts.map(c=>`<div style="font-size:9px;color:#7F1D1D;padding:3px 0;border-bottom:1px solid #FEE2E2">
+          ${c.msg}
+          <span style="display:inline-block;margin-left:6px;background:#DC2626;color:#fff;font-size:7px;font-weight:800;border-radius:3px;padding:0 4px">${c.role}</span>
+        </div>`).join('')}`:''}
+      ${swapConflicts.length?`<div style="font-size:9px;font-weight:700;color:#991B1B;margin-top:6px;margin-bottom:4px">SWAPS AFFECTED:</div>
+        ${swapConflicts.map(c=>{
+          // Suggest available IRREG staff for quick swap
+          const suggestions=S.staff.filter(s=>effectiveDept(s)==='IRR'&&s.category==='TECH'&&isOnShiftFn(s)&&!assignedNames.has(displayName(s))).slice(0,5);
+          const key=`cf_${c.name.replace(/\s/g,'_')}`;
+          suggestions.forEach((s,i)=>{ _allocStore[`${key}_${i}`]={allocName:c.partner,allocDept:c.partnerDept,irrName:displayName(s)}; });
+          return `<div style="padding:4px 0;border-bottom:1px solid #FEE2E2">
+            <div style="font-size:9px;color:#7F1D1D;margin-bottom:4px">${c.msg}</div>
+            ${suggestions.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">
+              <span style="font-size:8px;color:#991B1B;font-weight:700">SWAP WITH:</span>
+              ${suggestions.map((s,i)=>`<button class="btn btn-ghost btn-sm" style="font-size:8px;padding:1px 6px;border-color:#DC2626;color:#DC2626" onclick="window._doSwap('${key}_${i}')">⇄ ${displayName(s)}</button>`).join('')}
+            </div>`:'<span style="font-size:8px;color:#999">No IRREG staff available</span>'}
+          </div>`;
+        }).join('')}`:''}
+      <div style="font-size:8px;color:#991B1B;margin-top:6px;font-style:italic">Review assignments and swaps before shift briefing.</div>
+    </div>`;
+  })();
+
+  const shdr = (t,c='var(--amber)') => `<div style="font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:2px;color:${c};margin:8px 0 4px;padding-top:6px;border-top:1px solid var(--b)">${t}</div>`;
+  const lrow = (lbl,val) => `<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid var(--b)"><span style="font-size:9px;color:var(--amber);font-weight:700">${lbl}</span><span style="font-size:10px;color:#000;font-weight:700">${val||'—'}</span></div>`;
+  const leftPanel = `<div style="${col}">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="font-size:9px;color:#0D9488;font-weight:700;letter-spacing:2px">ALLOCATION</div>
+      <button class="btn btn-amber btn-sm np" onclick="openRolesModal()" style="font-size:9px;padding:3px 8px">✎ EDIT</button>
+    </div>
+    <div style="border-bottom:1px solid var(--b);padding-bottom:5px;margin-bottom:5px">
+      <div style="font-size:11px;color:var(--amber);font-weight:700;letter-spacing:2px;margin-bottom:1px">MOC</div>
+      <div style="font-size:14px;font-weight:700;color:#000">${mocNames}</div>
+    </div>
+    ${lrow('GL LO', glNames('LO')+glBtn('LO'))}
+    ${lrow('GL IRREG', glNames('IRR')+glBtn('IRR'))}
+    ${lrow('GL WO', glNames('WO')+glBtn('WO'))}
+    ${lrow('MOC CHASER', r.mocChaser||'NIL')}
+    ${shdr('MOJO')}
+    ${(r.mojo||[]).map((n,i)=>`<div style="font-size:10px;font-weight:600;color:${n?'#000':'#999'};padding:2px 4px">${n||'NIL'}</div>`).join('')}
+    ${shdr('WC / GSE')}
+    ${(r.wc||[]).map((wc,i)=>{
+      const ss=i===0||wc.ss;
+      const col=ss?'#1D4ED8':'#000';
+      return `<div style="display:grid;grid-template-columns:1fr 12px 1fr;gap:2px;padding:2px 0;border-bottom:1px solid var(--b);align-items:center">
+        <span style="font-size:9px;font-weight:600;color:${wc.primary?col:'#999'};min-width:0">${wc.primary||'NIL'}</span>
+        <span style="font-size:9px;font-weight:700;color:#999;text-align:center">${wc.asst?'+':''}</span>
+        <span style="font-size:9px;font-weight:600;color:${wc.asst?col:'#999'};text-align:right">${wc.asst||'—'}</span>
+      </div>`;
+    }).join('')}
+    ${shdr('RUNNER')}
+    ${(r.runners||[]).map((rn,i)=>{
+      const parts=(rn.timing||'').split('/').map(s=>s.trim());
+      const dispTiming=isDay?(parts[0]||rn.timing):(parts[1]||parts[0]||rn.timing);
+      const t=dispTiming.trim();
+      const ss=t.startsWith('06')||t.startsWith('12')||t.startsWith('18')||t.startsWith('00');
+      return `<div style="display:grid;grid-template-columns:1fr auto;gap:6px;padding:2px 0;border-bottom:1px solid var(--b);align-items:center">
+        <span style="font-size:9px;font-weight:600;color:${rn.name?(ss?'#1D4ED8':'#000'):'#999'};min-width:0">${rn.name||'NIL'}</span>
+        <span style="font-size:9px;font-weight:600;color:${ss?'#1D4ED8':'#333'};white-space:nowrap;text-align:right">${dispTiming}</span>
+      </div>`;
+    }).join('')}
+    ${shdr('TOWER')}
+    ${(r.towerSlots||[]).map((ts,i)=>{
+      const ss=i===0||ts.ss;
+      const col=ss?'#1D4ED8':'#000';
+      const primary=ts.a&&ts.b?ts.a+' / '+ts.b:ts.a||ts.b||'NIL';
+      return `<div style="display:grid;grid-template-columns:1fr 12px 1fr;gap:2px;padding:2px 0;border-bottom:1px solid var(--b);align-items:center">
+        <span style="font-size:9px;font-weight:600;color:${(ts.a||ts.b)?col:'#999'};min-width:0">${primary}</span>
+        <span style="font-size:9px;font-weight:700;color:#999;text-align:center">${ts.backup?'+':''}</span>
+        <span style="font-size:9px;font-weight:600;color:${ts.backup?col:'#999'};text-align:right">${ts.backup||'—'}</span>
+      </div>`;
+    }).join('')}
+  </div>`;
+
+  // ── MIDDLE PANEL: numbered staff lists ──
+  // ── RIGHT PANEL ──
+  const totalTech = loTech.length+irTech.length+woTech.length;
+  const totalB1   = irB1.length+woB1.length;
+  const totalB2   = irB2.length+woB2.length;
+
+  // ── SPLIT RIGHT PANEL: top = SOC/PDSC/FGS, bottom = Avail/HC/ARR ──
+  const topRightPanel = `
+    <div style="${col};margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <div style="font-size:9px;color:var(--amber);font-weight:700;letter-spacing:2px">SOC</div>
+        <button class="btn btn-ghost btn-sm np" onclick="addSoc()" style="font-size:9px;padding:2px 8px">+ ADD</button>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:8px;table-layout:fixed">
+        <tr style="background:var(--surf2)">
+          <th style="width:16px;padding:1px 3px;font-size:7px;color:var(--txt3);font-weight:400;text-align:left;border:1px solid var(--b)">#</th>
+          <th style="width:36px;padding:1px 3px;font-size:7px;color:var(--txt3);font-weight:400;text-align:left;border:1px solid var(--b)">REG</th>
+          <th style="width:54px;padding:1px 3px;font-size:7px;color:var(--txt3);font-weight:400;text-align:left;border:1px solid var(--b)">NAME</th>
+          <th style="width:76px;padding:1px 3px;font-size:7px;color:var(--txt3);font-weight:400;text-align:left;border:1px solid var(--b)">TIME</th>
+          <th style="width:44px;padding:1px 3px;font-size:7px;color:var(--txt3);font-weight:400;text-align:left;border:1px solid var(--b)">REMARK</th>
+          <th class="np" style="width:20px;padding:1px 3px;font-size:7px;color:var(--txt3);font-weight:400;text-align:center;border:1px solid var(--b)">✓</th>
+          <th class="np" style="width:18px;border:1px solid var(--b)"></th>
+        </tr>
+        ${S.soc.map((sr,i)=>{
+          const done=sr.done||false;
+          const rmk=(sr.remark||'').toUpperCase();
+          const isExt=rmk.includes('EXT');
+          const isHo=rmk.includes('HO');
+          const rowBg=done?'#D1FAE5':isExt?'#CFFAFE':isHo?'#FEF3C7':'transparent';
+          const rowTxt=done?'#065F46':isExt?'#0E7490':isHo?'#92400E':'var(--txt)';
+          return `<tr style="background:${rowBg};color:${rowTxt}">
+          <td style="padding:1px 3px;border:1px solid var(--b);font-size:8px;color:#555">${i+1}</td>
+          <td style="padding:1px 3px;border:1px solid var(--b)"><input value="${sr.flight}" oninput="S.soc[${i}].flight=this.value;scheduleSave()" placeholder="LDG" style="background:transparent;border:none;color:${rowTxt};font-family:var(--mono);font-size:8px;width:32px;outline:none"></td>
+          <td style="padding:1px 3px;border:1px solid var(--b)"><input value="${sr.name}" oninput="S.soc[${i}].name=this.value;scheduleSave()" placeholder="Name" style="background:transparent;border:none;color:${rowTxt};font-family:var(--mono);font-size:8px;width:48px;outline:none"></td>
+          <td style="padding:1px 3px;border:1px solid var(--b)"><input value="${sr.time}" oninput="S.soc[${i}].time=this.value;scheduleSave()" placeholder="0715-1030" style="background:transparent;border:none;color:${rowTxt};font-family:var(--mono);font-size:8px;width:68px;outline:none"></td>
+          <td style="padding:1px 3px;border:1px solid var(--b)"><input value="${sr.remark||''}" oninput="S.soc[${i}].remark=this.value;scheduleSave()" placeholder="EXT/HO" style="background:transparent;border:none;color:${rowTxt};font-family:var(--mono);font-size:8px;width:36px;outline:none"></td>
+          <td class="np" style="padding:1px 3px;border:1px solid var(--b);text-align:center">
+            <input type="checkbox" ${done?'checked':''} onchange="S.soc[${i}].done=this.checked;scheduleSave();renderSummary()" style="cursor:pointer;accent-color:#10B981">
+          </td>
+          <td class="np" style="padding:1px 3px;border:1px solid var(--b)"><button class="btn btn-red btn-sm" onclick="rmSoc(${i})" style="padding:0 4px;font-size:8px">✕</button></td>
+        </tr>`;}).join('')}
+      </table>
+    </div>
+
+    <div style="${col};margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="font-size:9px;color:var(--amber);font-weight:700;letter-spacing:2px">PDSC</div>
+        <button class="btn btn-ghost btn-sm np" onclick="addPdsc()" style="font-size:9px;padding:2px 8px">+ ADD</button>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:10px">
+        <tr style="background:var(--surf2)">
+          <th style="padding:2px 5px;font-size:8px;color:var(--txt3);font-weight:400;text-align:left;border:1px solid var(--b)">A/C REG</th>
+          <th style="padding:2px 5px;font-size:8px;color:var(--txt3);font-weight:400;text-align:left;border:1px solid var(--b)">CERTIFIER</th>
+          <th class="np" style="border:1px solid var(--b)"></th>
+        </tr>
+        ${S.pdsc.map((p,i)=>`<tr>
+          <td style="padding:2px 4px;border:1px solid var(--b)"><input value="${p.reg}" oninput="S.pdsc[${i}].reg=this.value;scheduleSave()" placeholder="9M-XXX" style="background:transparent;border:none;color:var(--txt);font-family:var(--mono);font-size:10px;width:70px;outline:none"></td>
+          <td style="padding:2px 4px;border:1px solid var(--b)"><input value="${p.certifier}" oninput="S.pdsc[${i}].certifier=this.value;scheduleSave()" placeholder="Name" style="background:transparent;border:none;color:var(--txt);font-family:var(--mono);font-size:10px;width:110px;outline:none"></td>
+          <td class="np" style="padding:2px 4px;border:1px solid var(--b)"><button class="btn btn-red btn-sm" onclick="rmPdsc(${i})" style="padding:1px 5px;font-size:9px">✕</button></td>
+        </tr>`).join('')}
+      </table>
+    </div>
+
+    <div style="${col};margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="font-size:9px;color:var(--amber);font-weight:700;letter-spacing:2px">FGS</div>
+        <button class="btn btn-ghost btn-sm np" onclick="addFgs()" style="font-size:9px;padding:2px 8px">+ ADD</button>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:10px">
+        <tr style="background:var(--surf2)">
+          <th style="padding:2px 5px;font-size:8px;color:var(--txt3);font-weight:400;text-align:left;border:1px solid var(--b)">#</th>
+          <th style="padding:2px 5px;font-size:8px;color:var(--txt3);font-weight:400;text-align:left;border:1px solid var(--b)">A/C REG</th>
+          <th style="padding:2px 5px;font-size:8px;color:var(--txt3);font-weight:400;text-align:left;border:1px solid var(--b)">REMARK</th>
+          <th class="np" style="border:1px solid var(--b)"></th>
+        </tr>
+        ${S.fgs.map((f,i)=>`<tr>
+          <td style="padding:2px 4px;color:var(--txt3);border:1px solid var(--b)">${i+1}</td>
+          <td style="padding:2px 4px;border:1px solid var(--b)"><input value="${f.reg}" oninput="S.fgs[${i}].reg=this.value;scheduleSave()" placeholder="9M-XXX" style="background:transparent;border:none;color:var(--txt);font-family:var(--mono);font-size:10px;width:70px;outline:none"></td>
+          <td style="padding:2px 4px;border:1px solid var(--b)"><input value="${f.remark||''}" oninput="S.fgs[${i}].remark=this.value;scheduleSave()" placeholder="Remark" style="background:transparent;border:none;color:var(--txt2);font-family:var(--mono);font-size:10px;width:90px;outline:none"></td>
+          <td class="np" style="padding:2px 4px;border:1px solid var(--b)"><button class="btn btn-red btn-sm" onclick="rmFgs(${i})" style="padding:1px 5px;font-size:9px">✕</button></td>
+        </tr>`).join('')}
+      </table>
+    </div>`;
+
+  // Count staff — half-shift counts as 0.5
+  const hCount=arr=>arr.reduce((s,st)=>s+(st&&effAvail(st)?.half?0.5:1),0);
+  const fmtN=n=>n%1?n.toFixed(1):n;
+  const bottomPanel = `
+    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:start;margin-top:10px;padding-top:10px;border-top:2px solid var(--b)">
+
+      <div style="${col}">
+        <div style="font-size:9px;color:var(--amber);font-weight:700;letter-spacing:2px;margin-bottom:6px">AVAILABILITY</div>
+        <div style="display:grid;grid-template-columns:repeat(${(cim.own.length)?4:3},1fr);gap:10px">
+          <div>
+            <div style="font-size:8px;color:var(--txt3);letter-spacing:1px;margin-bottom:3px;font-weight:600">LINE OPS</div>
+            ${avTbl([['LAT',lo,'LAT'],['TECH',lo,'TECH']])}
+          </div>
+          <div>
+            <div style="font-size:8px;color:var(--txt3);letter-spacing:1px;margin-bottom:3px;font-weight:600">IRREG</div>
+            ${avTbl([['LAE B1',irr,'LAE B1'],['LAE B2',irr,'LAE B2'],['TECH',irr,'TECH']])}
+          </div>
+          <div>
+            <div style="font-size:8px;color:var(--txt3);letter-spacing:1px;margin-bottom:3px;font-weight:600">WORK ORDER</div>
+            ${avTbl([['LAE B1',wo,'LAE B1'],['LAE B2',wo,'LAE B2'],['TECH',wo,'TECH']])}
+          </div>
+          ${(cim.own.length)?`<div>
+            <div style="font-size:8px;color:var(--txt3);letter-spacing:1px;margin-bottom:3px;font-weight:600">CABIN (CIM)</div>
+            ${avTbl([['LAE B1',cim,'LAE B1'],['LAE B2',cim,'LAE B2'],['TECH',cim,'TECH']])}
+          </div>`:''}
+        </div>
+      </div>
+
+      <div style="${col}">
+        <div style="font-size:9px;color:var(--amber);font-weight:700;letter-spacing:2px;margin-bottom:8px">HEADCOUNT</div>
+        <table style="width:100%;border-collapse:collapse;font-size:10px">
+          <tr style="background:var(--surf2)">
+            <th style="padding:3px 6px;font-size:8px;color:var(--txt3);font-weight:400;text-align:left;border:1px solid var(--b)"> </th>
+            <th style="padding:3px 6px;font-size:8px;color:var(--txt3);font-weight:400;text-align:center;border:1px solid var(--b)">LO</th>
+            <th style="padding:3px 6px;font-size:8px;color:var(--txt3);font-weight:400;text-align:center;border:1px solid var(--b)">IRREG</th>
+            <th style="padding:3px 6px;font-size:8px;color:var(--txt3);font-weight:400;text-align:center;border:1px solid var(--b)">WO</th>
+            <th style="padding:3px 6px;font-size:8px;color:var(--txt3);font-weight:400;text-align:center;border:1px solid var(--b)">CIM</th>
+            <th style="padding:3px 6px;font-size:8px;color:var(--amber);font-weight:700;text-align:center;border:1px solid var(--b)">TTL</th>
+          </tr>
+          ${(()=>{
+            let html='';
+            [['TECH','TECH'],['LAT','LAT'],['LAE B1','LAE B1'],['LAE B2','LAE B2']].forEach(([lbl,cat])=>{
+              const loArr={'TECH':loTech,'LAT':loLat}[cat]||[];
+              const irArr={'TECH':irTech,'LAE B1':irB1,'LAE B2':irB2}[cat]||[];
+              const woArr={'TECH':woTech,'LAE B1':woB1,'LAE B2':woB2}[cat]||[];
+              const cmArr={'TECH':cimTech,'LAT':cimLat,'LAE B1':cimB1,'LAE B2':cimB2}[cat]||[];
+              const lv=hCount(loArr),iv=hCount(irArr),wv=hCount(woArr),cv=hCount(cmArr),tot=lv+iv+wv+cv;
+              if(!tot) return;
+              html+=`<tr><td style="padding:3px 6px;color:var(--txt2);border:1px solid var(--b)">${lbl}</td>
+                <td style="padding:3px 6px;text-align:center;color:${lv?'var(--green)':'var(--txt3)'};border:1px solid var(--b)">${fmtN(lv)||'—'}</td>
+                <td style="padding:3px 6px;text-align:center;color:${iv?'var(--green)':'var(--txt3)'};border:1px solid var(--b)">${fmtN(iv)||'—'}</td>
+                <td style="padding:3px 6px;text-align:center;color:${wv?'var(--green)':'var(--txt3)'};border:1px solid var(--b)">${fmtN(wv)||'—'}</td>
+                <td style="padding:3px 6px;text-align:center;color:${cv?'var(--green)':'var(--txt3)'};border:1px solid var(--b)">${fmtN(cv)||'—'}</td>
+                <td style="padding:3px 6px;text-align:center;color:var(--amber);font-weight:700;border:1px solid var(--b)">${fmtN(tot)}</td></tr>`;
+            });
+            const tlo=hCount(loTech)+hCount(loLat),ti=hCount(irTech)+hCount(irB1)+hCount(irB2);
+            const tw=hCount(woTech)+hCount(woB1)+hCount(woB2),tc=hCount(cimTech)+hCount(cimLat)+hCount(cimB1)+hCount(cimB2);
+            html+=`<tr style="background:var(--surf2)"><td style="padding:3px 6px;color:var(--amber);font-weight:700;border:1px solid var(--b)">TOTAL</td>
+              <td style="padding:3px 6px;text-align:center;color:var(--amber);font-weight:700;border:1px solid var(--b)">${fmtN(tlo)}</td>
+              <td style="padding:3px 6px;text-align:center;color:var(--amber);font-weight:700;border:1px solid var(--b)">${fmtN(ti)}</td>
+              <td style="padding:3px 6px;text-align:center;color:var(--amber);font-weight:700;border:1px solid var(--b)">${fmtN(tw)}</td>
+              <td style="padding:3px 6px;text-align:center;color:var(--amber);font-weight:700;border:1px solid var(--b)">${fmtN(tc)}</td>
+              <td style="padding:3px 6px;text-align:center;color:var(--amber);font-weight:700;border:1px solid var(--b)">${fmtN(tlo+ti+tw+tc)}</td></tr>`;
+            return html;
+          })()}
+        </table>
+      </div>
+
+      <div style="${col};min-width:180px">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+          ${['ARR','DEP','TOW'].map(k=>`<div style="text-align:center">
+            <div style="font-size:8px;color:var(--txt3);letter-spacing:1px;margin-bottom:3px">${k}</div>
+            <input type="text" value="${S.ops[k]}" oninput="S.ops['${k}']=this.value" placeholder="—"
+              style="background:var(--bg);border:1px solid var(--b);border-radius:4px;color:var(--amber);font-family:var(--cond);font-size:22px;font-weight:700;text-align:center;width:100%;outline:none;padding:4px 0">
+          </div>`).join('')}
+        </div>
+      </div>
+
+    </div>`;
+  const xsBkAll2 = S.staff.filter(s=>s.isBackup&&isActive(effAvail(s)));
+  const xsBkByShift = {};
+  xsBkAll2.forEach(s=>{ const sh=s.fromShift||'?'; if(!xsBkByShift[sh]) xsBkByShift[sh]=[]; xsBkByShift[sh].push(s); });
+  const xsBanner = xsBkAll2.length ? `
+    <div style="background:#0A1929;border:1px solid #1D4ED8;border-radius:var(--r);padding:8px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="background:#1D4ED8;color:#fff;border-radius:3px;padding:1px 7px;font-size:9px;font-weight:700;letter-spacing:1px">${xsBkAll2.length} CROSS-SHIFT BK</span>
+      <span style="font-size:10px;color:var(--blue)">${Object.entries(xsBkByShift).map(([sh,ppl])=>`SHIFT ${sh}: ${ppl.map(s=>displayName(s)).join(', ')}`).join(' · ')}</span>
+    </div>` : '';
+
+  let h=`
+    <div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-family:var(--cond);font-size:20px;font-weight:700;letter-spacing:3px;color:var(--amber)">${dateStr} · ${shift}</div>
+        <div style="font-size:9px;color:var(--txt2);margin-top:1px;letter-spacing:1px">SHIFT C · SUMMARY OPS</div>
+      </div>
+      <button class="btn btn-amber np" onclick="openRolesModal()">✎ ASSIGN ROLES</button>
+      <button class="btn btn-ghost np" onclick="openAllocModal()" style="font-size:11px">📋 PASTE ALLOCATION</button>
+      <button class="btn btn-ghost np" onclick="openBriefingModal()" style="font-size:11px">📤 GENERATE TEXT</button>
+      <button class="btn btn-ghost np" onclick="openExclusionsModal()" style="font-size:11px;color:var(--red)">🚫 HIDDEN STAFF${(S.exclusions||[]).length?` (${S.exclusions.length})`:''}</button>
+    </div>
+    ${xsBanner}
+    ${conflictBanner}
+    <div style="display:grid;grid-template-columns:200px 1fr 300px;gap:10px;align-items:start">
+      <div>${leftPanel}</div>
+      <div>${midPanel}</div>
+      <div>${topRightPanel}</div>
+    </div>
+    ${bottomPanel}
+    <div class="np" style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn btn-amber btn-sm" onclick="printSummary()">🖨 PRINT</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportTxt()">⬇ TXT</button>
+      <button class="btn btn-ghost btn-sm" onclick="copyClip()">📋 COPY</button>
+    </div>`;
+
+  el.innerHTML=h;
+}
+
+function normCat(pos){
+  const p=pos.toUpperCase();
+  if(p.includes('LAE B1')||p==='TECH B1') return 'LAE B1';
+  if(p.includes('LAE B2')||p==='TECH B2') return 'LAE B2';
+  if(p==='LAT') return 'LAT';
+  if(p==='GL') return 'GL';
+  return 'TECH';
+}
+
+function updateCounts(){
+  [['LO','lo'],['IRR','irreg'],['WO','wo'],['CIM','cim']].forEach(([t,k])=>{
+    const own = S.staff.filter(s => effectiveDept(s)===t && !isTransferred(s));
+    const av  = own.filter(s=>isActive(effAvail(s))).length;
+    const el  = document.getElementById(`cnt-${k}`);
+    if(el) el.textContent=`${av}/${own.length}`;
+  });
+}
+
+function updSumRoles(){ /* debounced re-render */ }
+
+// ═══════════════════════════════════
+// BACKUP
+// ═══════════════════════════════════
+function addBk(dk){
+  const name=(document.getElementById(`bn-${dk}`).value||'').trim().toUpperCase();
+  if(!name) return;
+  S.backups[dk].push({
+    name,
+    pos: document.getElementById(`bp-${dk}`).value,
+    type:(document.getElementById(`bt-${dk}`).value||'').trim().toUpperCase(),
+    mcEl: false
+  });
+  document.getElementById(`bn-${dk}`).value='';
+  document.getElementById(`bt-${dk}`).value='';
+  renderAll(); scheduleSave();
+}
+
+function removeBk(dk,i){
+  S.backups[dk].splice(i,1);
+  renderAll(); scheduleSave();
+}
+function toggleBkMcEl(dk,i){
+  if(!S.backups[dk]||!S.backups[dk][i]) return;
+  S.backups[dk][i].mcEl = !S.backups[dk][i].mcEl;
+  renderAll(); scheduleSave();
+}
+
+// ═══════════════════════════════════
+// SOC
+// ═══════════════════════════════════
+function addSoc(){
+  S.soc.push({flight:'',name:'',time:'',remark:''});
+  renderSummary(); switchTab('summary'); scheduleSave();
+}
+function rmSoc(i){ S.soc.splice(i,1); renderSummary(); scheduleSave(); }
+
+function addPdsc(){ S.pdsc.push({reg:'',certifier:''}); renderSummary(); scheduleSave(); }
+function rmPdsc(i){ S.pdsc.splice(i,1); renderSummary(); scheduleSave(); }
+function addFgs() { S.fgs.push({reg:'',remark:''}); renderSummary(); scheduleSave(); }
+function rmFgs(i) { S.fgs.splice(i,1); renderSummary(); scheduleSave(); }
+
+// ═══════════════════════════════════
+// TABS
+// ═══════════════════════════════════
+function switchTab(t){
+  S.tab=t;
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(el=>el.classList.remove('active'));
+  document.getElementById(`tab-${t}`).classList.add('active');
+  document.getElementById(`panel-${t}`).classList.add('active');
+}
+
+// ═══════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════
+function setSt(m){ document.getElementById('fetch-st').textContent=m; }
+function showLoading(){
+  document.getElementById('content').innerHTML=`<div class="loading-wrap"><div class="spinner"></div>Fetching from Google Sheets...</div>`;
+}
+function hideLoading(){
+  document.getElementById('content').innerHTML=`
+    <div id="panel-lo"      class="panel active"><div id="cl"></div></div>
+    <div id="panel-irreg"   class="panel"><div id="ci"></div></div>
+    <div id="panel-wo"      class="panel"><div id="cw"></div></div>
+    <div id="panel-cim"     class="panel"><div id="cc"></div></div>
+    <div id="panel-summary" class="panel"><div id="cs"></div></div>`;
+  switchTab(S.tab);
+}
+function showErr(m){
+  const tips = m.includes('403')||m.includes('API key')
+    ? '· Your API key may be invalid or the Google Sheets API is not enabled.\n· Go to Google Cloud Console → APIs & Services → Library → enable Google Sheets API.'
+    : m.includes('404')
+    ? '· Sheet ID or Tab name is wrong. Check ⚙ CONFIG.'
+    : m.includes('not found')
+    ? '· The selected date may not exist in this tab yet.'
+    : '· Check your API key, Sheet ID, and Tab name in ⚙ CONFIG.\n· Make sure the sheet is shared as "Anyone with the link - Viewer".';
+  document.getElementById('content').innerHTML=`
+    <div style="padding:24px;max-width:600px">
+      <div style="background:var(--rbg);border:1px solid #3A0D0D;border-radius:var(--r);padding:16px 20px;margin-bottom:12px">
+        <div style="color:var(--red);font-weight:700;font-size:13px;margin-bottom:6px">⚠ Failed to load roster</div>
+        <div style="color:var(--orange);font-size:12px;margin-bottom:10px">${m}</div>
+        <div style="color:var(--txt2);font-size:11px;white-space:pre-line;line-height:2">${tips}</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-amber" onclick="loadRoster()">⟳ RETRY</button>
+        <button class="btn btn-ghost" onclick="openSettings()">⚙ OPEN CONFIG</button>
+      </div>
+    </div>`;
+}
+
+// ═══════════════════════════════════
+// PASTE ALLOCATION
+// ═══════════════════════════════════
+function openExclModal(){
+  const excl=S.exclusions||[];
+  const body=document.getElementById('excl-body');
+  if(!excl.length){
+    body.innerHTML=`<div style="text-align:center;padding:20px;color:var(--txt3);font-size:11px">No hidden staff.</div>`;
+  } else {
+    body.innerHTML=excl.map(id=>{
+      // Try to find their name from staff or nicknames
+      const s=S.staff.find(st=>st.id===id||st.id===id+'_BK');
+      const name=s?displayName(s):(S.nicknames[id]||id);
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--b)">
+        <div>
+          <div style="font-size:11px;font-weight:600;color:var(--txt)">${name}</div>
+          <div style="font-size:9px;color:var(--txt3)">${id}</div>
+        </div>
+        <button class="btn btn-amber btn-sm" style="font-size:9px" onclick="restoreStaff('${id}')">↩ RESTORE</button>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('excl-ov').classList.add('show');
+}
+function closeExclModal(){ document.getElementById('excl-ov').classList.remove('show'); }
+function restoreStaff(id){
+  S.exclusions=(S.exclusions||[]).filter(e=>e!==id);
+  saveExclusions();
+  openExclModal();
+  renderAll();
+  if(S.loaded) loadRoster();
+}
+
+function openActingGLModal(team, key){
+  document.getElementById('actgl-title').textContent=`✎ ACTING GL — ${team}`;
+  const current=S.actingGL[key]||'';
+  // Get all on-shift staff for this team (any category)
+  const isOnShiftFn=s=>{const a=effAvail(s);if(a.st==='WORKING'||a.st==='STANDBY')return true;if(S.overrides[s.id])return false;const raw=(s.schedVal||'').toUpperCase().trim();const _sh=document.getElementById('shift-sel').value.toUpperCase();return raw.startsWith(_sh);};
+  const candidates=S.staff.filter(s=>effectiveDept(s)===team&&isOnShiftFn(s));
+
+  let html=`<div style="font-size:10px;color:var(--txt2);margin-bottom:12px">Select a staff member to appoint as Acting GL for ${team}. This overrides the auto-detected GL until cleared.</div>`;
+  
+  if(current){
+    html+=`<div style="background:#FFF7ED;border:1px solid var(--orange);border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:10px">
+      <b style="color:var(--orange)">Current Acting GL:</b> ${current}
+      <button class="btn btn-ghost btn-sm" style="margin-left:8px;font-size:9px" onclick="clearActingGL('${key}')">✕ CLEAR</button>
+    </div>`;
+  }
+
+  html+=`<div style="display:flex;flex-direction:column;gap:4px;max-height:300px;overflow-y:auto">`;
+  candidates.forEach(s=>{
+    const dn=displayName(s);
+    const sel=dn===current;
+    html+=`<button class="btn ${sel?'btn-amber':'btn-ghost'}" style="text-align:left;font-size:11px;padding:6px 12px" onclick="setActingGL('${key}','${dn}')">
+      ${dn} <span style="color:var(--txt3);font-size:9px;margin-left:4px">${s.category} · ${s.desigCode||''}</span>
+    </button>`;
+  });
+  html+=`</div>`;
+  document.getElementById('actgl-body').innerHTML=html;
+  document.getElementById('actgl-ov').classList.add('show');
+}
+function closeActingGLModal(){ document.getElementById('actgl-ov').classList.remove('show'); }
+function setActingGL(key,name){
+  if(!S.actingGL) S.actingGL={lo:'',irreg:'',wo:''};
+  S.actingGL[key]=name;
+  closeActingGLModal(); renderAll(); scheduleSave();
+}
+function clearActingGL(key){
+  if(S.actingGL) S.actingGL[key]='';
+  closeActingGLModal(); renderAll(); scheduleSave();
+}
+
+function generateBriefingText(){
+  const r=S.roles;
+  const dateStr=fmtDate(document.getElementById('dp').value);
+  const shift=document.getElementById('shift-sel').value;
+  const isDay=shift==='DAY';
+
+  // Format date as DD MMM YYYY uppercase
+  const d=new Date(document.getElementById('dp').value+'T12:00:00');
+  const M=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const dateFmt=`${String(d.getDate()).padStart(2,'0')} ${M[d.getMonth()]} ${d.getFullYear()}`;
+  const shiftLabel=isDay?'DAY OPS':'NIGHT OPS';
+  const timing=isDay?'0700-1900':'1900-0700';
+  const ssTiming=isDay?'0600-1800':'1800-0600';
+
+  // GL names
+  const glN=team=>{
+    const key={LO:'lo',IRR:'irreg',WO:'wo'}[team]||'lo';
+    if(S.actingGL&&S.actingGL[key]) return S.actingGL[key];
+    const dk=key;
+    const gl=S.staff.filter(s=>effectiveDept(s)===team&&s.category==='GL');
+    const bkGL=(S.backups[dk]||[]).filter(b=>normCat(b.pos)==='GL');
+    return [...gl.map(s=>displayName(s)),...bkGL.map(b=>b.name)].join(' / ')||'TBA';
+  };
+
+  // MOC
+  const mocNames=S.staff.filter(s=>isMocStaff(s)&&isActive(effAvail(s))).map(s=>displayName(s)).join(' / ')||'—';
+
+  // Certifiers — all on-shift
+  const isOnShift=s=>{const a=effAvail(s);if(a.st==='WORKING'||a.st==='STANDBY'||a.st==='BACKUP_SHIFT')return true;if(S.overrides[s.id])return false;const raw=(s.schedVal||'').toUpperCase().trim();return raw.startsWith(shift.toUpperCase());};
+  const xsBk=S.staff.filter(s=>s.isBackup&&isActive(effAvail(s)));
+  const byCat=(team,cat)=>{
+    const dk={LO:'lo',IRR:'irreg',WO:'wo',CIM:'cim'}[team]||'lo';
+    const own=S.staff.filter(s=>!s.isBackup&&effectiveDept(s)===team&&s.category===cat&&isOnShift(s));
+    const xs=xsBk.filter(s=>effectiveDept(s)===team&&s.category===cat);
+    const mb=(S.backups[dk]||[]).filter(b=>normCat(b.pos)===cat&&!b.mcEl).map(b=>({_manual:true,shortName:b.name,id:'mb_'+b.name}));
+    return [...own,...xs,...mb];
+  };
+  const dn=s=>s._manual?s.shortName:displayName(s);
+  const teams=['LO','IRR','WO','CIM'];
+  const b1=teams.flatMap(t=>byCat(t,'LAE B1'));
+  const b2=teams.flatMap(t=>byCat(t,'LAE B2'));
+  const lat=teams.flatMap(t=>byCat(t,'LAT'));
+
+  // SS detection — runner timing starts with 06 or 12
+  const isSS=t=>t&&(t.trim().startsWith('06')||t.trim().startsWith('12'));
+
+  // Build SS person set from runners
+  const ssPersons=new Set(r.runners.filter(rn=>rn.name&&isSS(rn.timing)).map(rn=>rn.name));
+
+  // Trainee names set
+  const traineeNames=new Set([...(S.trainees?.permanent||[]),...(S.trainees?.backups||[])].map(t=>(t.name||'').toUpperCase()));
+
+  // Helper: strip (TR) suffix, add TRAINEE prefix if needed
+  const cleanRoleName=name=>{
+    if(!name) return '';
+    // Strip existing (TR) suffix
+    const stripped=name.replace(/\s*\(TR\)\s*$/i,'').trim();
+    // If already has TRAINEE prefix, return as-is
+    if(stripped.toUpperCase().startsWith('TRAINEE ')) return stripped;
+    // If in trainees list OR had (TR) suffix → add TRAINEE prefix
+    if(name.match(/\(TR\)/i)||traineeNames.has(stripped.toUpperCase())) return 'TRAINEE '+stripped;
+    return stripped;
+  };
+
+  // Helper: append (1/2) for half-shift staff
+  const dnHalf=s=>s._manual?s.shortName:dn(s)+(effAvail(s).half?' (1/2)':'');
+
+  // MOJO
+  const mojoLine=r.mojo.filter(Boolean).map(cleanRoleName).join(' / ');
+
+  // WC — first pair is always SS
+  const wcLines=r.wc.filter(wc=>wc.primary).map((wc,i)=>{
+    const asst=wc.asst?`+ ${cleanRoleName(wc.asst)}`:'';
+    const ss=i===0||wc.ss||ssPersons.has(wc.primary);
+    return `${cleanRoleName(wc.primary)} ${asst}${ss?' - SS':''}`.trim();
+  });
+
+  // Tower — first slot is always SS
+  const towerLines=r.towerSlots.filter(t=>t.a).map((t,i)=>{
+    let line=cleanRoleName(t.a);
+    if(t.b) line+=` / ${cleanRoleName(t.b)}`;
+    if(t.backup) line+=` + ${cleanRoleName(t.backup)}`;
+    const ss=i===0||t.ss||ssPersons.has(t.a)||ssPersons.has(t.b);
+    if(ss) line+=` - SS`;
+    return line;
+  });
+
+  // Runners
+  const runnerLines=r.runners.filter(rn=>rn.name).map(rn=>{
+    const t=(rn.timing||'').split('/')[0].trim().replace(/[^\d-]/g,'');
+    return `${cleanRoleName(rn.name)} ${t}${isSS(rn.timing)?' - SS':''}`;
+  });
+
+  let txt='';
+  txt+=`*SALAM AND GOOD ${isDay?'MORNING':'EVENING'}*\n`;
+  txt+=`*${dateFmt} (${shiftLabel})*\n`;
+  txt+=`*${timing}*\n`;
+  txt+=`*SLIP SHIFT - SS (${ssTiming})*\n\n`;
+  txt+=`*MOC* : ${mocNames}\n`;
+  txt+=`*GL LO* : ${glN('LO')}\n`;
+  txt+=`*GL IRREG* : ${glN('IRR')}\n`;
+  txt+=`*GL WO* : ${glN('WO')}\n\n`;
+  if(b1.length){ txt+=`*LAE B1*\n${b1.map(s=>dnHalf(s)).join(' / ')}\n\n`; }
+  if(b2.length){ txt+=`*LAE B2*\n${b2.map(s=>dnHalf(s)).join(' / ')}\n\n`; }
+  if(lat.length){ txt+=`*LAT*\n${lat.map(s=>dnHalf(s)).join(' / ')}\n\n`; }
+  if(mojoLine){ txt+=`*MOJO*\n${mojoLine}\n\n`; }
+  if(runnerLines.length){ txt+=`*RUNNER*\n${runnerLines.join('\n')}\n\n`; }
+  if(wcLines.length){ txt+=`*WHEELCREW*\n${wcLines.join('\n')}\n\n`; }
+  if(towerLines.length){ txt+=`*TOWER*\n${towerLines.join('\n')}\n\n`; }
+  if(r.mocChaser){ txt+=`*MOC CHASER*\n${r.mocChaser}\n`; }
+
+  return txt.trim();
+}
+
+function openBriefingModal(){
+  const txt=generateBriefingText();
+  document.getElementById('briefing-out').value=txt;
+  document.getElementById('briefing-ov').classList.add('show');
+}
+function closeBriefingModal(){ document.getElementById('briefing-ov').classList.remove('show'); }
+function copyBriefingText(){
+  const ta=document.getElementById('briefing-out');
+  ta.select(); document.execCommand('copy');
+  const btn=document.getElementById('briefing-copy-btn');
+  btn.textContent='✓ COPIED!'; setTimeout(()=>btn.textContent='📋 COPY',2000);
+}
+function openAllocModal(){
+  document.getElementById('alloc-input').value='';
+  document.getElementById('alloc-preview').innerHTML='';
+  document.getElementById('alloc-ov').classList.add('show');
+}
+function closeAllocModal(){ document.getElementById('alloc-ov').classList.remove('show'); }
+
+// Match a name from allocation text to a staff member OR tower/trainee entry
+function matchStaff(name){
+  if(!name) return null;
+  const n=name.trim().toUpperCase().replace(/^TRAINEE\s+/,'');
+  if(!n) return null;
+
+  // 1. Search S.staff — exact displayName
+  let found=S.staff.find(s=>displayName(s).toUpperCase()===n);
+  // 2. Exact shortName
+  if(!found) found=S.staff.find(s=>s.shortName.toUpperCase()===n);
+  // 3. displayName starts with n, or n starts with displayName (min 3 chars to avoid single-letter nickname false matches)
+  if(!found) found=S.staff.find(s=>{const dn=displayName(s).toUpperCase();return dn.length>=3&&(dn.startsWith(n)||n.startsWith(dn));});
+  // 4. shortName starts with n (min 3 chars)
+  if(!found) found=S.staff.find(s=>s.shortName.toUpperCase().length>=3&&(s.shortName.toUpperCase().startsWith(n)||n.startsWith(s.shortName.toUpperCase())));
+  if(found) return found;
+
+  // 5. Search towers — exact then startsWith
+  const allTowers=[...(S.towers?.permanent||[]),...(S.towers?.backups||[])];
+  let tw=allTowers.find(t=>t?.name&&t.name.toUpperCase()===n);
+  if(!tw) tw=allTowers.find(t=>t?.name&&(t.name.toUpperCase().startsWith(n)||n.startsWith(t.name.toUpperCase())));
+  if(tw) return {_isTower:true, shortName:tw.name, displayName_:tw.name, id:'_tw_'+tw.name};
+
+  // 6. Search trainees — exact then startsWith
+  const allTrainees=[...(S.trainees?.permanent||[]),...(S.trainees?.backups||[])];
+  let tr=allTrainees.find(t=>t?.name&&t.name.toUpperCase()===n);
+  if(!tr) tr=allTrainees.find(t=>t?.name&&(t.name.toUpperCase().startsWith(n)||n.startsWith(t.name.toUpperCase())));
+  if(tr) return {_isTrainee:true, shortName:tr.name, displayName_:tr.name, id:'_tr_'+tr.name};
+
+  return null;
+}
+
+// Safe displayName for any matched object
+function resolveDisplayName(s){
+  if(!s) return '';
+  if(s._isTower||s._isTrainee) return s.displayName_||s.shortName;
+  return displayName(s);
+}
+
+function stripTrainee(name){ return name.trim().replace(/^TRAINEE\s+/i,'').trim(); }
+function isTrainee(name){ return /^TRAINEE\s+/i.test(name.trim()); }
+
+function parseAllocText(){
+  const raw=document.getElementById('alloc-input').value;
+  const lines=raw.split(/\r?\n/).map(l=>l.trim());
+
+  const parsed={
+    mocChaser:[], mojo:[], wc:[], runners:[], towerSlots:[],
+    traineeNames: new Set() // names that had TRAINEE prefix
+  };
+
+  const SECTIONS={
+    'MOC CHASER':'mocChaser','MOJO':'mojo','ASST MOJO':'mojo',
+    'WHEELCREW':'wc','WHEEL CREW':'wc',
+    'RUNNER':'runners','RUNNERS':'runners',
+    'TOWING TEAM':'towerSlots','TOWING':'towerSlots','TOWER':'towerSlots'
+  };
+
+  const trackTrainee=(raw)=>{
+    const stripped=stripTrainee(raw);
+    if(isTrainee(raw)) parsed.traineeNames.add(stripped.toUpperCase());
+    return stripped;
+  };
+
+  let curSection=null;
+  for(const line of lines){
+    if(!line){ curSection=null; continue; }
+    const secKey=Object.keys(SECTIONS).find(k=>line.toUpperCase()===k||line.toUpperCase().startsWith(k));
+    if(secKey){ curSection=SECTIONS[secKey]; continue; }
+    if(!curSection) continue;
+
+    if(curSection==='mocChaser'){
+      parsed.mocChaser.push(trackTrainee(line));
+    }
+    else if(curSection==='mojo'){
+      parsed.mojo.push(trackTrainee(line));
+    }
+    else if(curSection==='wc'){
+      const ssFlag=/[-–]\s*SS\s*$/i.test(line);
+      const cleaned=line.replace(/[-–]\s*SS\s*$/i,'').trim();
+      const parts=cleaned.split(/\s*\+\s*/);
+      parsed.wc.push({ primary:trackTrainee(parts[0]||''), asst:trackTrainee(parts[1]||''), ss:ssFlag });
+    }
+    else if(curSection==='runners'){
+      const m=line.match(/^(.+?)\s+(\d{3,4}-\d{3,4})\s*$/);
+      if(m) parsed.runners.push({ name:trackTrainee(m[1]), timing:m[2] });
+      else parsed.runners.push({ name:trackTrainee(line), timing:'' });
+    }
+    else if(curSection==='towerSlots'){
+      const ssFlag=/[-–]\s*SS\s*$/i.test(line);
+      const cleaned=line.replace(/^\d+\.\s*[\u2060\u200B\u00A0]*/,'').replace(/[-–]\s*SS\s*$/i,'').trim();
+      let a='',b='',backup='';
+      if(cleaned.includes('/')){
+        const [left,right]=cleaned.split('/').map(s=>s.trim());
+        a=trackTrainee(left);
+        const rparts=right.split(/\s*\+\s*/);
+        b=trackTrainee(rparts[0]||'');
+        backup=trackTrainee(rparts[1]||'');
+      } else if(cleaned.includes('+')){
+        const parts=cleaned.split(/\s*\+\s*/);
+        a=trackTrainee(parts[0]||'');
+        // No / means: a + backup (assistant), not a + b
+        backup=trackTrainee(parts[1]||'');
+        b='';
+      } else {
+        a=trackTrainee(cleaned);
+      }
+      if(a||b) parsed.towerSlots.push({a,b,backup,ss:ssFlag});
+    }
+  }
+
+  renderAllocPreview(parsed);
+}
+
+var _allocStore={};
+var _swapInProgress=false;
+
+function renderAllocPreview(parsed){
+  const el=document.getElementById('alloc-preview');
+  _allocStore={_parsed:parsed};
+
+  const checkName=(name,skipIrreg=false)=>{
+    if(!name) return {name:'',found:null,ok:true,dept:''};
+    // If name was originally prefixed with TRAINEE → always ok
+    if(parsed.traineeNames&&parsed.traineeNames.has(name.toUpperCase()))
+      return {name,found:{_isTrainee:true},ok:true,dept:'TRAINEE',dn:name};
+    const s=matchStaff(name);
+    if(!s) return {name,found:null,ok:false,dept:'NOT FOUND'};
+    if(s._isTower) return {name,found:s,ok:true,dept:'TOWER',dn:resolveDisplayName(s)};
+    if(s._isTrainee) return {name,found:s,ok:true,dept:'TRAINEE',dn:resolveDisplayName(s)};
+    const dept=effectiveDept(s);
+    return {name,found:s,ok:dept==='IRR',dept,dn:resolveDisplayName(s)};
+  };
+
+  const chip=r=>{
+    if(!r.name) return `<span style="color:var(--txt3);font-size:10px">—</span>`;
+    const col=r.found?(r.ok?'var(--green)':'var(--orange)'):'var(--red)';
+    const warn=r.found&&!r.ok&&r.dept!=='NOT FOUND'?` ⚠ ${r.dept}`:'';
+    const nf=!r.found?' ✗ NOT FOUND':'';
+    return `<span style="display:inline-block;background:${col}22;border:1px solid ${col};border-radius:4px;padding:2px 7px;font-size:10px;color:${col};margin:2px">${r.dn||r.name}${warn}${nf}</span>`;
+  };
+
+  const row=(lbl,cnt)=>`<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid var(--b)">
+    <div style="min-width:100px;font-size:9px;color:var(--txt3);font-weight:700;letter-spacing:1px;padding-top:4px">${lbl}</div>
+    <div style="flex:1">${cnt}</div></div>`;
+
+  let html=`<div style="background:var(--surf2);border:1px solid var(--b);border-radius:8px;padding:12px;margin-bottom:12px">
+    <div style="font-size:10px;font-weight:700;color:var(--amber);letter-spacing:1px;margin-bottom:6px">PREVIEW</div>
+    <div style="font-size:9px;margin-bottom:8px"><span style="color:var(--green)">■</span> IRREG &nbsp;<span style="color:var(--orange)">■</span> Needs swap/transfer &nbsp;<span style="color:var(--red)">■</span> Not found</div>`;
+
+  if(parsed.mocChaser.length) html+=row('MOC CHASER',parsed.mocChaser.map(n=>chip(checkName(n))).join(''));
+  if(parsed.mojo.length) html+=row('MOJO',parsed.mojo.map(n=>chip(checkName(n))).join(''));
+  parsed.wc.forEach((wc,i)=>html+=row(`WC ${i+1}`,chip(checkName(wc.primary))+`<span style="color:var(--txt3);font-size:10px"> + </span>`+chip(checkName(wc.asst))));
+  parsed.runners.forEach((r,i)=>html+=row(`RUNNER ${i+1}`,chip(checkName(r.name))+`<span style="color:var(--txt3);font-size:10px;margin-left:4px">${r.timing}</span>`));
+  parsed.towerSlots.forEach((t,i)=>{
+    const p=[chip(checkName(t.a,true))];
+    if(t.b) p.push(`<span style="color:var(--txt3);font-size:10px"> / </span>`+chip(checkName(t.b,true)));
+    if(t.backup) p.push(`<span style="color:var(--txt3);font-size:10px"> + </span>`+chip(checkName(t.backup,true)));
+    html+=row(`TOWER ${i+1}`,p.join(''));
+  });
+  html+=`</div>`;
+
+  // Check ALL names for warnings — including tower slot regular staff
+  const irregNames=[...parsed.mocChaser,...parsed.mojo,
+    ...parsed.wc.flatMap(w=>[w.primary,w.asst]),...parsed.runners.map(r=>r.name)].filter(Boolean);
+  const towerNames=parsed.towerSlots.flatMap(t=>[t.a,t.b,t.backup]).filter(Boolean);
+  const allNames=[...irregNames,...towerNames];
+  const warnings=[...irregNames,...towerNames].filter(n=>{const r=checkName(n);return r.found&&!r.ok;});
+  const notFound=allNames.filter(n=>!matchStaff(n));
+
+  if(warnings.length){
+    const isOnShiftFn=s=>{const a=effAvail(s);if(a.st==='WORKING'||a.st==='STANDBY'||a.st==='BACKUP_SHIFT')return true;if(S.overrides[s.id])return false;const raw=(s.schedVal||'').toUpperCase().trim();const _sh=document.getElementById('shift-sel').value.toUpperCase();return raw.startsWith(_sh);};
+    const allocSet=new Set(allNames.map(n=>{const s=matchStaff(n);return s?resolveDisplayName(s):n;}));
+    const irrPool=S.staff.filter(s=>effectiveDept(s)==='IRR'&&s.category==='TECH'&&isOnShiftFn(s)&&!allocSet.has(displayName(s)));
+
+    html+=`<div style="background:#FFF7ED;border:1px solid var(--orange);border-radius:6px;padding:10px 12px;margin-bottom:10px">
+      <b style="color:var(--orange);font-size:10px">⚠ ${warnings.length} STAFF NEED SWAP / TRANSFER TO IRREG</b>
+      <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">`;
+
+    warnings.forEach((n,wi)=>{
+      const s=matchStaff(n); if(!s) return;
+      const dn=resolveDisplayName(s), dept=effectiveDept(s);
+      // Store swap candidates in _allocStore for safe access
+      _allocStore[`w${wi}`]={dn,dept};
+      irrPool.forEach((irS,si)=>{ _allocStore[`w${wi}_s${si}`]={allocName:dn,allocDept:dept,irrName:displayName(irS)}; });
+
+      html+=`<div style="background:var(--surf);border:1px solid var(--b2);border-radius:6px;padding:8px 10px">
+        <div style="font-size:10px;margin-bottom:6px">
+          <b style="color:var(--orange)">${dn}</b> <span style="color:var(--txt2)">is in</span>
+          <b style="color:var(--blue)">${dept}</b> <span style="color:var(--txt2)">— choose action:</span>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          <span style="font-size:9px;color:var(--txt3);font-weight:700">SWAP WITH:</span>
+          ${irrPool.slice(0,6).map((irS,si)=>{
+            const key=`w${wi}_s${si}`;
+            _allocStore[key]={allocName:dn,allocDept:dept,irrName:displayName(irS)};
+            return `<button class="btn btn-ghost btn-sm" style="font-size:9px;padding:2px 8px" onclick="window._doSwap('${key}')">⇄ ${displayName(irS)}</button>`;
+          }).join('')}
+          ${!irrPool.length?`<span style="color:var(--txt3);font-size:9px">No IRREG staff available to swap</span>`:''}
+          <button class="btn btn-sm" style="font-size:9px;padding:2px 8px;background:#EFF6FF;border:1px solid #2563EB;color:#2563EB" onclick="window._doTransfer('w${wi}')">→ TRANSFER TO IRREG</button>
+        </div>
+      </div>`;
+    });
+    html+=`</div></div>`;
+  }
+
+  if(notFound.length) html+=`<div style="background:#FEF2F2;border:1px solid var(--red);border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:10px">
+    <b style="color:var(--red)">✗ ${notFound.length} name(s) not found:</b> ${notFound.join(', ')}
+  </div>`;
+
+  html+=`<div style="display:flex;gap:8px">
+    <button class="btn btn-amber" onclick="window._doApplyAllocation()">✓ APPLY ROLES</button>
+    <button class="btn btn-ghost" onclick="document.getElementById('alloc-preview').innerHTML=''">CLEAR</button>
+  </div>`;
+  el.innerHTML=html;
+}
+
+function _doSwap(key){
+  if(_swapInProgress) return;
+  _swapInProgress=true;
+  const d=_allocStore[key];
+  if(!d){ _swapInProgress=false; return; }
+  // Find staff IDs — same format as the IRREG swap UI
+  const s1=S.staff.find(s=>displayName(s)===d.irrName||s.shortName===d.irrName);
+  const s2=S.staff.find(s=>displayName(s)===d.allocName||s.shortName===d.allocName);
+  if(!s1||!s2){ alert('Could not match staff IDs for: '+d.irrName+' / '+d.allocName); _swapInProgress=false; return; }
+  const id1=s1.id, id2=s2.id;
+  // Remove existing swaps for either person
+  S.swaps=S.swaps.filter(sw=>sw.id1!==id1&&sw.id2!==id1&&sw.id1!==id2&&sw.id2!==id2);
+  S.swaps.push({id1, id2});
+  renderAll(); scheduleSave();
+  if(document.getElementById('alloc-input').value.trim()) parseAllocText();
+  setTimeout(()=>{_swapInProgress=false;},500);
+}
+
+function _doTransfer(key){
+  if(_swapInProgress) return;
+  _swapInProgress=true;
+  const d=_allocStore[key];
+  if(!d){ _swapInProgress=false; return; }
+  const s=S.staff.find(st=>displayName(st)===d.dn||st.shortName===d.dn);
+  if(!s){ alert('Could not match staff for: '+d.dn); _swapInProgress=false; return; }
+  const id=s.id, toDept='IRR';
+  S.transfers=S.transfers.filter(t=>t.id!==id);
+  S.transfers.push({id, toDept});
+  renderAll(); scheduleSave();
+  if(document.getElementById('alloc-input').value.trim()) parseAllocText();
+  setTimeout(()=>{_swapInProgress=false;},500);
+}
+
+function _doApplyAllocation(){
+  const parsed=_allocStore._parsed; if(!parsed) return;
+  const resolve=name=>{ if(!name) return ''; const s=matchStaff(name); return s?resolveDisplayName(s):name; };
+  const resolveWithTrainee=name=>{ if(!name) return ''; const isT=parsed.traineeNames&&parsed.traineeNames.has(name.toUpperCase()); const r=resolve(name); return isT?'TRAINEE '+r:r; };
+  if(parsed.mocChaser[0]) S.roles.mocChaser=resolve(parsed.mocChaser[0]);
+  parsed.mojo.forEach((n,i)=>{ if(i<3) S.roles.mojo[i]=resolve(n); });
+  parsed.wc.forEach((wc,i)=>{ if(i<2){ S.roles.wc[i].primary=resolve(wc.primary); S.roles.wc[i].asst=resolveWithTrainee(wc.asst); S.roles.wc[i].ss=!!wc.ss; } });
+  parsed.runners.forEach((r,i)=>{ if(i<4){ S.roles.runners[i].name=resolve(r.name); if(r.timing) S.roles.runners[i].timing=r.timing; } });
+  parsed.towerSlots.forEach((t,i)=>{ if(i<4){ S.roles.towerSlots[i].a=resolve(t.a); S.roles.towerSlots[i].b=resolve(t.b); S.roles.towerSlots[i].backup=resolveWithTrainee(t.backup); S.roles.towerSlots[i].ss=!!t.ss; } });
+  closeAllocModal(); renderAll(); scheduleSave();
+}
+
+function applyAllocation(parsed){ _allocStore._parsed=parsed; _doApplyAllocation(); }
+
+// ═══════════════════════════════════
+// ROLES MODAL
+// ═══════════════════════════════════
+function openRolesModal(){ renderRolesModal(); document.getElementById('roles-ov').classList.add('show'); }
+function closeRolesModal(){ document.getElementById('roles-ov').classList.remove('show'); renderSummary(); }
+
+function renderRolesModal(){
+  const el=document.getElementById('roles-body');
+  const r=S.roles;
+
+  // Build pools fresh from S.staff (not relying on renderSummary locals)
+  // Include WORKING + STANDBY + COURSE/TASK staff — they're physically on shift
+  const isOnShift = s => { const a=effAvail(s); if(a.st==='WORKING'||a.st==='STANDBY'||a.st==='BACKUP_SHIFT') return true; if(S.overrides[s.id]) return false; const raw=(s.schedVal||'').toUpperCase().trim(); const _sh=document.getElementById('shift-sel').value.toUpperCase(); return raw.startsWith(_sh); };
+  const irTechAll = S.staff.filter(s=>effectiveDept(s)==='IRR'&&s.category==='TECH'&&isOnShift(s));
+  const irPool=[
+    ...irTechAll.map(s=>displayName(s)),
+    ...irr_bk_pool(),
+    ...[...S.trainees.permanent,...S.trainees.backups].filter(t=>t.name&&t.status==='AVAIL').map(t=>t.name+' (TR)')
+  ];
+  function irr_bk_pool(){ try{ return (S.backups.irreg||[]).filter(b=>normCat(b.pos)==='TECH').map(b=>b.name+' (BK)'); }catch(e){ return []; } }
+
+  const twPool=[...S.towers.permanent,...S.towers.backups].filter(t=>t.name&&t.status==='AVAIL').map(t=>t.name);
+  const trPool=[...S.trainees.permanent,...S.trainees.backups].filter(t=>t.name&&t.status==='AVAIL').map(t=>t.name+' (TR)');
+
+  const assigned2 = getAssignedNames();
+  const makePool = (pool, curVal) => pool.filter(n => !assigned2.has(n) || n === curVal);
+
+  const sel=(val,pool,onch)=>{
+    const opts = makePool(pool, val);
+    return `<select onchange="${onch}" style="background:var(--bg);border:1px solid var(--b);border-radius:4px;color:var(--txt);padding:4px 6px;font-family:var(--mono);font-size:11px;width:100%;outline:none"><option value="">NIL</option>${opts.map(n=>`<option value="${n}"${val===n?' selected':''}>${n}</option>`).join('')}</select>`;
+  };
+  const fld=(lbl,inp)=>`<div><div style="font-size:8px;color:var(--txt3);margin-bottom:3px">${lbl}</div>${inp}</div>`;
+  const sh=(t,c='var(--amber)')=>`<div style="font-size:9px;font-weight:700;letter-spacing:2px;color:${c};margin:14px 0 8px;padding-top:10px;border-top:1px solid var(--b)">${t}</div>`;
+
+  el.innerHTML=`
+    ${sh('LEADERSHIP')}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+      ${fld('MOC CHASER', sel(r.mocChaser,irPool,'S.roles.mocChaser=this.value'))}
+      <div></div>
+    </div>
+    ${sh('MOJO')}
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:6px">
+      ${r.mojo.map((v,i)=>fld(i===0?'MOJO':i===1?'ASST MOJO':' ',sel(v,irPool,`S.roles.mojo[${i}]=this.value`))).join('')}
+    </div>
+    ${sh('WC / GSE')}
+    ${r.wc.map((wc,i)=>`<div style="margin-bottom:8px">
+      <div style="font-size:8px;color:var(--txt3);margin-bottom:4px">PAIR ${i+1}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        ${fld('WC',sel(wc.primary,irPool,`S.roles.wc[${i}].primary=this.value`))}
+        ${fld('ASST / TRAINEE',sel(wc.asst,[...irPool,...trPool],`S.roles.wc[${i}].asst=this.value`))}
+      </div>
+    </div>`).join('')}
+    ${sh('RUNNERS','#C084FC')}
+    ${r.runners.map((rn,i)=>`<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-bottom:6px">
+      ${sel(rn.name,twPool,`S.roles.runners[${i}].name=this.value`)}
+      <span style="font-size:9px;color:var(--txt2);white-space:nowrap">${rn.timing}</span>
+    </div>`).join('')}
+    ${sh('TOWER POSITIONS','#C084FC')}
+    ${r.towerSlots.map((ts,i)=>`<div style="margin-bottom:10px">
+      <div style="font-size:8px;color:var(--txt3);margin-bottom:4px">TOWER ${i+1}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+        ${fld('PERSON A',sel(ts.a,twPool,`S.roles.towerSlots[${i}].a=this.value`))}
+        ${fld('PERSON B',sel(ts.b,twPool,`S.roles.towerSlots[${i}].b=this.value`))}
+        ${fld('BACKUP / ASST',sel(ts.backup,[...irPool,...trPool],`S.roles.towerSlots[${i}].backup=this.value`))}
+      </div>
+    </div>`).join('')}
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--b)">
+      <button class="btn btn-amber" style="width:100%" onclick="closeRolesModal()">DONE</button>
+    </div>`;
+}
+
+// ═══════════════════════════════════
+// EXPORT / PRINT
+// ═══════════════════════════════════
+function printSummary(){
+  switchTab('summary');
+  setTimeout(()=>window.print(), 200);
+}
+
+function buildTxt(){
+  const ds=fmtDate(document.getElementById('dp').value);
+  const sh=document.getElementById('shift-sel').value;
+  let t=`SHIFT C · OPS SUMMARY\n${ds} · ${sh}\n${'═'.repeat(40)}\n\n`;
+  t+=`OPS: ARR ${S.ops.ARR||'—'} | DEP ${S.ops.DEP||'—'} | TOW ${S.ops.TOW||'—'}\n\n`;
+  if(S.pdsc.some(p=>p.reg||p.certifier)){
+    t+=`PDSC\n${'─'.repeat(30)}\n`;
+    S.pdsc.forEach((p,i)=>t+=`${i+1}. ${(p.reg||'—').padEnd(10)} ${p.certifier||'—'}${p.acType?' ('+p.acType+')':''}\n`);
+    t+='\n';
+  }
+  if(S.fgs.some(f=>f.reg)){
+    t+=`FGS\n${'─'.repeat(30)}\n`;
+    S.fgs.forEach((f,i)=>t+=`${i+1}. ${f.reg||'—'}\n`);
+    t+='\n';
+  }
+  [['LO','lo','LINE OPS'],['IRR','irreg','IRREGULARITIES'],['WO','wo','WORK ORDER'],['CIM','cim','CABIN (CIM)']].forEach(([tm,dk,lb])=>{
+    const own=S.staff.filter(s=>s.team===tm);
+    const av=own.filter(s=>isActive(effAvail(s)));
+    t+=`${lb} — ${av.length}/${own.length} AVAIL\n`;
+    av.forEach(s=>t+=`  · ${displayName(s).padEnd(14)} ${s.desigCode}\n`);
+    if(S.backups[dk].length){ t+=`  BACKUP:\n`; S.backups[dk].forEach(b=>t+=`  · ${b.name.padEnd(14)} ${b.pos}\n`); }
+    t+='\n';
+  });
+  t+=`IRREG ROLES\n${'─'.repeat(30)}\n`;
+  const r=S.roles;
+  t+=`MOC CHASER   : ${r.mocChaser||'NIL'}\n`;
+  t+=`MOJO         : ${r.mojo[0]||'NIL'}\n`;
+  t+=`ASST MOJO    : ${r.mojo[1]||'NIL'}\n`;
+  r.wc.forEach((wc,i)=>t+=`WC ${i+1}         : ${wc.primary||'NIL'} / ${wc.asst||'—'}\n`);
+  t+=`\nRUNNERS\n${'─'.repeat(30)}\n`;
+  r.runners.forEach(rn=>t+=`${(rn.name||'NIL').padEnd(14)} ${rn.timing}\n`);
+  t+=`\nTOWER\n${'─'.repeat(30)}\n`;
+  r.towerSlots.forEach((ts,i)=>t+=`${i+1}. ${ts.a&&ts.b?ts.a+' / '+ts.b:ts.a||ts.b||'NIL'} | ${ts.backup||'—'}\n`);
+  if(S.soc.length){ t+=`\nSOC FLIGHTS\n${'─'.repeat(30)}\n`; S.soc.forEach(r=>t+=`${(r.flight||'—').padEnd(8)} ${(r.name||'—').padEnd(14)} ${(r.time||'—').padEnd(12)} ${r.remark||''}\n`); }
+  return t;
+}
+
+function exportTxt(){
+  const t=buildTxt();
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([t],{type:'text/plain'}));
+  a.download=`OPS_SHIFTC_${fmtDate(document.getElementById('dp').value).replace(/ /g,'_')}.txt`;
+  a.click();
+}
+
+function copyClip(){
+  navigator.clipboard.writeText(buildTxt()).then(()=>{
+    setSt('Copied to clipboard ✓');
+    setTimeout(()=>setSt(''),2000);
+  });
+}
+
+// ═══════════════════════════════════
+// TOWERS
+// ═══════════════════════════════════
+function renderTowersSection(){
+  const perm = S.towers.permanent;
+  const bkup = S.towers.backups;
+  const all  = [...perm.map((t,i)=>({...t,isPerm:true,idx:i})), ...bkup.map((t,i)=>({...t,isPerm:false,idx:i}))];
+  const avail = all.filter(t=>t.status==='AVAIL').length;
+
+  return `<div style="margin-top:16px;background:var(--bg);border:1px solid #2A1A3A;border-radius:var(--r);padding:14px 16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div>
+        <span style="font-family:var(--cond);font-size:11px;font-weight:700;letter-spacing:3px;color:#C084FC">TOWERS</span>
+        <span style="font-size:9px;color:var(--txt3);margin-left:8px">not counted in headcount</span>
+      </div>
+      <div style="display:flex;gap:6px">
+        <span style="font-size:10px;color:var(--txt2);align-self:center">${avail}/${all.length} AVAIL</span>
+        <button class="btn btn-sm np" onclick="openTowerEdit()" style="background:#1A0A2A;color:#C084FC;border:1px solid #3A1A5A;font-size:9px">✎ EDIT</button>
+      </div>
+    </div>
+
+    ${all.length===0?`<div style="font-size:11px;color:var(--txt3);padding:8px 0">No tower staff added yet. Click ✎ EDIT to add permanent staff.</div>`:''}
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:7px">
+      ${all.map(t=>{
+        const isAvail = t.status==='AVAIL';
+        const fn = t.isPerm ? `toggleTower('perm',${t.idx})` : `toggleTower('bk',${t.idx})`;
+        return `<div onclick="${fn}" style="background:${isAvail?'#1A0A2A':'var(--surf)'};border:1px solid ${isAvail?'#6B21A8':'var(--b)'};border-radius:var(--r);padding:9px 11px;cursor:pointer;transition:border-color .15s">
+          <div style="font-family:var(--cond);font-size:14px;font-weight:700;color:${isAvail?'#C084FC':'var(--txt2)'};letter-spacing:.5px;margin-bottom:4px">
+            ${t.name}${!t.isPerm?` <span style="font-size:8px;padding:1px 4px;background:#1C1500;color:var(--amber);border:1px solid #3A2A00;border-radius:2px">BK</span>`:''}
+          </div>
+          <span style="display:inline-block;font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 6px;border-radius:3px;border:1px solid;${isAvail?'background:#1A0A2A;color:#C084FC;border-color:#6B21A8':'background:var(--bg);color:var(--gray);border-color:var(--b)'}">
+            ${isAvail?'AVAIL':'OFF'}
+          </span>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div class="bk-form np" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--b)">
+      <span style="font-size:9px;color:var(--txt3);letter-spacing:1px">ADD BACKUP TOWER</span>
+      <input type="text" id="tw-bk-name" placeholder="Name" style="width:130px" onkeydown="if(event.key==='Enter')addTowerBackup()">
+      <button class="btn btn-sm np" onclick="addTowerBackup()" style="background:#1A0A2A;color:#C084FC;border:1px solid #3A1A5A">+ ADD</button>
+    </div>
+  </div>`;
+}
+
+function toggleTower(type, idx){
+  const list = type==='perm' ? S.towers.permanent : S.towers.backups;
+  list[idx].status = list[idx].status==='AVAIL' ? 'OFF' : 'AVAIL';
+  if(type==='perm') saveTowers();
+  renderAll();
+}
+
+function addTowerBackup(){
+  const inp = document.getElementById('tw-bk-name');
+  const name = (inp?.value||'').trim().toUpperCase();
+  if(!name) return;
+  S.towers.backups.push({ name, status:'AVAIL' });
+  inp.value='';
+  renderAll();
+}
+
+function removeTowerBackup(idx){
+  S.towers.backups.splice(idx,1);
+  renderAll();
+}
+
+function openTowerEdit(){
+  renderTowerEditModal();
+  document.getElementById('tower-edit-ov').classList.add('show');
+}
+function closeTowerEdit(){ document.getElementById('tower-edit-ov').classList.remove('show'); }
+
+function renderTowerEditModal(){
+  const el = document.getElementById('tower-edit-body');
+  const perm = S.towers.permanent;
+  el.innerHTML=`
+    <div style="font-size:10px;color:var(--txt2);margin-bottom:14px;line-height:1.6">
+      These are your 6 permanent tower staff. Names are saved to your browser and persist across sessions.
+    </div>
+    <div id="tower-perm-list" style="margin-bottom:14px">
+      ${perm.map((t,i)=>`
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+          <input type="text" value="${t.name}" oninput="updatePermTower(${i},this.value)"
+            style="flex:1;background:var(--bg);border:1px solid var(--b);border-radius:4px;color:var(--txt);padding:6px 10px;font-family:var(--mono);font-size:12px;outline:none">
+          <button class="btn btn-red btn-sm" onclick="removePermTower(${i})">✕</button>
+        </div>`).join('')}
+    </div>
+    ${perm.length<8?`<button class="btn btn-ghost btn-sm" onclick="addPermTower()">+ ADD PERMANENT TOWER</button>`:''}
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--b);display:flex;gap:8px">
+      <button class="btn btn-amber" style="flex:1" onclick="savePermTowers()">SAVE</button>
+      <button class="btn btn-ghost" onclick="closeTowerEdit()">CANCEL</button>
+    </div>`;
+}
+
+function addPermTower(){
+  S.towers.permanent.push({ name:'', status:'AVAIL' });
+  renderTowerEditModal();
+}
+
+function updatePermTower(idx, val){
+  S.towers.permanent[idx].name = val.toUpperCase().trim();
+}
+
+function removePermTower(idx){
+  S.towers.permanent.splice(idx,1);
+  renderTowerEditModal();
+}
+
+function savePermTowers(){
+  // Remove empty entries
+  S.towers.permanent = S.towers.permanent.filter(t=>t.name);
+  saveTowers();
+  closeTowerEdit();
+  renderAll();
+}
+
+// ═══════════════════════════════════
+// TRAINEES
+// ═══════════════════════════════════
+function renderTraineesSection(){
+  const perm  = S.trainees.permanent;
+  const bkup  = S.trainees.backups;
+  const all   = [...perm.map((t,i)=>({...t,isPerm:true,idx:i})), ...bkup.map((t,i)=>({...t,isPerm:false,idx:i}))];
+  const avail = all.filter(t=>t.status==='AVAIL').length;
+
+  return `<div style="margin-top:12px;background:var(--bg);border:1px solid #1A2A1A;border-radius:var(--r);padding:14px 16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div>
+        <span style="font-family:var(--cond);font-size:11px;font-weight:700;letter-spacing:3px;color:#4ade80">TRAINEES</span>
+        <span style="font-size:9px;color:var(--txt3);margin-left:8px">not counted in headcount</span>
+      </div>
+      <div style="display:flex;gap:6px">
+        <span style="font-size:10px;color:var(--txt2);align-self:center">${avail}/${all.length} AVAIL</span>
+        <button class="btn btn-sm np" onclick="openTraineeEdit()" style="background:#0A1A0A;color:#4ade80;border:1px solid #1A4A1A;font-size:9px">✎ EDIT</button>
+      </div>
+    </div>
+
+    ${all.length===0?`<div style="font-size:11px;color:var(--txt3);padding:4px 0">No trainees added. Click ✎ EDIT to add permanent trainees.</div>`:''}
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:7px">
+      ${all.map(t=>{
+        const isAvail = t.status==='AVAIL';
+        const fn = t.isPerm ? `toggleTrainee('perm',${t.idx})` : `toggleTrainee('bk',${t.idx})`;
+        return `<div onclick="${fn}" style="background:${isAvail?'#0A1A0A':'var(--surf)'};border:1px solid ${isAvail?'#166534':'var(--b)'};border-radius:var(--r);padding:9px 11px;cursor:pointer;transition:border-color .15s">
+          <div style="font-family:var(--cond);font-size:14px;font-weight:700;color:${isAvail?'#4ade80':'var(--txt2)'};letter-spacing:.5px;margin-bottom:4px">
+            ${t.name}${!t.isPerm?` <span style="font-size:8px;padding:1px 4px;background:#1C1500;color:var(--amber);border:1px solid #3A2A00;border-radius:2px">BK</span>`:''}
+          </div>
+          <span style="display:inline-block;font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 6px;border-radius:3px;border:1px solid;${isAvail?'background:#0A1A0A;color:#4ade80;border-color:#166534':'background:var(--bg);color:var(--gray);border-color:var(--b)'}">
+            ${isAvail?'AVAIL':'OFF'}
+          </span>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div class="bk-form np" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--b)">
+      <span style="font-size:9px;color:var(--txt3);letter-spacing:1px">ADD TRAINEE</span>
+      <input type="text" id="tr-bk-name" placeholder="Name" style="width:130px" onkeydown="if(event.key==='Enter')addTraineeBackup()">
+      <button class="btn btn-sm np" onclick="addTraineeBackup()" style="background:#0A1A0A;color:#4ade80;border:1px solid #1A4A1A">+ ADD</button>
+    </div>
+  </div>`;
+}
+
+function toggleTrainee(type, idx){
+  const list = type==='perm' ? S.trainees.permanent : S.trainees.backups;
+  list[idx].status = list[idx].status==='AVAIL' ? 'OFF' : 'AVAIL';
+  if(type==='perm') saveTrainees();
+  renderAll();
+}
+
+function addTraineeBackup(){
+  const inp  = document.getElementById('tr-bk-name');
+  const name = (inp?.value||'').trim().toUpperCase();
+  if(!name) return;
+  S.trainees.backups.push({ name, status:'AVAIL' });
+  inp.value='';
+  renderAll();
+}
+
+function openTraineeEdit(){
+  renderTraineeEditModal();
+  document.getElementById('trainee-edit-ov').classList.add('show');
+}
+function closeTraineeEdit(){ document.getElementById('trainee-edit-ov').classList.remove('show'); }
+
+function renderTraineeEditModal(){
+  const el   = document.getElementById('trainee-edit-body');
+  const perm = S.trainees.permanent;
+  el.innerHTML=`
+    <div style="font-size:10px;color:var(--txt2);margin-bottom:14px;line-height:1.6">
+      Permanent trainees are saved to your browser. Toggle availability each shift by clicking their card.
+    </div>
+    <div style="margin-bottom:14px">
+      ${perm.map((t,i)=>`
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+          <input type="text" value="${t.name}" oninput="updatePermTrainee(${i},this.value)"
+            style="flex:1;background:var(--bg);border:1px solid var(--b);border-radius:4px;color:var(--txt);padding:6px 10px;font-family:var(--mono);font-size:12px;outline:none">
+          <button class="btn btn-red btn-sm" onclick="removePermTrainee(${i})">✕</button>
+        </div>`).join('')}
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="addPermTrainee()">+ ADD TRAINEE</button>
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--b);display:flex;gap:8px">
+      <button class="btn btn-amber" style="flex:1" onclick="savePermTrainees()">SAVE</button>
+      <button class="btn btn-ghost" onclick="closeTraineeEdit()">CANCEL</button>
+    </div>`;
+}
+
+function addPermTrainee(){
+  S.trainees.permanent.push({ name:'', status:'AVAIL' });
+  renderTraineeEditModal();
+}
+
+function updatePermTrainee(idx, val){
+  S.trainees.permanent[idx].name = val.toUpperCase().trim();
+}
+
+function removePermTrainee(idx){
+  S.trainees.permanent.splice(idx,1);
+  renderTraineeEditModal();
+}
+
+function savePermTrainees(){
+  S.trainees.permanent = S.trainees.permanent.filter(t=>t.name);
+  saveTrainees();
+  closeTraineeEdit();
+  renderAll();
+}
+
+// ═══════════════════════════════════
+// MOC SECTION (shown in LO tab)
+// ═══════════════════════════════════
+function renderMocSection(){
+  const mocStaff = S.staff.filter(s=>isMocStaff(s));
+  const mocBk    = S.backups.moc||[];
+  const avail    = mocStaff.filter(s=>isActive(effAvail(s))).length + mocBk.filter(b=>b.status==='AVAIL').length;
+  const total    = mocStaff.length + mocBk.length;
+
+  return `<div style="margin-top:16px;background:var(--bg);border:1px solid #2A2000;border-radius:var(--r);padding:14px 16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div>
+        <span style="font-family:var(--cond);font-size:11px;font-weight:700;letter-spacing:3px;color:var(--amber)">MOC</span>
+        <span style="font-size:9px;color:var(--txt3);margin-left:8px">not counted in headcount</span>
+      </div>
+      <span style="font-size:10px;color:var(--txt2)">${avail}/${total} AVAIL</span>
+    </div>
+
+    ${total===0?`<div style="font-size:11px;color:var(--txt3);padding:4px 0">No MOC staff detected from roster.</div>`:''}
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:7px;margin-bottom:12px">
+      ${mocStaff.map(s=>{
+        const a=effAvail(s), avl=isActive(a), nm=displayName(s), hasNick=!!S.nicknames[s.id];
+        return `<div style="background:${avl?'#1A1200':'var(--surf)'};border:1px solid ${avl?'var(--amber)':'var(--b)'};border-radius:var(--r);padding:9px 11px;opacity:${avl?1:0.6}">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px">
+            <div style="font-family:var(--cond);font-size:14px;font-weight:700;color:${avl?'var(--amber2)':'var(--txt2)'}">${nm}${hasNick?`<span style="font-size:7px;color:var(--txt3);margin-left:3px">✎</span>`:''}
+            </div>
+            <button onclick="editNickname('${s.id}','${s.fullName}',event)" class="np" title="Edit nickname" style="background:transparent;border:none;color:var(--txt3);font-size:10px;cursor:pointer;padding:0;line-height:1;flex-shrink:0">✎</button>
+          </div>
+          <div style="font-size:9px;color:var(--txt3);margin-bottom:4px">${s.desigCode||s.desig}</div>
+          <span style="display:inline-block;font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 6px;border-radius:3px;border:1px solid;background:${avl?'#1A1200':'var(--bg)'};color:${avl?'var(--amber)':'var(--gray)'};border-color:${avl?'#92400e':'var(--b)'}">
+            ${avl?'AVAIL':a.lbl||'OFF'}
+          </span>
+        </div>`;
+      }).join('')}
+      ${mocBk.map((b,i)=>`<div style="background:${b.status==='AVAIL'?'#1A1200':'var(--surf)'};border:1px solid ${b.status==='AVAIL'?'var(--amber)':'var(--b)'};border-radius:var(--r);padding:9px 11px">
+        <div style="font-family:var(--cond);font-size:14px;font-weight:700;color:${b.status==='AVAIL'?'var(--amber2)':'var(--txt2)'};margin-bottom:4px">
+          ${b.name} <span style="font-size:8px;padding:1px 4px;background:#1C1500;color:var(--amber);border:1px solid #3A2A00;border-radius:2px">BK</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+          <span onclick="toggleMocBk(${i})" style="display:inline-block;font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 6px;border-radius:3px;border:1px solid;cursor:pointer;background:${b.status==='AVAIL'?'#1A1200':'var(--bg)'};color:${b.status==='AVAIL'?'var(--amber)':'var(--gray)'};border-color:${b.status==='AVAIL'?'#92400e':'var(--b)'}">
+            ${b.status==='AVAIL'?'AVAIL':'OFF'}
+          </span>
+          <button onclick="removeMocBk(${i})" class="np" style="background:transparent;border:none;color:var(--txt3);font-size:12px;cursor:pointer;padding:0 2px">✕</button>
+        </div>
+      </div>`).join('')}
+    </div>
+
+    <div class="bk-form np" style="padding-top:10px;border-top:1px solid var(--b)">
+      <span style="font-size:9px;color:var(--txt3);letter-spacing:1px">ADD BACKUP MOC</span>
+      <input type="text" id="moc-bk-name" placeholder="Name" style="width:130px" onkeydown="if(event.key==='Enter')addMocBackup()">
+      <button class="btn btn-amber btn-sm np" onclick="addMocBackup()">+ ADD</button>
+    </div>
+  </div>`;
+}
+
+function addMocBackup(){
+  const inp=document.getElementById('moc-bk-name');
+  const name=(inp?.value||'').trim().toUpperCase();
+  if(!name) return;
+  if(!S.backups.moc) S.backups.moc=[];
+  S.backups.moc.push({name,status:'AVAIL'});
+  inp.value='';
+  renderAll();
+}
+function toggleMocBk(i){ S.backups.moc[i].status=S.backups.moc[i].status==='AVAIL'?'OFF':'AVAIL'; renderAll(); }
+function removeMocBk(i){ S.backups.moc.splice(i,1); renderAll(); }
+
+let swapState = { step:1, person1:null, mode:null, focusDept:null };
+
+function openSwapModal(focusDept){
+  swapState = { step:1, person1:null, mode:null, focusDept: focusDept||null };
+  renderSwapModal();
+  document.getElementById('swap-ov').classList.add('show');
+}
+function closeSwapModal(){ document.getElementById('swap-ov').classList.remove('show'); }
+
+function renderSwapModal(){
+  const el = document.getElementById('swap-body');
+  const DEPT_LABELS = { LO:'LINE OPS', IRR:'IRREGULARITIES', WO:'WORK ORDER', CIM:'CABIN (CIM)' };
+  const DEPTS_LIST  = ['LO','IRR','WO','CIM'];
+
+  // Active swaps/transfers list
+  const activeHTML = [
+    ...S.swaps.map((sw,i)=>{
+      const p1=S.staff.find(s=>s.id===sw.id1), p2=S.staff.find(s=>s.id===sw.id2);
+      if(!p1||!p2) return '';
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--bg);border:1px solid var(--b);border-radius:4px;margin-bottom:5px">
+        <span style="font-size:11px;color:var(--txt)">${displayName(p1)} <span style="color:var(--txt2)">(${p1.team})</span> ⇄ ${p2.shortName} <span style="color:var(--txt2)">(${p2.team})</span></span>
+        <button class="btn btn-red btn-sm" onclick="removeSwap(${i})">✕</button>
+      </div>`;
+    }),
+    ...S.transfers.map((tr,i)=>{
+      const p=S.staff.find(s=>s.id===tr.id);
+      if(!p) return '';
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--bg);border:1px solid var(--b);border-radius:4px;margin-bottom:5px">
+        <span style="font-size:11px;color:var(--txt)">${displayName(p)} <span style="color:var(--txt2)">(${p.team})</span> → <span style="color:var(--teal)">${tr.toDept}</span> <span style="font-size:9px;color:var(--txt3)">[TRANSFER]</span></span>
+        <button class="btn btn-red btn-sm" onclick="removeTransfer(${i})">✕</button>
+      </div>`;
+    })
+  ].join('');
+
+  const isTechAvail = s => s.category==='TECH' && isActive(effAvail(s)) && !isTransferred(s);
+
+  if(swapState.step===1){
+    // Step 1: pick a person — TECH + available only
+    const staffByDept = {};
+    DEPTS_LIST.forEach(d=>{ staffByDept[d] = S.staff.filter(s=>effectiveDept(s)===d && isTechAvail(s)); });
+
+    el.innerHTML=`
+      ${activeHTML?`<div style="margin-bottom:16px">
+        <div style="font-size:9px;color:var(--amber);letter-spacing:2px;font-weight:700;margin-bottom:8px">ACTIVE SWAPS & TRANSFERS</div>
+        ${activeHTML}
+      </div>`:''}
+      <div style="font-size:9px;color:var(--amber);letter-spacing:2px;font-weight:700;margin-bottom:4px">STEP 1 — SELECT TECH TO SWAP OR TRANSFER</div>
+      <div style="font-size:10px;color:var(--txt2);margin-bottom:12px">Only showing available TECH staff</div>
+      ${DEPTS_LIST.map(dept=>{
+        const members = staffByDept[dept]; if(!members.length) return '';
+        return `<div style="margin-bottom:12px">
+          <div style="font-size:9px;color:var(--txt2);letter-spacing:2px;margin-bottom:6px">${DEPT_LABELS[dept]||dept}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px">
+            ${members.map(s=>`<button onclick="swapPickPerson1('${s.id}')"
+              style="background:${swapState.person1?.id===s.id?'var(--amber)':'var(--surf2)'};color:${swapState.person1?.id===s.id?'#000':'var(--txt)'};border:1px solid ${swapState.person1?.id===s.id?'var(--amber)':'var(--b2)'};border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:var(--mono)">
+              ${displayName(s)}
+            </button>`).join('')}
+          </div>
+        </div>`;
+      }).join('')}`;
+  }
+  else if(swapState.step===2){
+    // Step 2: pick mode
+    const p = swapState.person1;
+    el.innerHTML=`
+      <div style="font-size:9px;color:var(--amber);letter-spacing:2px;font-weight:700;margin-bottom:10px">STEP 2 — CHOOSE ACTION FOR ${displayName(p)}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+        <div onclick="swapPickMode('swap')" style="background:var(--surf2);border:2px solid ${swapState.mode==='swap'?'var(--amber)':'var(--b)'};border-radius:8px;padding:16px;cursor:pointer;text-align:center">
+          <div style="font-size:20px;margin-bottom:6px">⇄</div>
+          <div style="font-size:12px;font-weight:700;color:var(--txt)">SWAP</div>
+          <div style="font-size:10px;color:var(--txt2);margin-top:4px">Exchange with someone from another dept</div>
+        </div>
+        <div onclick="swapPickMode('transfer')" style="background:var(--surf2);border:2px solid ${swapState.mode==='transfer'?'var(--amber)':'var(--b)'};border-radius:8px;padding:16px;cursor:pointer;text-align:center">
+          <div style="font-size:20px;margin-bottom:6px">→</div>
+          <div style="font-size:12px;font-weight:700;color:var(--txt)">TRANSFER</div>
+          <div style="font-size:10px;color:var(--txt2);margin-top:4px">Move to another dept (one-way)</div>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="swapBack()">← BACK</button>`;
+  }
+  else if(swapState.step===3 && swapState.mode==='swap'){
+    // Step 3a: pick person to swap WITH — TECH + available from other depts only
+    const p1 = swapState.person1;
+    const others = S.staff.filter(s => effectiveDept(s)!==effectiveDept(p1) && isTechAvail(s));
+    const byDept = {};
+    others.forEach(s=>{ const d=effectiveDept(s); if(!byDept[d]) byDept[d]=[]; byDept[d].push(s); });
+
+    el.innerHTML=`
+      <div style="font-size:9px;color:var(--amber);letter-spacing:2px;font-weight:700;margin-bottom:4px">STEP 3 — PICK TECH TO SWAP WITH ${displayName(p1)}</div>
+      <div style="font-size:10px;color:var(--txt2);margin-bottom:12px">${displayName(p1)} → their dept · they → ${effectiveDept(p1)} · Only showing available TECH</div>
+      ${Object.keys(byDept).length===0?`<div style="color:var(--orange);font-size:11px;padding:12px 0">No available TECH found in other departments.</div>`:''}
+      ${Object.entries(byDept).map(([dept,members])=>`
+        <div style="margin-bottom:12px">
+          <div style="font-size:9px;color:var(--txt2);letter-spacing:2px;margin-bottom:6px">${DEPT_LABELS[dept]||dept}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px">
+            ${members.map(s=>`<button onclick="confirmSwap('${s.id}')"
+              style="background:var(--surf2);color:var(--txt);border:1px solid var(--b2);border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:var(--mono)">
+              ${displayName(s)}
+            </button>`).join('')}
+          </div>
+        </div>`).join('')}
+      <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="swapBack()">← BACK</button>`;
+  }
+  else if(swapState.step===3 && swapState.mode==='transfer'){
+    // Step 3b: pick destination dept
+    const p1  = swapState.person1;
+    const depts = DEPTS_LIST.filter(d=>d!==effectiveDept(p1));
+    el.innerHTML=`
+      <div style="font-size:9px;color:var(--amber);letter-spacing:2px;font-weight:700;margin-bottom:4px">STEP 3 — SELECT DESTINATION FOR ${displayName(p1)}</div>
+      <div style="font-size:10px;color:var(--txt2);margin-bottom:12px">${displayName(p1)} will appear in the new dept with a "FROM ${p1.team}" tag</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px">
+        ${depts.map(d=>`<button onclick="confirmTransfer('${d}')"
+          style="background:var(--surf2);color:var(--txt);border:1px solid var(--b2);border-radius:6px;padding:12px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--mono);letter-spacing:1px">
+          ${DEPT_LABELS[d]||d}
+        </button>`).join('')}
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="swapBack()">← BACK</button>`;
+  }
+}
+
+function swapPickPerson1(id){
+  swapState.person1 = S.staff.find(s=>s.id===id);
+  swapState.step = 2;
+  renderSwapModal();
+}
+function swapPickMode(mode){
+  swapState.mode = mode;
+  swapState.step = 3;
+  renderSwapModal();
+}
+function swapBack(){
+  swapState.step = Math.max(1, swapState.step-1);
+  if(swapState.step===1){ swapState.person1=null; swapState.mode=null; }
+  renderSwapModal();
+}
+function confirmSwap(id2){
+  const id1 = swapState.person1.id;
+  // Remove any existing swap/transfer for these two
+  S.swaps     = S.swaps.filter(sw=>sw.id1!==id1&&sw.id2!==id1&&sw.id1!==id2&&sw.id2!==id2);
+  S.transfers = S.transfers.filter(t=>t.id!==id1&&t.id!==id2);
+  S.swaps.push({ id1, id2 });
+  closeSwapModal();
+  renderAll();
+}
+function confirmTransfer(toDept){
+  const id = swapState.person1.id;
+  S.swaps     = S.swaps.filter(sw=>sw.id1!==id&&sw.id2!==id);
+  S.transfers = S.transfers.filter(t=>t.id!==id);
+  S.transfers.push({ id, toDept });
+  closeSwapModal();
+  renderAll();
+}
+function removeSwap(i){ S.swaps.splice(i,1); renderSwapModal(); renderAll(); }
+function removeTransfer(i){ S.transfers.splice(i,1); renderSwapModal(); renderAll(); }
+
+// ═══════════════════════════════════
+function showDebug(){
+  const d = S.debug;
+  if(!d.totalRows){ alert('Load roster first, then click 🔍 DEBUG.'); return; }
+  const colStr = d.cols ? Object.entries(d.cols).map(([k,v])=>`${k}=col[${v}]`).join('  ') : 'not detected';
+  const sampleHTML = (d.sample||[]).map(s=>`
+    <tr style="border-bottom:1px solid #1E2A38">
+      <td style="padding:3px 8px;color:#60A5FA">${s.team}</td>
+      <td style="padding:3px 8px;color:var(--txt);font-size:10px">${s.id}</td>
+      <td style="padding:3px 8px;color:var(--txt);font-size:10px">${s.name.substring(0,22)}</td>
+      <td style="padding:3px 8px;color:${s.shift==='C'?'#10B981':'#F87171'};font-weight:700">${s.shift||'(empty)'}</td>
+      <td style="padding:3px 8px;color:var(--txt3);font-size:9px">read from col[${s.colShift}]</td>
+    </tr>`).join('');
+
+  document.body.insertAdjacentHTML('beforeend',`<div id="dbg-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;overflow-y:auto;padding:24px;font-family:'Inter',sans-serif">
+    <div style="max-width:820px;margin:0 auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div style="color:#F59E0B;font-size:16px;font-weight:700;letter-spacing:2px">🔍 DEBUG PANEL</div>
+        <button onclick="document.getElementById('dbg-overlay').remove()" style="background:var(--surf3);border:1px solid var(--b2);color:var(--txt);padding:6px 16px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px">✕ CLOSE</button>
+      </div>
+
+      <div style="background:var(--surf);border:1px solid var(--b);border-radius:8px;padding:16px;margin-bottom:12px">
+        <div style="color:#F59E0B;font-size:10px;letter-spacing:2px;margin-bottom:10px">SHEET FETCH RESULT</div>
+        <div style="font-size:11px;color:var(--txt);line-height:2.2">
+          Total rows received from API: <b style="color:#10B981">${d.totalRows}</b><br>
+          Date column: <b style="color:${d.dateCol>=0?'#10B981':'#F87171'}">${d.dateCol>=0?`col[${d.dateCol}] found at row ${d.dateRow}`:'❌ NOT FOUND'}</b><br>
+          Date cell value: <b style="color:#FBBF24">"${d.dateHeaderCell}"</b><br>
+          Prev cell (col-1): <b style="color:var(--txt3)">"${d.dateAdjacentPrev}"</b><br>
+          Next cell (col+1): <b style="color:var(--txt3)">"${d.dateAdjacentNext}"</b><br>
+          Sample schedule values: <b style="color:#FBBF24">${(d.sampleSchedVals||[]).map(s=>`${s.name}="${s.schedVal}"`).join(', ')}</b><br>
+          Column detection: <b style="color:${d.headerFound?'#10B981':'#FB923C'}">${d.headerFound?`✓ id=col[${d.cols?.id}] name=col[${d.cols?.name}]`:'⚠ fallback'}</b><br>
+          Sections detected: <b style="color:${Object.keys(d.sections||{}).length>0?'#10B981':'#F87171'}">${Object.entries(d.sections||{}).map(([k,v])=>`${k}(${v.count} @ row ${v.startRow})`).join(' · ')||'NONE'}</b><br>
+          Total Shift C staff loaded: <b style="color:${d.staffFound>0?'#10B981':'#F87171'}">${d.staffFound}</b><br>
+          Cross-shift backups detected: <b style="color:${d.xsBkFound>0?'#10B981':'#FB923C'}">${d.xsBkFound||0}</b>
+          ${d.xsBkSamples?.length?`<br><span style="font-size:9px;color:var(--txt3)">${d.xsBkSamples.map(s=>`${s.name} → ${s.team} (SHIFT ${s.fromShift}) val="${s.schedVal}"`).join(' · ')}</span>`:''}
+        </div>
+      </div>
+
+      <div style="background:var(--surf);border:1px solid var(--b);border-radius:8px;padding:16px;margin-bottom:12px">
+        <div style="color:#F59E0B;font-size:10px;letter-spacing:2px;margin-bottom:8px">ROW 5 — COLUMNS 38–55 (looking for end-of-month date cells)</div>
+        <div style="font-size:10px;color:var(--txt3);line-height:2">
+          ${(d.row5cols||[]).map(c=>`col[${c.col}]: <span style="color:#FBBF24">"${c.val}"</span>`).join(' &nbsp;|&nbsp; ')||'(no values found in this range)'}
+        </div>
+      </div>
+        <div style="font-size:10px;color:var(--txt3);line-height:2;word-break:break-all">${colStr}</div>
+      </div>
+
+      <div style="background:var(--surf);border:1px solid var(--b);border-radius:8px;padding:16px;margin-bottom:12px">
+        <div style="color:#F59E0B;font-size:10px;letter-spacing:2px;margin-bottom:8px">
+          SAMPLE ROWS — LO/IRR/WO STAFF (ALL SHIFTS)
+          <span style="color:var(--txt3);font-weight:400"> · Shift C shown in green · Others in red</span>
+        </div>
+        ${d.sample&&d.sample.length?`<table style="width:100%;border-collapse:collapse;font-size:11px">
+          <thead><tr style="border-bottom:1px solid #28384A">
+            <th style="padding:5px 8px;color:var(--txt3);text-align:left;font-weight:400">TEAM</th>
+            <th style="padding:5px 8px;color:var(--txt3);text-align:left;font-weight:400">STAFF ID</th>
+            <th style="padding:5px 8px;color:var(--txt3);text-align:left;font-weight:400">NAME</th>
+            <th style="padding:5px 8px;color:var(--txt3);text-align:left;font-weight:400">SHIFT VALUE</th>
+            <th style="padding:5px 8px;color:var(--txt3);text-align:left;font-weight:400">SOURCE</th>
+          </tr></thead>
+          <tbody>${sampleHTML}</tbody>
+        </table>
+        ${d.sample.filter(s=>s.shift==='C').length===0?
+          `<div style="color:#F87171;font-size:11px;margin-top:12px;padding:10px;background:#1A0606;border-radius:4px">
+            ⚠ No rows have Shift = "C". The SHIFT VALUE column above shows what values are actually in your sheet.<br>
+            Screenshot this and share — I'll fix the parser to match.
+          </div>`:''}`
+        :`<div style="color:#FB923C;font-size:11px">No LO/IRR/WO rows found at all. The team column might be at the wrong index (currently col[${d.cols?.team}]).</div>`}
+      </div>
+
+      <div style="background:var(--surf);border:1px solid var(--b);border-radius:8px;padding:16px;margin-bottom:12px">
+        <div style="color:#F59E0B;font-size:10px;letter-spacing:2px;margin-bottom:8px">OTHER SHIFT ROWS — SCHEDULE VALUES ON SELECTED DATE</div>
+        ${d.otherShiftSamples?.length?`<table style="width:100%;border-collapse:collapse;font-size:10px">
+          <thead><tr style="border-bottom:1px solid #28384A">
+            <th style="padding:4px 8px;color:var(--txt3);text-align:left;font-weight:400">SHIFT</th>
+            <th style="padding:4px 8px;color:var(--txt3);text-align:left;font-weight:400">STAFF ID</th>
+            <th style="padding:4px 8px;color:var(--txt3);text-align:left;font-weight:400">NAME</th>
+            <th style="padding:4px 8px;color:var(--txt3);text-align:left;font-weight:400">SCHEDULE VALUE</th>
+          </tr></thead>
+          <tbody>${(d.otherShiftSamples||[]).map(s=>`<tr style="border-bottom:1px solid #1E2A38">
+            <td style="padding:3px 8px;color:#60A5FA">${s.shift}</td>
+            <td style="padding:3px 8px;color:var(--txt3);font-size:9px">${s.id}</td>
+            <td style="padding:3px 8px;color:var(--txt);font-size:9px">${s.name.substring(0,20)}</td>
+            <td style="padding:3px 8px;color:#FBBF24;font-weight:700">${s.schedVal}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+        <div style="color:var(--txt3);font-size:10px;margin-top:8px">Share a screenshot of this — the SCHEDULE VALUE column shows the exact codes in your sheet so I can match them precisely.</div>`
+        :`<div style="color:#FB923C;font-size:11px">No other-shift staff rows found. The section headers may not match "SHIFT A/B/D" pattern.</div>`}
+      </div>
+        <div style="font-size:11px;color:var(--txt3);line-height:2">
+          1. Screenshot this panel and share it — I can fix the column detection from this info.<br>
+          2. If SHIFT VALUE is blank or shows something other than A/B/C/D — the shift column is at the wrong index.<br>
+          3. If no LO/IRR/WO rows appear — the team column is wrong.<br>
+          4. If Date = NOT FOUND — check that the date exists in tab <b style="color:var(--txt)">"${S.cfg.tab}"</b> and month matches.
+        </div>
+      </div>
+    </div>
+  </div>`);
+}
+</script>
+</body>
+</html>
