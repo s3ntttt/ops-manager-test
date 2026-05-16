@@ -73,7 +73,12 @@ app.post('/api/auth', authLimiter, (req, res) => {
   }
 
   // Fresh login — validate the access code
-  if (!code || code.trim().toUpperCase() !== process.env.ACCESS_CODE.trim().toUpperCase()) {
+  const expectedCode = (process.env.ACCESS_CODE || '').trim().toUpperCase();
+  if (!expectedCode) {
+    console.error('ACCESS_CODE is not set in environment variables!');
+    return res.status(500).json({ error: 'Server misconfiguration: ACCESS_CODE not set.' });
+  }
+  if (!code || code.trim().toUpperCase() !== expectedCode) {
     return res.status(401).json({ error: 'Incorrect access code.' });
   }
 

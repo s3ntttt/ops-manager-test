@@ -1218,7 +1218,6 @@ async function loadRoster(){
       towerSlots:[{a:'',b:'',backup:''},{a:'',b:'',backup:''},{a:'',b:'',backup:''},{a:'',b:'',backup:''}]
     };
     S.loaded = true;
-    const group = document.getElementById('shift-group-sel')?.value||'';
     setSt(`${staff.length} staff · ${dateStr} · Shift ${group} ${shift}`);
     hideLoading();
     renderAll();
