@@ -246,7 +246,7 @@ select option{background:var(--surf2)}
 <!-- MAIN APP -->
 <!-- HEADER -->
 <div id="hdr">
-  <div class="logo">OPS MGR <em>· SHIFT C</em></div>
+  <div class="logo">OPS MGR <em id="logo-shift">· SHIFT C</em></div>
   <div style="display:flex;align-items:center;gap:10px">
     <span id="save-ts" style="font-size:10px;color:var(--txt3)"></span>
     <span id="fetch-ts" style="font-size:10px;color:var(--txt3)"></span>
@@ -262,7 +262,7 @@ select option{background:var(--surf2)}
   </div>
   <div style="display:flex;align-items:center;gap:6px">
     <span class="clbl">SHIFT</span>
-    <select id="shift-group-sel" onchange="if(S.loaded){loadRoster();}" style="width:52px">
+    <select id="shift-group-sel" onchange="updateLogoShift();if(S.loaded){loadRoster();}" style="width:52px">
       <option value="A">A</option>
       <option value="B">B</option>
       <option value="C">C</option>
@@ -341,18 +341,6 @@ select option{background:var(--surf2)}
     <div class="modal-title">🚫 HIDDEN STAFF</div>
     <div style="font-size:10px;color:var(--txt2);margin-bottom:10px">Staff permanently hidden from all lists. Click RESTORE to bring them back.</div>
     <div id="excl-body"></div>
-  </div>
-</div>
-
-<!-- EXCLUSIONS MODAL -->
-<div class="overlay" id="excl-ov">
-  <div class="modal" style="max-width:400px">
-    <button class="modal-close" onclick="closeExclusionsModal()">✕</button>
-    <div class="modal-title">🚫 HIDDEN STAFF</div>
-    <div id="excl-body"></div>
-    <div style="margin-top:12px">
-      <button class="btn btn-ghost" onclick="closeExclusionsModal()">CLOSE</button>
-    </div>
   </div>
 </div>
 
@@ -591,13 +579,13 @@ document.addEventListener('visibilitychange', ()=>{
 async function migrateLegacyData(){
   if(!fbReady) return;
   // Old fbKey() used underscores instead of slash: shifts_DATE_SHIFT
-  // New fbKey() uses: shifts/DATE_SHIFT
-  // Migrate any data found at old paths to new paths
+  // New fbKey() uses: shifts/DATE_GROUP_SHIFT (includes group letter)
   const date=document.getElementById('dp')?.value||'';
   const shift=document.getElementById('shift-sel')?.value||'';
+  const group=(document.getElementById('shift-group-sel')?.value||'C').toUpperCase();
   if(!date||!shift) return;
   const oldKey=`shifts_${date}_${shift}`;
-  const newKey=`shifts/${date}_${shift}`;
+  const newKey=`shifts/${date}_${group}_${shift}`;
   try {
     const snap=await fbDb.ref(oldKey).get();
     if(snap.exists()){
@@ -616,15 +604,13 @@ function saveLastDate(){
   const d =document.getElementById('dp')?.value;
   const sh=document.getElementById('shift-sel')?.value;
   const sg=document.getElementById('shift-group-sel')?.value;
-  if(d&&sh) fbDb.ref('settings/lastDate').set({date:d,shift:sh,shiftGroup:sg||'A'}).catch(()=>{});
+  if(d&&sh) fbDb.ref('settings/lastDate').set({date:d,shift:sh,shiftGroup:sg||'C'}).catch(()=>{});
 }
 
 function fbSave(){
   if(!fbReady||!S.loaded) return;
-  const date=document.getElementById('dp')?.value||'';
-  const shift=document.getElementById('shift-sel')?.value||'';
-  if(!date||!shift) return;
-  const key='shifts/'+date+'_'+shift;
+  const key=fbKey();
+  if(!key) return;
   const payload={_savedAt:Date.now(),_key:key};
   SAVE_FIELDS.forEach(f=>{
     try{ payload[f]=JSON.parse(JSON.stringify(S[f])); }catch(e){}
@@ -637,10 +623,8 @@ function fbSave(){
 
 async function fbLoad(){
   if(!fbReady) return;
-  const date=document.getElementById('dp')?.value||'';
-  const shift=document.getElementById('shift-sel')?.value||'';
-  if(!date||!shift) return;
-  const key='shifts/'+date+'_'+shift;
+  const key=fbKey();
+  if(!key) return;
   const el=document.getElementById('save-ts');
   if(el) el.textContent='☁ Loading…';
   try{
@@ -1033,12 +1017,30 @@ async function loadTrainees(){
 }
 
 function open_setup(){
-  document.getElementById('su-key').value = S.cfg.key;
+  const keyEl = document.getElementById('su-key');
+  if(keyEl) keyEl.value = S.cfg.key||'';
   document.getElementById('su-sid').value = S.cfg.sid;
   document.getElementById('su-tab').value = S.cfg.tab;
   document.getElementById('setup-ov').classList.add('show');
 }
 function close_setup(){ document.getElementById('setup-ov').classList.remove('show'); }
+
+// ── Dynamic header shift label ──
+function updateLogoShift(){
+  const g = document.getElementById('shift-group-sel')?.value || 'C';
+  const el = document.getElementById('logo-shift');
+  if(el) el.textContent = '· SHIFT '+g;
+}
+
+// ── Alias so both open/closeExclusionsModal and open/closeExclModal work ──
+function closeExclusionsModal(){ closeExclModal(); }
+
+// ── Global Escape key closes any open overlay ──
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Escape') return;
+  document.querySelectorAll('.overlay.show').forEach(ov => ov.classList.remove('show'));
+});
+
 function openSettings(){
   document.getElementById('cfg-sid').value = S.cfg.sid;
   document.getElementById('cfg-tab').value = S.cfg.tab;
@@ -1629,7 +1631,7 @@ function shortify(name){
 
 function catOf(dc, desig){
   const dcc = dc.replace(/\s+/g,'').toUpperCase();
-  if(dc==='LT'||desig.includes('GROUP LEADER')) return 'GL';
+  if(dcc==='LT'||desig.includes('GROUP LEADER')) return 'GL';
   if(dc==='LAT') return 'LAT';
   // Check TECH codes FIRST before any (B1)/(B2) text matching
   if(['LATNCS','LAENCS','LAENCSB1','LAENCSB2'].includes(dcc)) return 'TECH';
@@ -2045,7 +2047,7 @@ function renderSummary(){
       <div style="background:#1A0A0A;border:1px solid #3A0D0D;border-radius:8px;padding:16px 20px">
         <div style="color:var(--red);font-weight:700;font-size:13px;margin-bottom:6px">⚠ Summary render error</div>
         <div style="color:var(--orange);font-size:11px;margin-bottom:8px">${err.message}</div>
-        <button class="btn btn-amber btn-sm" onclick="_renderSummaryInner(document.getElementById('cs'))">⟳ RETRY</button>
+        <button class="btn btn-amber btn-sm" onclick="renderSummary()">⟳ RETRY</button>
       </div></div>`;
     console.error('renderSummary crash:', err);
   }
@@ -2581,7 +2583,7 @@ function _renderSummaryInner(el){
     <div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <div>
         <div style="font-family:var(--cond);font-size:20px;font-weight:700;letter-spacing:3px;color:var(--amber)">${dateStr} · ${shift}</div>
-        <div style="font-size:9px;color:var(--txt2);margin-top:1px;letter-spacing:1px">SHIFT C · SUMMARY OPS</div>
+        <div style="font-size:9px;color:var(--txt2);margin-top:1px;letter-spacing:1px">SHIFT ${document.getElementById('shift-group-sel')?.value||'C'} · SUMMARY OPS</div>
       </div>
       <button class="btn btn-amber np" onclick="openRolesModal()">✎ ASSIGN ROLES</button>
       <button class="btn btn-ghost np" onclick="openAllocModal()" style="font-size:11px">📋 PASTE ALLOCATION</button>

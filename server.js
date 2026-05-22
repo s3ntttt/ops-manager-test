@@ -18,7 +18,26 @@ const app  = express();
 const PORT = process.env.PORT || 3000;
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
-app.use(cors());
+
+// CORS — allow same-origin (Railway serves frontend from same domain) + localhost dev.
+// Add extra origins via ALLOWED_ORIGINS env var (comma-separated) if ever needed.
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : [];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // No origin = same-origin request (or curl) — allow
+    if (!origin) return callback(null, true);
+    // Any localhost port — allow for local dev
+    if (/^http:\/\/localhost(:\d+)?$/.test(origin)) return callback(null, true);
+    // Explicitly whitelisted origins
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true
+}));
+
 app.use(express.json());
 
 // Serve the frontend from the "public" subfolder (index.html lives there)
@@ -29,6 +48,13 @@ const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 20,                   // max 20 attempts per window
   message: { error: 'Too many attempts, please try again later.' }
+});
+
+// Rate limiter – protects Google Sheets API quota
+const sheetsLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,  // 1 minute window
+  max: 30,                   // max 30 fetches per minute per IP
+  message: { error: 'Too many sheet requests, please slow down.' }
 });
 
 // ─── Auth middleware ──────────────────────────────────────────────────────────
@@ -93,7 +119,7 @@ app.post('/api/auth', authLimiter, (req, res) => {
  * GET /api/sheets?sid=SHEET_ID&tab=TAB_NAME&range=RANGE
  * Proxies Google Sheets API — the API key stays on the server
  */
-app.get('/api/sheets', requireAuth, async (req, res) => {
+app.get('/api/sheets', sheetsLimiter, requireAuth, async (req, res) => {
   const { sid, tab, range } = req.query;
   if (!sid || !tab) return res.status(400).json({ error: 'Missing sid or tab' });
 
