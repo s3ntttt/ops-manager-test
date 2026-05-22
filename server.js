@@ -19,24 +19,10 @@ const PORT = process.env.PORT || 3000;
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
-// CORS — allow same-origin (Railway serves frontend from same domain) + localhost dev.
-// Add extra origins via ALLOWED_ORIGINS env var (comma-separated) if ever needed.
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
-  : [];
-
-app.use(cors({
-  origin: (origin, callback) => {
-    // No origin = same-origin request (or curl) — allow
-    if (!origin) return callback(null, true);
-    // Any localhost port — allow for local dev
-    if (/^http:\/\/localhost(:\d+)?$/.test(origin)) return callback(null, true);
-    // Explicitly whitelisted origins
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true
-}));
+// CORS — open to all origins. Security is enforced by JWT on every API route.
+// The frontend and backend share the same Railway domain, so restricting CORS
+// by origin would block same-domain POST requests (browsers send Origin on POST).
+app.use(cors());
 
 app.use(express.json());
 
