@@ -2928,14 +2928,18 @@ function matchStaff(name){
   const n=name.trim().toUpperCase().replace(/^TRAINEE\s+/,'');
   if(!n) return null;
 
-  // 1. Search S.staff — exact displayName
+  // 1. Exact displayName (nickname takes priority)
   let found=S.staff.find(s=>displayName(s).toUpperCase()===n);
   // 2. Exact shortName
   if(!found) found=S.staff.find(s=>s.shortName.toUpperCase()===n);
-  // 3. displayName starts with n, or n starts with displayName (min 3 chars to avoid single-letter nickname false matches)
-  if(!found) found=S.staff.find(s=>{const dn=displayName(s).toUpperCase();return dn.length>=3&&(dn.startsWith(n)||n.startsWith(dn));});
-  // 4. shortName starts with n (min 3 chars)
-  if(!found) found=S.staff.find(s=>s.shortName.toUpperCase().length>=3&&(s.shortName.toUpperCase().startsWith(n)||n.startsWith(s.shortName.toUpperCase())));
+  // 2.5. Exact fullName — catches full names like "AMIR SYAMIM" when nickname is set to "SYAMIM"
+  if(!found) found=S.staff.find(s=>(s.fullName||'').toUpperCase()===n);
+  // 3. Unambiguous prefix match on displayName (min 3 chars) — only matches if exactly ONE staff qualifies
+  if(!found){const m=S.staff.filter(s=>{const dn=displayName(s).toUpperCase();return dn.length>=3&&(dn.startsWith(n)||n.startsWith(dn));});if(m.length===1)found=m[0];}
+  // 4. Unambiguous prefix match on shortName (min 3 chars)
+  if(!found){const m=S.staff.filter(s=>s.shortName.toUpperCase().length>=3&&(s.shortName.toUpperCase().startsWith(n)||n.startsWith(s.shortName.toUpperCase())));if(m.length===1)found=m[0];}
+  // 4.5. Unambiguous prefix match on fullName (min 3 chars)
+  if(!found){const m=S.staff.filter(s=>(s.fullName||'').toUpperCase().length>=3&&((s.fullName||'').toUpperCase().startsWith(n)||n.startsWith((s.fullName||'').toUpperCase())));if(m.length===1)found=m[0];}
   if(found) return found;
 
   // 5. Search towers — exact then startsWith
@@ -3858,15 +3862,4 @@ function showDebug(){
         :`<div style="color:#FB923C;font-size:11px">No other-shift staff rows found. The section headers may not match "SHIFT A/B/D" pattern.</div>`}
       </div>
         <div style="font-size:11px;color:var(--txt3);line-height:2">
-          1. Screenshot this panel and share it — I can fix the column detection from this info.<br>
-          2. If SHIFT VALUE is blank or shows something other than A/B/C/D — the shift column is at the wrong index.<br>
-          3. If no LO/IRR/WO rows appear — the team column is wrong.<br>
-          4. If Date = NOT FOUND — check that the date exists in tab <b style="color:var(--txt)">"${S.cfg.tab}"</b> and month matches.
-        </div>
-      </div>
-    </div>
-  </div>`);
-}
-</script>
-</body>
-</html>
+         
