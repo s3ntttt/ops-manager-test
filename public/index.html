@@ -1735,7 +1735,7 @@ function effAvail(s){
   return s.avail||{st:'OFF',lbl:'?',cls:'off',badge:'bof',raw:'',half:false};
 }
 
-function isActive(a){ return ['WORKING','STANDBY','BACKUP_SHIFT'].includes(a.st); }
+function isActive(a){ return ['WORKING','BACKUP_SHIFT'].includes(a.st); }
 
 // ═══════════════════════════════════
 // RENDER
@@ -2121,7 +2121,7 @@ function _renderSummaryInner(el){
   const xsBk = S.staff.filter(s=>s.isBackup&&isActive(effAvail(s)));
 
   const bycat = (teamKey, cat, manualBk=[]) => {
-    const isOnShift = s => { const a=effAvail(s); if(a.st==='WORKING'||a.st==='STANDBY'||a.st==='BACKUP_SHIFT') return true; if(S.overrides[s.id]) return false; const raw=(s.schedVal||'').toUpperCase().trim(); return raw.startsWith(shift.toUpperCase()); };
+    const isOnShift = s => { const a=effAvail(s); if(a.st==='WORKING'||a.st==='BACKUP_SHIFT') return true; if(S.overrides[s.id]) return false; const raw=(s.schedVal||'').toUpperCase().trim(); return raw.startsWith(shift.toUpperCase()); };
     const own = S.staff.filter(s=>!s.isBackup&&effectiveDept(s)===teamKey&&s.category===cat&&isOnShift(s));
     const xs  = xsBk.filter(s=>effectiveDept(s)===teamKey&&s.category===cat);
     const mb  = manualBk.filter(b=>normCat(b.pos)===cat&&!b.mcEl);
@@ -2280,7 +2280,7 @@ function _renderSummaryInner(el){
     const statusLabel=st=>({'LEAVE':'AL/OFF','OFF':'AL/OFF','ABSENT':'MC/EL',
       'COURSE':'COURSE','TASK':'TASK','FLYING':'FLYING'}[st]||st||'UNAVAILABLE');
 
-    const isUnavail=s=>{ const a=effAvail(s); return a.st!=='WORKING'&&a.st!=='STANDBY'&&a.st!=='BACKUP_SHIFT'; };
+    const isUnavail=s=>{ const a=effAvail(s); return a.st!=='WORKING'&&a.st!=='BACKUP_SHIFT'; };
     const findStaff=name=>S.staff.find(s=>displayName(s)===name||s.shortName===name);
 
     // 1. Direct role assignment conflicts
@@ -2337,7 +2337,7 @@ function _renderSummaryInner(el){
       });
     });
 
-    const isOnShiftFn=s=>{const a=effAvail(s);return a.st==='WORKING'||a.st==='STANDBY'||a.st==='BACKUP_SHIFT';};
+    const isOnShiftFn=s=>{const a=effAvail(s);return a.st==='WORKING'||a.st==='BACKUP_SHIFT';};
     const assignedNames=new Set(roleEntries.map(e=>e.name));
 
     if(!conflicts.length) return '';
@@ -2766,7 +2766,7 @@ function openActingGLModal(team, key){
   document.getElementById('actgl-title').textContent=`✎ ACTING GL — ${team}`;
   const current=S.actingGL[key]||'';
   // Get all on-shift staff for this team (any category)
-  const isOnShiftFn=s=>{const a=effAvail(s);if(a.st==='WORKING'||a.st==='STANDBY')return true;if(S.overrides[s.id])return false;const raw=(s.schedVal||'').toUpperCase().trim();const _sh=document.getElementById('shift-sel').value.toUpperCase();return raw.startsWith(_sh);};
+  const isOnShiftFn=s=>{const a=effAvail(s);if(a.st==='WORKING')return true;if(S.overrides[s.id])return false;const raw=(s.schedVal||'').toUpperCase().trim();const _sh=document.getElementById('shift-sel').value.toUpperCase();return raw.startsWith(_sh);};
   const candidates=S.staff.filter(s=>effectiveDept(s)===team&&isOnShiftFn(s));
 
   let html=`<div style="font-size:10px;color:var(--txt2);margin-bottom:12px">Select a staff member to appoint as Acting GL for ${team}. This overrides the auto-detected GL until cleared.</div>`;
@@ -2829,7 +2829,7 @@ function generateBriefingText(){
   const mocNames=S.staff.filter(s=>isMocStaff(s)&&isActive(effAvail(s))).map(s=>displayName(s)).join(' / ')||'—';
 
   // Certifiers — all on-shift
-  const isOnShift=s=>{const a=effAvail(s);if(a.st==='WORKING'||a.st==='STANDBY'||a.st==='BACKUP_SHIFT')return true;if(S.overrides[s.id])return false;const raw=(s.schedVal||'').toUpperCase().trim();return raw.startsWith(shift.toUpperCase());};
+  const isOnShift=s=>{const a=effAvail(s);if(a.st==='WORKING'||a.st==='BACKUP_SHIFT')return true;if(S.overrides[s.id])return false;const raw=(s.schedVal||'').toUpperCase().trim();return raw.startsWith(shift.toUpperCase());};
   const xsBk=S.staff.filter(s=>s.isBackup&&isActive(effAvail(s)));
   const byCat=(team,cat)=>{
     const dk={LO:'lo',IRR:'irreg',WO:'wo',CIM:'cim'}[team]||'lo';
@@ -3108,7 +3108,7 @@ function renderAllocPreview(parsed){
   const notFound=allNames.filter(n=>!matchStaff(n));
 
   if(warnings.length){
-    const isOnShiftFn=s=>{const a=effAvail(s);if(a.st==='WORKING'||a.st==='STANDBY'||a.st==='BACKUP_SHIFT')return true;if(S.overrides[s.id])return false;const raw=(s.schedVal||'').toUpperCase().trim();const _sh=document.getElementById('shift-sel').value.toUpperCase();return raw.startsWith(_sh);};
+    const isOnShiftFn=s=>{const a=effAvail(s);if(a.st==='WORKING'||a.st==='BACKUP_SHIFT')return true;if(S.overrides[s.id])return false;const raw=(s.schedVal||'').toUpperCase().trim();const _sh=document.getElementById('shift-sel').value.toUpperCase();return raw.startsWith(_sh);};
     const allocSet=new Set(allNames.map(n=>{const s=matchStaff(n);return s?resolveDisplayName(s):n;}));
     const irrPool=S.staff.filter(s=>effectiveDept(s)==='IRR'&&s.category==='TECH'&&isOnShiftFn(s)&&!allocSet.has(displayName(s)));
 
@@ -3212,8 +3212,8 @@ function renderRolesModal(){
   const r=S.roles;
 
   // Build pools fresh from S.staff (not relying on renderSummary locals)
-  // Include WORKING + STANDBY + COURSE/TASK staff — they're physically on shift
-  const isOnShift = s => { const a=effAvail(s); if(a.st==='WORKING'||a.st==='STANDBY'||a.st==='BACKUP_SHIFT') return true; if(S.overrides[s.id]) return false; const raw=(s.schedVal||'').toUpperCase().trim(); const _sh=document.getElementById('shift-sel').value.toUpperCase(); return raw.startsWith(_sh); };
+  // Include WORKING + BACKUP_SHIFT staff — STBY is treated as OFF (not counted)
+  const isOnShift = s => { const a=effAvail(s); if(a.st==='WORKING'||a.st==='BACKUP_SHIFT') return true; if(S.overrides[s.id]) return false; const raw=(s.schedVal||'').toUpperCase().trim(); const _sh=document.getElementById('shift-sel').value.toUpperCase(); return raw.startsWith(_sh); };
   const irTechAll = S.staff.filter(s=>effectiveDept(s)==='IRR'&&s.category==='TECH'&&isOnShift(s));
   const irPool=[
     ...irTechAll.map(s=>displayName(s)),
