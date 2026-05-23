@@ -661,7 +661,7 @@ async function loadLastDate(){
       const sg=document.getElementById('shift-group-sel');
       if(dp&&date) dp.value=date;
       if(ss&&shift) ss.value=shift;
-      if(sg&&shiftGroup) sg.value=shiftGroup;
+      if(sg&&shiftGroup){ sg.value=shiftGroup; updateLogoShift(); }
     }
   } catch(e){}
 }
@@ -1956,7 +1956,7 @@ function cardHTML(s, viewingDept){
       <div style="display:flex;gap:3px;flex-shrink:0">
         <button onclick="setStatus('${s.id}','MCEL',event)" class="np" title="Mark MC/EL" style="background:${ov==='MC/EL'?'#DC2626':'transparent'};border:1px solid ${ov==='MC/EL'?'#DC2626':'var(--b2)'};color:${ov==='MC/EL'?'#fff':'var(--txt3)'};border-radius:3px;font-size:7px;font-weight:700;cursor:pointer;padding:1px 4px;line-height:1">MC/EL</button>
         <button onclick="setStatus('${s.id}','AL',event)" class="np" title="Mark AL/OFF" style="background:${ov==='AL/OFF'?'#D97706':'transparent'};border:1px solid ${ov==='AL/OFF'?'#D97706':'var(--b2)'};color:${ov==='AL/OFF'?'#fff':'var(--txt3)'};border-radius:3px;font-size:7px;font-weight:700;cursor:pointer;padding:1px 4px;line-height:1">AL</button>
-        <button onclick="editNickname('${s.id}','${s.fullName}',event)" class="np" title="Edit nickname" style="background:transparent;border:none;color:var(--txt3);font-size:10px;cursor:pointer;padding:0;line-height:1">✎</button>
+        <button onclick="editNickname('${s.id}','${(s.fullName||'').replace(/'/g,"\\'")}',event)" class="np" title="Edit nickname" style="background:transparent;border:none;color:var(--txt3);font-size:10px;cursor:pointer;padding:0;line-height:1">✎</button>
       </div>
     </div>
     <div class="cmeta">${s.desigCode||s.desig} · ${s.acType||s.fleet||'—'}</div>
@@ -3576,7 +3576,7 @@ function renderMocSection(){
           <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px">
             <div style="font-family:var(--cond);font-size:14px;font-weight:700;color:${avl?'var(--amber2)':'var(--txt2)'}">${nm}${hasNick?`<span style="font-size:7px;color:var(--txt3);margin-left:3px">✎</span>`:''}
             </div>
-            <button onclick="editNickname('${s.id}','${s.fullName}',event)" class="np" title="Edit nickname" style="background:transparent;border:none;color:var(--txt3);font-size:10px;cursor:pointer;padding:0;line-height:1;flex-shrink:0">✎</button>
+            <button onclick="editNickname('${s.id}','${(s.fullName||'').replace(/'/g,"\\'")}',event)" class="np" title="Edit nickname" style="background:transparent;border:none;color:var(--txt3);font-size:10px;cursor:pointer;padding:0;line-height:1;flex-shrink:0">✎</button>
           </div>
           <div style="font-size:9px;color:var(--txt3);margin-bottom:4px">${s.desigCode||s.desig}</div>
           <span style="display:inline-block;font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 6px;border-radius:3px;border:1px solid;background:${avl?'#1A1200':'var(--bg)'};color:${avl?'var(--amber)':'var(--gray)'};border-color:${avl?'#92400e':'var(--b)'}">
