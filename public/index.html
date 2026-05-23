@@ -262,7 +262,7 @@ select option{background:var(--surf2)}
   </div>
   <div style="display:flex;align-items:center;gap:6px">
     <span class="clbl">SHIFT</span>
-    <select id="shift-group-sel" onchange="updateLogoShift();if(S.loaded){loadRoster();}" style="width:52px">
+    <select id="shift-group-sel" onchange="updateLogoShift();S.towers={permanent:[],backups:[]};S.trainees={permanent:[],backups:[]};loadTowers();loadTrainees();if(S.loaded){loadRoster();}" style="width:52px">
       <option value="A">A</option>
       <option value="B">B</option>
       <option value="C">C</option>
@@ -530,14 +530,14 @@ function fbSignIn(){
       if(el) el.textContent='☁ Connected';
       // Load nicknames first, then shift data so nicknames are ready when rendering
       loadNicknames().then(async ()=>{
-        await loadTrainees();
-        await loadTowers();
         await loadExclusions();
         await loadSheetConfigs();
         const oldDate=document.getElementById('dp')?.value;
         const oldShift=document.getElementById('shift-sel')?.value;
         const oldGroup=document.getElementById('shift-group-sel')?.value;
-        await loadLastDate();
+        await loadLastDate(); // sets correct shift group FIRST
+        await loadTowers();   // now loads the correct shift's towers
+        await loadTrainees(); // now loads the correct shift's trainees
         const newDate=document.getElementById('dp')?.value;
         const newShift=document.getElementById('shift-sel')?.value;
         const newGroup=document.getElementById('shift-group-sel')?.value;
@@ -813,8 +813,8 @@ const S = {
 (function init(){
   try { const c=JSON.parse(localStorage.getItem('ops_cfg')||'{}'); if(c.key) Object.assign(S.cfg,c); } catch(_){}
   try { const n=JSON.parse(localStorage.getItem('ops_nicknames')||'{}'); S.nicknames=n; } catch(_){}
-  try { const t=JSON.parse(localStorage.getItem('ops_towers')||'null'); if(t) S.towers.permanent=t; } catch(_){}
-  try { const tr=JSON.parse(localStorage.getItem('ops_trainees')||'[]'); S.trainees.permanent=tr; } catch(_){}
+  try { const _g=currentGroup(); const t=JSON.parse(localStorage.getItem('ops_towers_'+_g)||'null'); if(t) S.towers.permanent=t; } catch(_){}
+  try { const _g=currentGroup(); const tr=JSON.parse(localStorage.getItem('ops_trainees_'+_g)||'[]'); if(Array.isArray(tr)&&tr.length) S.trainees.permanent=tr; } catch(_){}
   document.getElementById('dp').value = new Date().toISOString().split('T')[0];
   close_setup();
   // Auto-login if session is still valid (page refresh)
@@ -856,12 +856,14 @@ const S = {
 })();
 
 function saveTowers(){
-  localStorage.setItem('ops_towers', JSON.stringify(S.towers.permanent));
-  if(fbReady) fbDb.ref('settings/towers').set(S.towers.permanent).catch(e=>console.warn('Towers save error:',e));
+  const g=currentGroup();
+  localStorage.setItem('ops_towers_'+g, JSON.stringify(S.towers.permanent));
+  if(fbReady) fbDb.ref('settings/shifts/'+g+'/towers').set(S.towers.permanent).catch(e=>console.warn('Towers save error:',e));
 }
 function saveTrainees(){
-  localStorage.setItem('ops_trainees', JSON.stringify(S.trainees.permanent));
-  if(fbReady) fbDb.ref('settings/trainees').set(S.trainees.permanent).catch(e=>console.warn('Trainees save error:',e));
+  const g=currentGroup();
+  localStorage.setItem('ops_trainees_'+g, JSON.stringify(S.trainees.permanent));
+  if(fbReady) fbDb.ref('settings/shifts/'+g+'/trainees').set(S.trainees.permanent).catch(e=>console.warn('Trainees save error:',e));
 }
 
 // ═══════════════════════════════════
@@ -950,16 +952,21 @@ function addSheetConfig(){
 
 async function loadTowers(){
   if(!fbReady) return;
+  const g=currentGroup();
   try {
-    const snap=await fbDb.ref('settings/towers').get();
+    const snap=await fbDb.ref('settings/shifts/'+g+'/towers').get();
     if(snap.exists()){
       const cloud=snap.val();
       if(Array.isArray(cloud)&&cloud.length){
         S.towers.permanent=cloud;
-        localStorage.setItem('ops_towers',JSON.stringify(cloud));
+        localStorage.setItem('ops_towers_'+g,JSON.stringify(cloud));
         renderAll();
+        return;
       }
     }
+    // No data for this shift — clear so previous shift's list doesn't bleed through
+    S.towers.permanent=[];
+    renderAll();
   } catch(e){ console.warn('Towers load error:',e); }
 }
 
@@ -1004,15 +1011,19 @@ async function loadExclusions(){
 }
 async function loadTrainees(){
   if(!fbReady) return;
+  const g=currentGroup();
   try {
-    const snap=await fbDb.ref('settings/trainees').get();
+    const snap=await fbDb.ref('settings/shifts/'+g+'/trainees').get();
     if(snap.exists()){
       const cloud=snap.val();
       if(Array.isArray(cloud)&&cloud.length){
         S.trainees.permanent=cloud;
-        localStorage.setItem('ops_trainees', JSON.stringify(cloud));
+        localStorage.setItem('ops_trainees_'+g,JSON.stringify(cloud));
+        return;
       }
     }
+    // No data for this shift — clear so previous shift's list doesn't bleed through
+    S.trainees.permanent=[];
   } catch(e){ console.warn('Trainees load error:',e); }
 }
 
@@ -1031,6 +1042,7 @@ function updateLogoShift(){
   const el = document.getElementById('logo-shift');
   if(el) el.textContent = '· SHIFT '+g;
 }
+function currentGroup(){ return (document.getElementById('shift-group-sel')?.value||'C').toUpperCase(); }
 
 // ── Alias so both open/closeExclusionsModal and open/closeExclModal work ──
 function closeExclusionsModal(){ closeExclModal(); }
