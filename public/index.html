@@ -3223,7 +3223,9 @@ function _doApplyAllocation(){
   parsed.wc.forEach((wc,i)=>{ if(i<2){ S.roles.wc[i].primary=resolve(wc.primary); S.roles.wc[i].asst=resolveWithTrainee(wc.asst); S.roles.wc[i].ss=!!wc.ss; } });
   parsed.runners.forEach((r,i)=>{ if(i<4){ S.roles.runners[i].name=resolve(r.name); if(r.timing) S.roles.runners[i].timing=r.timing; } });
   parsed.towerSlots.forEach((t,i)=>{ if(i<4){ S.roles.towerSlots[i].a=resolve(t.a); S.roles.towerSlots[i].b=resolve(t.b); S.roles.towerSlots[i].backup=resolveWithTrainee(t.backup); S.roles.towerSlots[i].ss=!!t.ss; } });
-  closeAllocModal(); renderAll(); scheduleSave();
+  closeAllocModal(); renderAll();
+  // Save immediately — scheduleSave() has 500ms delay which loses data if user changes date first
+  if(fbReady && S.loaded) fbSave(); else { pendingSave=true; }
 }
 
 function applyAllocation(parsed){ _allocStore._parsed=parsed; _doApplyAllocation(); }
@@ -3232,7 +3234,7 @@ function applyAllocation(parsed){ _allocStore._parsed=parsed; _doApplyAllocation
 // ROLES MODAL
 // ═══════════════════════════════════
 function openRolesModal(){ renderRolesModal(); document.getElementById('roles-ov').classList.add('show'); }
-function closeRolesModal(){ document.getElementById('roles-ov').classList.remove('show'); renderSummary(); }
+function closeRolesModal(){ document.getElementById('roles-ov').classList.remove('show'); renderSummary(); scheduleSave(); }
 
 function renderRolesModal(){
   const el=document.getElementById('roles-body');
@@ -3265,33 +3267,33 @@ function renderRolesModal(){
   el.innerHTML=`
     ${sh('LEADERSHIP')}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
-      ${fld('MOC CHASER', sel(r.mocChaser,irPool,'S.roles.mocChaser=this.value'))}
+      ${fld('MOC CHASER', sel(r.mocChaser,irPool,'S.roles.mocChaser=this.value;scheduleSave()'))}
       <div></div>
     </div>
     ${sh('MOJO')}
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:6px">
-      ${r.mojo.map((v,i)=>fld(i===0?'MOJO':i===1?'ASST MOJO':' ',sel(v,irPool,`S.roles.mojo[${i}]=this.value`))).join('')}
+      ${r.mojo.map((v,i)=>fld(i===0?'MOJO':i===1?'ASST MOJO':' ',sel(v,irPool,`S.roles.mojo[${i}]=this.value;scheduleSave()`))).join('')}
     </div>
     ${sh('WC / GSE')}
     ${r.wc.map((wc,i)=>`<div style="margin-bottom:8px">
       <div style="font-size:8px;color:var(--txt3);margin-bottom:4px">PAIR ${i+1}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        ${fld('WC',sel(wc.primary,irPool,`S.roles.wc[${i}].primary=this.value`))}
-        ${fld('ASST / TRAINEE',sel(wc.asst,[...irPool,...trPool],`S.roles.wc[${i}].asst=this.value`))}
+        ${fld('WC',sel(wc.primary,irPool,`S.roles.wc[${i}].primary=this.value;scheduleSave()`))}
+        ${fld('ASST / TRAINEE',sel(wc.asst,[...irPool,...trPool],`S.roles.wc[${i}].asst=this.value;scheduleSave()`))}
       </div>
     </div>`).join('')}
     ${sh('RUNNERS','#C084FC')}
     ${r.runners.map((rn,i)=>`<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-bottom:6px">
-      ${sel(rn.name,twPool,`S.roles.runners[${i}].name=this.value`)}
+      ${sel(rn.name,twPool,`S.roles.runners[${i}].name=this.value;scheduleSave()`)}
       <span style="font-size:9px;color:var(--txt2);white-space:nowrap">${rn.timing}</span>
     </div>`).join('')}
     ${sh('TOWER POSITIONS','#C084FC')}
     ${r.towerSlots.map((ts,i)=>`<div style="margin-bottom:10px">
       <div style="font-size:8px;color:var(--txt3);margin-bottom:4px">TOWER ${i+1}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-        ${fld('PERSON A',sel(ts.a,twPool,`S.roles.towerSlots[${i}].a=this.value`))}
-        ${fld('PERSON B',sel(ts.b,twPool,`S.roles.towerSlots[${i}].b=this.value`))}
-        ${fld('BACKUP / ASST',sel(ts.backup,[...irPool,...trPool],`S.roles.towerSlots[${i}].backup=this.value`))}
+        ${fld('PERSON A',sel(ts.a,twPool,`S.roles.towerSlots[${i}].a=this.value;scheduleSave()`))}
+        ${fld('PERSON B',sel(ts.b,twPool,`S.roles.towerSlots[${i}].b=this.value;scheduleSave()`))}
+        ${fld('BACKUP / ASST',sel(ts.backup,[...irPool,...trPool],`S.roles.towerSlots[${i}].backup=this.value;scheduleSave()`))}
       </div>
     </div>`).join('')}
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--b)">
