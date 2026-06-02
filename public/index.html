@@ -610,25 +610,27 @@ function saveLastDate(){
 }
 
 function fbSave(){
-  if(!fbReady||!S.loaded) return;
+  if(!fbReady||!S.loaded){ dbg('fbSave SKIP fbReady='+fbReady+' loaded='+S.loaded); return; }
   const key=fbKey();
-  if(!key) return;
+  if(!key){ dbg('fbSave SKIP key empty'); return; }
   const payload={_savedAt:Date.now(),_key:key};
   SAVE_FIELDS.forEach(f=>{
     try{ payload[f]=JSON.parse(JSON.stringify(S[f])); }catch(e){}
   });
   // Synchronous localStorage backup — survives async Firebase timing issues
   try{ localStorage.setItem('ops_ls_'+key, JSON.stringify(payload)); }catch(e){}
+  dbg('fbSave KEY='+key+' roles.mocChaser='+JSON.stringify(S.roles?.mocChaser));
   const el=document.getElementById('save-ts');
   fbDb.ref(key).set(payload)
-    .then(()=>{ if(el) el.textContent='☁ Saved '+new Date().toLocaleTimeString(); saveLastDate(); })
-    .catch(e=>{ if(el) el.textContent='⚠ Save failed: '+e.code; console.error('fbSave:',e); });
+    .then(()=>{ if(el) el.textContent='☁ Saved '+new Date().toLocaleTimeString(); saveLastDate(); dbg('fbSave OK'); })
+    .catch(e=>{ if(el) el.textContent='⚠ Save failed: '+e.code; console.error('fbSave:',e); dbg('fbSave ERR '+e.code); });
 }
 
 async function fbLoad(){
-  if(!fbReady){ _restoringFromFb=false; return; }
+  if(!fbReady){ _restoringFromFb=false; dbg('fbLoad SKIP not ready'); return; }
   const key=fbKey();
-  if(!key){ _restoringFromFb=false; return; }
+  if(!key){ _restoringFromFb=false; dbg('fbLoad SKIP key empty'); return; }
+  dbg('fbLoad KEY='+key);
   const el=document.getElementById('save-ts');
   if(el) el.textContent='☁ Loading…';
   try{
@@ -643,8 +645,10 @@ async function fbLoad(){
       const raw=snap.val();
       const d=sanitizeState(raw);
       SAVE_FIELDS.forEach(f=>{ if(d[f]!=null) try{ S[f]=JSON.parse(JSON.stringify(d[f])); }catch(e){} });
+      dbg('fbLoad GOT data roles.mocChaser='+JSON.stringify(d.roles?.mocChaser));
       if(el) el.textContent='☁ Synced '+new Date(d._savedAt||Date.now()).toLocaleTimeString();
     } else {
+      dbg('fbLoad NO data for key='+key);
       if(el) el.textContent='☁ No saved data';
     }
     renderAll();
@@ -676,6 +680,17 @@ function saveSocNow(){ if(fbReady&&S.loaded) fbSave(); }
 
 let saveTimer=null, pendingSave=false;
 let _restoringFromFb=false; // true while fbLoad() is running — blocks scheduleSave from overwriting Firebase with blank state
+
+// ── DEBUG LOG (remove after diagnosis) ──
+const _dbgLog=[];
+function dbg(msg){
+  const t=new Date().toLocaleTimeString();
+  _dbgLog.unshift('['+t+'] '+msg);
+  if(_dbgLog.length>12) _dbgLog.pop();
+  const el=document.getElementById('_dbg');
+  if(el) el.innerHTML=_dbgLog.map(l=>'<div>'+l+'</div>').join('');
+}
+
 
 function scheduleSave(){
   if(!S.loaded || _restoringFromFb) return;
@@ -1265,9 +1280,11 @@ async function loadRoster(){
     if(_lsKey){
       try{
         const _lsRaw = localStorage.getItem('ops_ls_'+_lsKey);
+        dbg('LS check KEY='+_lsKey+' found='+(!!_lsRaw));
         if(_lsRaw){
           const _lsD = sanitizeState(JSON.parse(_lsRaw));
           SAVE_FIELDS.forEach(f=>{ if(_lsD[f]!=null) try{ S[f]=JSON.parse(JSON.stringify(_lsD[f])); }catch(e){} });
+          dbg('LS restore KEY='+_lsKey+' roles.mocChaser='+JSON.stringify(_lsD.roles?.mocChaser));
         }
       }catch(e){}
     }
@@ -3240,9 +3257,10 @@ function _doApplyAllocation(){
   parsed.wc.forEach((wc,i)=>{ if(i<2){ S.roles.wc[i].primary=resolve(wc.primary); S.roles.wc[i].asst=resolveWithTrainee(wc.asst); S.roles.wc[i].ss=!!wc.ss; } });
   parsed.runners.forEach((r,i)=>{ if(i<4){ S.roles.runners[i].name=resolve(r.name); if(r.timing) S.roles.runners[i].timing=r.timing; } });
   parsed.towerSlots.forEach((t,i)=>{ if(i<4){ S.roles.towerSlots[i].a=resolve(t.a); S.roles.towerSlots[i].b=resolve(t.b); S.roles.towerSlots[i].backup=resolveWithTrainee(t.backup); S.roles.towerSlots[i].ss=!!t.ss; } });
+  dbg('applyAlloc mocChaser='+JSON.stringify(S.roles.mocChaser)+' fbReady='+fbReady+' loaded='+S.loaded);
   closeAllocModal(); renderAll();
   // Save immediately — scheduleSave() has 500ms delay which loses data if user changes date first
-  if(fbReady && S.loaded) fbSave(); else { pendingSave=true; }
+  if(fbReady && S.loaded) fbSave(); else { pendingSave=true; dbg('applyAlloc pendingSave set'); }
 }
 
 function applyAllocation(parsed){ _allocStore._parsed=parsed; _doApplyAllocation(); }
@@ -3930,5 +3948,6 @@ function showDebug(){
   </div>`);
 }
 </script>
+<div id="_dbg" style="position:fixed;bottom:0;left:0;right:0;background:#000;color:#0f0;font-family:monospace;font-size:10px;padding:4px 8px;z-index:9999;max-height:140px;overflow:auto;border-top:1px solid #0f0;opacity:.92"></div>
 </body>
 </html>
