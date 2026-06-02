@@ -624,10 +624,9 @@ function fbSave(){
 }
 
 async function fbLoad(){
-  if(!fbReady) return;
+  if(!fbReady){ _restoringFromFb=false; return; }
   const key=fbKey();
-  if(!key) return;
-  _restoringFromFb=true;
+  if(!key){ _restoringFromFb=false; return; }
   const el=document.getElementById('save-ts');
   if(el) el.textContent='☁ Loading…';
   try{
@@ -1259,9 +1258,10 @@ async function loadRoster(){
     S.loaded = true;
     setSt(`${staff.length} staff · ${dateStr} · Shift ${group} ${shift}`);
     hideLoading();
+    _restoringFromFb = true; // block scheduleSave until fbLoad restores saved state
     renderAll();
     // Load saved Firebase state — if not ready yet, fbSignIn will call fbLoad when auth completes
-    if(fbReady) fbLoad();
+    if(fbReady) fbLoad(); else _restoringFromFb = false;
   }catch(err){
     hideLoading();
     showErr(err.message);
