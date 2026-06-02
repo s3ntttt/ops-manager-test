@@ -627,6 +627,7 @@ async function fbLoad(){
   if(!fbReady) return;
   const key=fbKey();
   if(!key) return;
+  _restoringFromFb=true;
   const el=document.getElementById('save-ts');
   if(el) el.textContent='☁ Loading…';
   try{
@@ -649,6 +650,8 @@ async function fbLoad(){
   }catch(e){
     if(el) el.textContent='⚠ Error: '+e.code;
     console.error('fbLoad:',e);
+  } finally {
+    _restoringFromFb=false;
   }
 }
 
@@ -671,9 +674,10 @@ async function loadLastDate(){
 function saveSocNow(){ if(fbReady&&S.loaded) fbSave(); }
 
 let saveTimer=null, pendingSave=false;
+let _restoringFromFb=false; // true while fbLoad() is running — blocks scheduleSave from overwriting Firebase with blank state
 
 function scheduleSave(){
-  if(!S.loaded) return;
+  if(!S.loaded || _restoringFromFb) return;
   pendingSave=true;
   if(!fbReady) return; // will flush when fbReady
   clearTimeout(saveTimer);
