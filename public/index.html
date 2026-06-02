@@ -89,6 +89,7 @@ select option{background:var(--surf2)}
 .card.xfer{border-left-color:#2DD4BF;opacity:.4}
 .bxf{background:#041A18;color:#2DD4BF;border-color:#063830}
 .card-moved{border-left-color:var(--blue)!important;border-style:dashed!important}
+.card-eng{border-left:3px solid #92400E!important;background:linear-gradient(135deg,#1A1200 0%,var(--card) 40%)!important}
 .card.course{border-left-color:var(--yellow)}
 .card.off{border-left-color:var(--txt3);opacity:.55}
 .card.bkcard{border-left-color:var(--teal)}
@@ -262,7 +263,7 @@ select option{background:var(--surf2)}
   </div>
   <div style="display:flex;align-items:center;gap:6px">
     <span class="clbl">SHIFT</span>
-    <select id="shift-group-sel" onchange="updateLogoShift();S.towers={permanent:[],backups:[]};S.trainees={permanent:[],backups:[]};loadTowers();loadTrainees();if(S.loaded){loadRoster();}" style="width:52px">
+    <select id="shift-group-sel" onchange="updateLogoShift();loadEngSpecialists();S.towers={permanent:[],backups:[]};S.trainees={permanent:[],backups:[]};loadTowers();loadTrainees();if(S.loaded){loadRoster();}" style="width:52px">
       <option value="A">A</option>
       <option value="B">B</option>
       <option value="C">C</option>
@@ -530,6 +531,7 @@ function fbSignIn(){
       if(el) el.textContent='☁ Connected';
       // Load nicknames first, then shift data so nicknames are ready when rendering
       loadNicknames().then(async ()=>{
+        loadEngSpecialists();
         await loadExclusions();
         await loadSheetConfigs();
         const oldDate=document.getElementById('dp')?.value;
@@ -661,7 +663,7 @@ async function loadLastDate(){
       const sg=document.getElementById('shift-group-sel');
       if(dp&&date) dp.value=date;
       if(ss&&shift) ss.value=shift;
-      if(sg&&shiftGroup){ sg.value=shiftGroup; updateLogoShift(); }
+      if(sg&&shiftGroup){ sg.value=shiftGroup; updateLogoShift(); loadEngSpecialists(); }
     }
   } catch(e){}
 }
@@ -804,8 +806,24 @@ const S = {
   fgs:  [{ reg:'', remark:'' }],
   ops: { ARR:'', DEP:'', TOW:'' },
   tab: 'lo',
-  loaded: false
+  loaded: false,
+  engSpecialists: []  // staff IDs for ENG SPECIALIST TEAM in the selected shift
 };
+
+// ═══════════════════════════════════
+// ENG SPECIALIST TEAM — per-shift IDs
+// (identified from KUL/0626/R0)
+// ═══════════════════════════════════
+const ENG_SPECIALISTS = {
+  A: ['M04675','M10856','M10852','M03615','M04486'],
+  B: ['M10849','M13024','M11053','M13294','M06592'],
+  C: ['M11669','M11499','M10857','M05984','M07046'],
+  D: ['M13189','M13410','M12454','M10855','M02284']
+};
+function loadEngSpecialists(){
+  const g = (document.getElementById('shift-group-sel')?.value||'C').toUpperCase();
+  S.engSpecialists = ENG_SPECIALISTS[g] || [];
+}
 
 // ═══════════════════════════════════
 // INIT
@@ -1962,7 +1980,11 @@ function cardHTML(s, viewingDept){
   const fromTag = (mv && viewingDept && effectiveDept(s)===viewingDept && s.team!==viewingDept)
     ? `<span style="display:inline-block;margin-left:4px;padding:1px 5px;background:#0A1929;color:#93C5FD;border:1px solid #1D4ED8;border-radius:2px;font-size:8px;font-weight:700;letter-spacing:.5px">FROM ${s.team}</span>`
     : '';
-  return `<div class="card ${a.cls}${mv?' card-moved':''}" onclick="cycleOvr('${s.id}')" title="${s.fullName}\n${s.desig}\n${s.acType}\nScheduled: ${s.schedVal||'—'}\nClick to cycle status">
+  const isEng = S.engSpecialists.includes(s.id);
+  const engTag = isEng
+    ? `<span style="display:inline-block;padding:1px 6px;background:#1A1200;color:#FCD34D;border:1px solid #92400E;border-radius:2px;font-size:8px;font-weight:700;letter-spacing:.5px">⚙ ENG</span>`
+    : '';
+  return `<div class="card ${a.cls}${mv?' card-moved':''}${isEng?' card-eng':''}" onclick="cycleOvr('${s.id}')" title="${s.fullName}\n${s.desig}\n${s.acType}\nScheduled: ${s.schedVal||'—'}\nClick to cycle status">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2px">
       <div class="cname">${nm}${hasCustomNick?`<span style="font-size:7px;color:var(--txt3);margin-left:3px" title="Custom nickname">✎</span>`:''}${ov?` <span class="ovr-star">✱</span>`:''}</div>
       <div style="display:flex;gap:3px;flex-shrink:0">
@@ -1973,7 +1995,7 @@ function cardHTML(s, viewingDept){
     </div>
     <div class="cmeta">${s.desigCode||s.desig} · ${s.acType||s.fleet||'—'}</div>
     <div style="display:flex;align-items:center;flex-wrap:wrap;gap:3px;margin-top:5px">
-      <span class="badge ${a.badge}">${a.lbl}</span>${raw}${fromTag}
+      <span class="badge ${a.badge}">${a.lbl}</span>${raw}${fromTag}${engTag}
     </div>
   </div>`;
 }
