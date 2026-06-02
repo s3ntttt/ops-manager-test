@@ -1237,6 +1237,9 @@ async function loadRoster(){
     if(gen!==_rosterGen) return; // a newer loadRoster started — abort this one
     const group = document.getElementById('shift-group-sel')?.value || 'C';
     const staff = parseRoster(rows, dateStr, shift, group);
+    // Force ENG SPECIALIST TEAM members into IRR regardless of how the parser sectioned them
+    const engIds = ENG_SPECIALISTS[group.toUpperCase()] || [];
+    staff.forEach(s => { if(engIds.includes(s.id)) s.team = 'IRR'; });
     S.staff = staff;
     // Reset shift-specific state before loading saved data
     S.overrides={}; S.swaps=[]; S.transfers=[];
