@@ -617,6 +617,8 @@ function fbSave(){
   SAVE_FIELDS.forEach(f=>{
     try{ payload[f]=JSON.parse(JSON.stringify(S[f])); }catch(e){}
   });
+  // Synchronous localStorage backup — survives async Firebase timing issues
+  try{ localStorage.setItem('ops_ls_'+key, JSON.stringify(payload)); }catch(e){}
   const el=document.getElementById('save-ts');
   fbDb.ref(key).set(payload)
     .then(()=>{ if(el) el.textContent='☁ Saved '+new Date().toLocaleTimeString(); saveLastDate(); })
@@ -1258,7 +1260,18 @@ async function loadRoster(){
     S.loaded = true;
     setSt(`${staff.length} staff · ${dateStr} · Shift ${group} ${shift}`);
     hideLoading();
-    _restoringFromFb = true; // block scheduleSave until fbLoad restores saved state
+    // Immediately restore from localStorage (synchronous) before Firebase responds
+    const _lsKey = fbKey();
+    if(_lsKey){
+      try{
+        const _lsRaw = localStorage.getItem('ops_ls_'+_lsKey);
+        if(_lsRaw){
+          const _lsD = sanitizeState(JSON.parse(_lsRaw));
+          SAVE_FIELDS.forEach(f=>{ if(_lsD[f]!=null) try{ S[f]=JSON.parse(JSON.stringify(_lsD[f])); }catch(e){} });
+        }
+      }catch(e){}
+    }
+    _restoringFromFb = true; // block scheduleSave until fbLoad finishes (Firebase overrides localStorage)
     renderAll();
     // Load saved Firebase state — if not ready yet, fbSignIn will call fbLoad when auth completes
     if(fbReady) fbLoad(); else _restoringFromFb = false;
