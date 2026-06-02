@@ -1776,6 +1776,8 @@ function renderAll(){
 // Returns the dept a person is actually working in (after swaps/transfers)
 function effectiveDept(s){
   if(!s) return null;
+  // ENG SPECIALIST TEAM always belong to IRR — override any section mis-parse
+  if(S.engSpecialists.includes(s.id)) return 'IRR';
   // Check transfers first
   const tr = S.transfers.find(t=>t.id===s.id);
   if(tr) return tr.toDept;
@@ -1808,7 +1810,7 @@ function renderDept(elId, teamKey, dk){
 
   // Staff showing in this dept = own staff (not moved out) + staff moved IN from other depts
   const allTeams = [...new Set(S.staff.map(s=>s.team))];
-  const ownOriginal = S.staff.filter(s=>s.team===teamKey);
+  const ownOriginal = S.staff.filter(s=>s.team===teamKey||(teamKey==='IRR'&&S.engSpecialists.includes(s.id)));
 
   if(!ownOriginal.length){
     el.innerHTML=`<div style="padding:20px;font-size:12px">
