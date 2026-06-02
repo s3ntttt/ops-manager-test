@@ -578,28 +578,7 @@ document.addEventListener('visibilitychange', ()=>{
   if(document.visibilityState==='hidden'&&fbReady&&S.loaded){ fbSave(); }
 });
 
-async function migrateLegacyData(){
-  if(!fbReady) return;
-  // Old fbKey() used underscores instead of slash: shifts_DATE_SHIFT
-  // New fbKey() uses: shifts/DATE_GROUP_SHIFT (includes group letter)
-  const date=document.getElementById('dp')?.value||'';
-  const shift=document.getElementById('shift-sel')?.value||'';
-  const group=(document.getElementById('shift-group-sel')?.value||'C').toUpperCase();
-  if(!date||!shift) return;
-  const oldKey=`shifts_${date}_${shift}`;
-  const newKey=`shifts/${date}_${group}_${shift}`;
-  try {
-    const snap=await fbDb.ref(oldKey).get();
-    if(snap.exists()){
-      const data=snap.val();
-      // Copy to new path
-      await fbDb.ref(newKey).set(data);
-      // Delete old path
-      await fbDb.ref(oldKey).remove();
-      console.log('Migrated data from',oldKey,'to',newKey);
-    }
-  } catch(e){ console.warn('Migration error:',e); }
-}
+
 
 function saveLastDate(){
   if(!fbReady) return;
@@ -632,12 +611,6 @@ async function fbLoad(){
   const el=document.getElementById('save-ts');
   if(el) el.textContent='☁ Loading…';
   try{
-    // migrate old underscore key if exists
-    const oldSnap=await fbDb.ref('shifts_'+date+'_'+shift).get();
-    if(oldSnap.exists()){
-      await fbDb.ref(key).set(oldSnap.val());
-      await fbDb.ref('shifts_'+date+'_'+shift).remove();
-    }
     const snap=await fbDb.ref(key).get();
     if(snap.exists()){
       const raw=snap.val();
