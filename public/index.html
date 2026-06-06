@@ -1609,6 +1609,19 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
     if(sv) dbgOtherSamples.push({ shift:dbgOtherSec, id:idRaw, name:cols.name!==null?c(row[cols.name]):'', schedVal:sv });
   }
 
+  // Find raw row for M13028 to debug why it may be missing
+  const _dbgTargetId = 'M13028';
+  let _dbgTargetRow = null, _dbgTargetRowIdx = -1;
+  for(let _di=0;_di<rows.length;_di++){
+    const _dr=rows[_di];
+    if(!_dr) continue;
+    for(let _dj=0;_dj<_dr.length;_dj++){
+      if(String(_dr[_dj]||'').trim().toUpperCase()===_dbgTargetId){ _dbgTargetRow=_dr; _dbgTargetRowIdx=_di; break; }
+    }
+    if(_dbgTargetRow) break;
+  }
+  const _dbgTargetInStaff = staff.find(s=>s.id===_dbgTargetId||s.id.startsWith(_dbgTargetId));
+
   S.debug = { totalRows:rows.length, staffFound:staff.filter(s=>!s.isBackup).length,
     xsBkFound: xsBkFound.length, xsBkSamples: xsBkFound.slice(0,5).map(s=>({name:s.shortName,team:s.team,schedVal:s.schedVal,fromShift:s.fromShift})),
     otherShiftSamples: dbgOtherSamples,
@@ -1621,6 +1634,15 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
     row5cols: (rows[5]||[]).slice(38,56).map((v,i)=>({col:i+38,val:String(v||'')})).filter(x=>x.val),
     headerFound:cols.id!==null, cols,
     sections:dbgSections,
+    targetDebug: {
+      id: _dbgTargetId,
+      foundInRows: _dbgTargetRowIdx,
+      foundInStaff: !!_dbgTargetInStaff,
+      rawRow: _dbgTargetRow ? _dbgTargetRow.slice(0,15).map((v,i)=>i+'='+JSON.stringify(String(v||''))) : 'ROW NOT FOUND IN SHEET',
+      colsId: cols.id, colsShift: cols.shift, colsDesig: cols.desig, colsDesigCode: cols.desigCode,
+      shiftVal: _dbgTargetRow && cols.shift!==null ? String(_dbgTargetRow[cols.shift]||'') : '(shift col not detected)',
+      idVal: _dbgTargetRow && cols.id!==null ? String(_dbgTargetRow[cols.id]||'') : '(id col not detected)',
+    },
     sample: staff.filter(s=>!s.isBackup).slice(0,20).map(s=>({
       team:s.team, id:s.id, name:s.shortName,
       shift:s.schedVal, colShift:dateCol, rawRow:[]
@@ -3843,6 +3865,19 @@ function showDebug(){
           Cross-shift backups detected: <b style="color:${d.xsBkFound>0?'#10B981':'#FB923C'}">${d.xsBkFound||0}</b>
           ${d.xsBkSamples?.length?`<br><span style="font-size:9px;color:var(--txt3)">${d.xsBkSamples.map(s=>`${s.name} → ${s.team} (SHIFT ${s.fromShift}) val="${s.schedVal}"`).join(' · ')}</span>`:''}
         </div>
+      </div>
+
+      <div style="background:#0A0A1A;border:2px solid #F59E0B;border-radius:8px;padding:16px;margin-bottom:12px">
+        <div style="color:#F59E0B;font-size:10px;letter-spacing:2px;margin-bottom:8px">M13028 (HARITH IMRAN) — RAW ROW DEBUG</div>
+        <div style="font-size:10px;line-height:2">
+          Found in sheet rows: <b style="color:${d.targetDebug?.foundInRows>=0?'#10B981':'#F87171'}">${d.targetDebug?.foundInRows>=0?'YES @ row '+d.targetDebug.foundInRows:'NOT FOUND IN SHEET DATA'}</b><br>
+          Found in parsed staff: <b style="color:${d.targetDebug?.foundInStaff?'#10B981':'#F87171'}">${d.targetDebug?.foundInStaff?'YES':'NO — FILTERED OUT'}</b><br>
+          cols: id=<b style="color:#FBBF24">${d.targetDebug?.colsId}</b> shift=<b style="color:#FBBF24">${d.targetDebug?.colsShift??'null'}</b> desig=<b style="color:#FBBF24">${d.targetDebug?.colsDesig??'null'}</b> desigCode=<b style="color:#FBBF24">${d.targetDebug?.colsDesigCode??'null'}</b><br>
+          idVal: <b style="color:#FBBF24">"${d.targetDebug?.idVal}"</b> &nbsp; shiftVal: <b style="color:#FBBF24">"${d.targetDebug?.shiftVal}"</b><br>
+          Raw row (cols 0–14):<br>
+          <span style="font-size:9px;color:var(--txt3);word-break:break-all">${Array.isArray(d.targetDebug?.rawRow)?d.targetDebug.rawRow.join(' | '):(d.targetDebug?.rawRow||'—')}</span>
+        </div>
+      </div>
       </div>
 
       <div style="background:var(--surf);border:1px solid var(--b);border-radius:8px;padding:16px;margin-bottom:12px">
