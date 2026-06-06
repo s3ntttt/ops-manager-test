@@ -1553,9 +1553,8 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
     // ── Own-shift staff ──
     if(curSection){
       // If Shift column is detectable, only collect staff whose shift matches selected group
-      // Normalise shift values: "SC"→"C", "SB"→"B" etc. (some rosters use this format)
-      const _sv = /^S([ABCD])$/.test(staffShiftVal) ? staffShiftVal[1] : staffShiftVal;
-      if(_sv && /^[ABCD]$/.test(_sv) && _sv!==shiftGroup) continue; // belongs to different shift
+      // Section header is authoritative: if the header says "IRREGULARITIES SHIFT C",
+      // all staff listed under it belong to Shift C — ignore the individual row's shift column.
       if(dbgSections[curSection]) dbgSections[curSection].count++;
       staff.push({ id, fullName,
         shortName: sn[fullName]||shortify(fullName),
