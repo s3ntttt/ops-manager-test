@@ -283,6 +283,7 @@ select option{background:var(--surf2)}
   </div>
   <button class="btn btn-amber" onclick="loadRoster()">⟳ LOAD ROSTER</button>
   <button class="btn btn-ghost btn-sm np" onclick="fbLoad()" title="Force sync from Firebase" style="padding:4px 8px">☁ SYNC</button>
+  <button class="btn btn-ghost btn-sm np" onclick="clearDateData()" title="Clear &amp; reset all saved data for this date/shift" style="padding:4px 8px;color:#DC2626;border-color:#DC2626">🗑 RESET</button>
   <button class="btn btn-ghost btn-sm np" onclick="openExclModal()" title="Manage hidden staff" style="padding:4px 8px">🚫 HIDDEN</button>
   <button class="btn btn-ghost btn-sm np" onclick="showDebug()" title="Show raw sheet data for troubleshooting">🔍 DEBUG</button>
   <span id="fetch-st" style="font-size:11px;color:var(--txt2)"></span>
@@ -627,6 +628,53 @@ async function fbLoad(){
   } finally {
     _restoringFromFb=false;
   }
+}
+
+
+async function clearDateData(){
+  if(!S.loaded){ alert('Load a roster first before resetting.'); return; }
+  const key = fbKey();
+  if(!key){ alert('No date/shift selected.'); return; }
+  const label = key.replace('shifts/','');
+  if(!confirm(`RESET all saved data for ${label}?\n\nThis clears:\n• SS techs\n• Roles (WC, MOJO, RUNNERS, TOWERS)\n• Swaps & transfers\n• Backups\n• SOC / PDSC / FGS / OPS\n\nThe roster staff list stays. This cannot be undone.`)) return;
+  // 1. Wipe Firebase
+  if(fbReady){
+    try{ await fbDb.ref(key).remove(); }catch(e){ console.warn('FB delete error:',e); }
+  }
+  // 2. Wipe localStorage backup
+  try{ localStorage.removeItem('ops_ls_'+key); }catch(e){}
+  // 3. Reset state fields to defaults
+  S.overrides  = {};
+  S.swaps      = [];
+  S.transfers  = [];
+  S.backups    = { lo:[], irreg:[], wo:[], cim:[], moc:[] };
+  S.ssTechs    = [];
+  S.soc        = [{ flight:'', name:'', time:'', remark:'' }];
+  S.pdsc       = [{ reg:'', certifier:'' }];
+  S.fgs        = [{ reg:'', remark:'' }];
+  S.ops        = { ARR:'', DEP:'', TOW:'' };
+  S.actingGL   = { lo:'', irreg:'', wo:'' };
+  S.roles      = {
+    mocChaser: '',
+    mojo: ['','',''],
+    wc: [{ primary:'', asst:'' },{ primary:'', asst:'' }],
+    runners: [
+      { name:'', timing:'0600-1200 / 1800-0000' },
+      { name:'', timing:'0700-1300 / 1900-0100' },
+      { name:'', timing:'1200-1800 / 0000-0600' },
+      { name:'', timing:'1300-1900 / 0100-0700' }
+    ],
+    towerSlots: [
+      { a:'', b:'', backup:'' },
+      { a:'', b:'', backup:'' },
+      { a:'', b:'', backup:'' },
+      { a:'', b:'', backup:'' }
+    ]
+  };
+  // 4. Re-render & update status bar
+  renderAll();
+  const el = document.getElementById('save-ts');
+  if(el) el.textContent = '🗑 Reset — ' + label;
 }
 
 async function loadLastDate(){
