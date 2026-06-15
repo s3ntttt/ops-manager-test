@@ -2308,7 +2308,7 @@ function _renderSummaryInner(el){
         : isMoved
         ? `<span style="font-size:8px;color:#555;margin-left:2px">↔</span>`
         : isHalf
-        ? `<span style="font-size:8px;color:#C2410C;font-weight:700;margin-left:4px;background:#FFF7ED;border:1px solid #C2410C;border-radius:3px;padding:0 3px">½ NIGHT</span>`
+        ? `<span style="font-size:8px;color:#C2410C;font-weight:700;margin-left:4px;background:#FFF7ED;border:1px solid #C2410C;border-radius:3px;padding:0 3px">½ ${(document.getElementById('shift-sel')?.value||'SHIFT')}</span>`
         : '';
       const rb = isBk ? '' : roleBadge(base);
       const nm = tp ? `${base} <span style="font-size:8px;color:#555">(${tp})</span>${tag}${rb}` : `${base}${tag}${rb}`;
