@@ -19,6 +19,10 @@ const PORT = process.env.PORT || 3000;
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
+// Trust Railway's proxy so express-rate-limit can read the real client IP
+// from X-Forwarded-For (required on all Railway/Heroku/Render deployments)
+app.set('trust proxy', 1);
+
 // CORS — open to all origins. Security is enforced by JWT on every API route.
 // The frontend and backend share the same Railway domain, so restricting CORS
 // by origin would block same-domain POST requests (browsers send Origin on POST).
