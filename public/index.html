@@ -2958,8 +2958,25 @@ function generateBriefingText(){
     return stripped;
   };
 
-  // Helper: append (1/2) for half-shift staff
-  const dnHalf=s=>s._manual?s.shortName:dn(s)+(effAvail(s).half?' (1/2)':'');
+  // Helper: format name with (1/2 DAY/NIGHT), timing override, and * for flying duty
+  const curShiftLbl=(document.getElementById('shift-sel')?.value||'SHIFT');
+  const dnHalf=s=>{
+    if(s._manual) return s.shortName;
+    const base=dn(s);
+    const raw=(s.schedVal||'').toUpperCase();
+    // Half-shift: show shift label e.g. (1/2 DAY)
+    const halfSuffix=effAvail(s).half?` (1/2 ${curShiftLbl})`:'';
+    // Flying duty: F1-F9 in schedVal → append *
+    const isFly=/\(F\d\)/.test(raw);
+    const flySuffix=isFly?'*':'';
+    // Timing override: (0700-1700) or (0700) in schedVal, not a fly code
+    let timeSuffix='';
+    if(!isFly){
+      const tm=raw.match(/\((\d{4})(?:-(\d{4}))?\)/);
+      if(tm) timeSuffix=` (${tm[1]}${tm[2]?'-'+tm[2]:''})`;
+    }
+    return base+flySuffix+halfSuffix+timeSuffix;
+  };
 
   // MOJO
   const mojoLine=r.mojo.filter(Boolean).map(cleanRoleName).join(' / ');
