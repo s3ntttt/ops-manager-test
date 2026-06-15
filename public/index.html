@@ -2303,13 +2303,16 @@ function _renderSummaryInner(el){
       const base  = isBk ? (s.name||s.shortName)+' (BK)' : displayName(s);
       const tp    = isBk ? (s.acType||s.type||'') : (s.acType||s.fleet||'');
       const isHalf = !isBk && !isXsBk && effAvail(s).half;
-      const tag   = isXsBk
-        ? `<span style="font-size:8px;color:#555;font-weight:700;margin-left:2px">BK-${s.fromShift}</span>`
-        : isMoved
-        ? `<span style="font-size:8px;color:#555;margin-left:2px">↔</span>`
-        : isHalf
-        ? `<span style="font-size:8px;color:#C2410C;font-weight:700;margin-left:4px;background:#FFF7ED;border:1px solid #C2410C;border-radius:3px;padding:0 3px">½ ${(document.getElementById('shift-sel')?.value||'SHIFT')}</span>`
-        : '';
+      const schedRaw = (!isBk&&!isXsBk) ? (s.schedVal||'').toUpperCase() : '';
+      const flyMatch  = schedRaw.match(/\(F(\d)\)/);
+      const timeMatch = !flyMatch ? schedRaw.match(/\((\d{4})(?:-(\d{4}))?\)/) : null;
+      const tags = [];
+      if(isXsBk)        tags.push(`<span style="font-size:8px;color:#555;font-weight:700;margin-left:2px">BK-${s.fromShift}</span>`);
+      else if(isMoved)  tags.push(`<span style="font-size:8px;color:#555;margin-left:2px">↔</span>`);
+      if(isHalf)        tags.push(`<span style="font-size:8px;color:#C2410C;font-weight:700;margin-left:4px;background:#FFF7ED;border:1px solid #C2410C;border-radius:3px;padding:0 3px">½ ${(document.getElementById('shift-sel')?.value||'SHIFT')}</span>`);
+      if(flyMatch)      tags.push(`<span style="font-size:7px;color:#fff;font-weight:700;margin-left:4px;background:#7C3AED;border-radius:3px;padding:0 4px;vertical-align:middle">F${flyMatch[1]}</span>`);
+      if(timeMatch)     tags.push(`<span style="font-size:7px;color:#0369A1;font-weight:700;margin-left:4px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:3px;padding:0 4px;vertical-align:middle">${timeMatch[1]}${timeMatch[2]?'-'+timeMatch[2]:''}</span>`);
+      const tag = tags.join('');
       const rb = isBk ? '' : roleBadge(base);
       const nm = tp ? `${base} <span style="font-size:8px;color:#555">(${tp})</span>${tag}${rb}` : `${base}${tag}${rb}`;
       return `<div style="display:flex;gap:3px;padding:1px 0"><span style="font-size:9px;color:#555;width:13px;flex-shrink:0;text-align:right">${i+1}</span><span style="font-size:10px;font-weight:600;color:#000;line-height:1.6">${nm}</span></div>`;
