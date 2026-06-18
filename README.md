@@ -10,11 +10,11 @@ A real-time web application built for airline ground operations teams to manage 
 
 ### 📋 Live Roster Management
 - Pulls live staff data directly from **Google Sheets** roster
-- Automatically parses staff by department — Line Ops, Irregularities, Work Order, CIM, MOC
+- Automatically parses staff by working group — Line Ops, Irregularities, Work Order, CIM, MOC
 - Detects staff availability: Working, AL/OFF, MC/EL, Flying Duty, Course, Standby
 
 ### 👥 Manpower Tracking
-- Real-time headcount per department and category (LAE B1/B2, LAT, TECH)
+- Real-time headcount per working group and category (LAE B1/B2, LAT, TECH)
 - Availability breakdown — MC/EL, AL/OFF, CRS/PRO, Flying
 - Half-shift staff counted as 0.5 automatically
 - Flying-on-duty staff counted as 0.5 in availability
@@ -22,9 +22,9 @@ A real-time web application built for airline ground operations teams to manage 
 ### 🔧 Role Allocation
 - Assign MOC, MOJO, Wheel Crew, Runners, Tower crew
 - Slip Shift (SS) assignment for Line Ops Technicians (up to 3)
-- Acting Group Leader assignment per department
-- Staff swap and transfer between departments
-- Backup staff management across all departments
+- Acting Group Leader assignment per working group
+- Staff swap and transfer between working groups
+- Backup staff management across all working groups
 
 ### 📤 Operational Briefing Generator
 - One-click generation of the daily shift briefing text
