@@ -142,6 +142,25 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// ─── Global error handler ────────────────────────────────────────────────────
+// Catches any unexpected Express error not handled by individual routes.
+// Returns clean JSON instead of a raw HTML crash page.
+app.use((err, req, res, next) => {
+  console.error('Unhandled Express error:', err);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+// ─── Process-level crash guard ────────────────────────────────────────────────
+// Keeps the server alive and logs clearly if something unexpected happens
+// outside of Express (unhandled async errors or uncaught exceptions).
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled promise rejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception — server staying alive:', err);
+});
+
 // ─── Start ────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`\n  OPS MANAGER server running`);
