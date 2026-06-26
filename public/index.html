@@ -3240,9 +3240,9 @@ function renderAllocPreview(parsed){
     warnings.forEach((n,wi)=>{
       const s=matchStaff(n); if(!s) return;
       const dn=resolveDisplayName(s), dept=effectiveDept(s);
-      // Store swap candidates in _allocStore for safe access
-      _allocStore[`w${wi}`]={dn,dept};
-      irrPool.forEach((irS,si)=>{ _allocStore[`w${wi}_s${si}`]={allocName:dn,allocDept:dept,irrName:displayName(irS)}; });
+      // Store swap candidates in _allocStore for safe access — store IDs to avoid name-clash
+      _allocStore[`w${wi}`]={dn,dept,allocId:s.id};
+      irrPool.forEach((irS,si)=>{ _allocStore[`w${wi}_s${si}`]={allocName:dn,allocDept:dept,irrName:displayName(irS),allocId:s.id,irrId:irS.id}; });
 
       html+=`<div style="background:var(--surf);border:1px solid var(--b2);border-radius:6px;padding:8px 10px">
         <div style="font-size:10px;margin-bottom:6px">
@@ -3253,7 +3253,7 @@ function renderAllocPreview(parsed){
           <span style="font-size:9px;color:var(--txt3);font-weight:700">SWAP WITH:</span>
           ${irrPool.slice(0,6).map((irS,si)=>{
             const key=`w${wi}_s${si}`;
-            _allocStore[key]={allocName:dn,allocDept:dept,irrName:displayName(irS)};
+            _allocStore[key]={allocName:dn,allocDept:dept,irrName:displayName(irS),allocId:s.id,irrId:irS.id};
             return `<button class="btn btn-ghost btn-sm" style="font-size:9px;padding:2px 8px" onclick="window._doSwap('${key}')">⇄ ${displayName(irS)}</button>`;
           }).join('')}
           ${!irrPool.length?`<span style="color:var(--txt3);font-size:9px">No IRREG staff available to swap</span>`:''}
@@ -3280,9 +3280,9 @@ function _doSwap(key){
   _swapInProgress=true;
   const d=_allocStore[key];
   if(!d){ _swapInProgress=false; return; }
-  // Find staff IDs — same format as the IRREG swap UI
-  const s1=S.staff.find(s=>displayName(s)===d.irrName||s.shortName===d.irrName);
-  const s2=S.staff.find(s=>displayName(s)===d.allocName||s.shortName===d.allocName);
+  // Find staff IDs — prefer stored IDs to avoid name-collision when displayNames are shared
+  const s1=d.irrId?S.staff.find(s=>s.id===d.irrId):S.staff.find(s=>displayName(s)===d.irrName||s.shortName===d.irrName);
+  const s2=d.allocId?S.staff.find(s=>s.id===d.allocId):S.staff.find(s=>displayName(s)===d.allocName||s.shortName===d.allocName);
   if(!s1||!s2){ alert('Could not match staff IDs for: '+d.irrName+' / '+d.allocName); _swapInProgress=false; return; }
   const id1=s1.id, id2=s2.id;
   // Remove existing swaps for either person
@@ -3298,7 +3298,7 @@ function _doTransfer(key){
   _swapInProgress=true;
   const d=_allocStore[key];
   if(!d){ _swapInProgress=false; return; }
-  const s=S.staff.find(st=>displayName(st)===d.dn||st.shortName===d.dn);
+  const s=d.allocId?S.staff.find(st=>st.id===d.allocId):S.staff.find(st=>displayName(st)===d.dn||st.shortName===d.dn);
   if(!s){ alert('Could not match staff for: '+d.dn); _swapInProgress=false; return; }
   const id=s.id, toDept='IRR';
   S.transfers=S.transfers.filter(t=>t.id!==id);
