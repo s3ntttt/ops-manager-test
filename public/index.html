@@ -3053,9 +3053,11 @@ function matchStaff(name){
   const n=name.trim().toUpperCase().replace(/^TRAINEE\s+/,'');
   if(!n) return null;
 
-  // 1. Exact displayName (nickname takes priority)
-  let found=S.staff.find(s=>displayName(s).toUpperCase()===n);
-  // 2. Exact shortName
+  // 1. Exact CUSTOM nickname match — highest priority (explicit user-set nickname always wins)
+  let found=S.staff.find(s=>S.nicknames[s.id]&&S.nicknames[s.id].toUpperCase()===n);
+  // 2. Exact shortName match — only staff WITHOUT a custom nickname (avoids conflict with nicknames)
+  if(!found) found=S.staff.find(s=>!S.nicknames[s.id]&&s.shortName.toUpperCase()===n);
+  // 2b. Exact shortName — any staff (fallback if step 2 found nothing)
   if(!found) found=S.staff.find(s=>s.shortName.toUpperCase()===n);
   // 2.5. Exact fullName — catches full names like "AMIR SYAMIM" when nickname is set to "SYAMIM"
   if(!found) found=S.staff.find(s=>(s.fullName||'').toUpperCase()===n);
