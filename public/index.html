@@ -3053,25 +3053,26 @@ function matchStaff(name){
   const n=name.trim().toUpperCase().replace(/^TRAINEE\s+/,'');
   if(!n) return null;
 
-  // 1. Exact CUSTOM nickname match — highest priority (explicit user-set nickname always wins)
-  let found=S.staff.find(s=>S.nicknames[s.id]&&S.nicknames[s.id].toUpperCase()===n);
-  // 2. Exact shortName match — only staff WITHOUT a custom nickname (avoids conflict with nicknames)
-  if(!found) found=S.staff.find(s=>!S.nicknames[s.id]&&s.shortName.toUpperCase()===n);
-  // 2b. Exact shortName — any staff (fallback if step 2 found nothing)
-  if(!found) found=S.staff.find(s=>s.shortName.toUpperCase()===n);
-  // 2.5. Exact fullName — catches full names like "AMIR SYAMIM" when nickname is set to "SYAMIM"
-  if(!found) found=S.staff.find(s=>(s.fullName||'').toUpperCase()===n);
-  // 3. Unambiguous prefix match on displayName (min 3 chars) — only matches if exactly ONE staff qualifies
-  if(!found){const m=S.staff.filter(s=>{const dn=displayName(s).toUpperCase();return dn.length>=3&&(dn.startsWith(n)||n.startsWith(dn));});if(m.length===1)found=m[0];}
-  // 4. Unambiguous prefix match on shortName (min 3 chars)
-  if(!found){const m=S.staff.filter(s=>s.shortName.toUpperCase().length>=3&&(s.shortName.toUpperCase().startsWith(n)||n.startsWith(s.shortName.toUpperCase())));if(m.length===1)found=m[0];}
-  // 4.5. Unambiguous prefix match on fullName (min 3 chars)
-  if(!found){const m=S.staff.filter(s=>(s.fullName||'').toUpperCase().length>=3&&((s.fullName||'').toUpperCase().startsWith(n)||n.startsWith((s.fullName||'').toUpperCase())));if(m.length===1)found=m[0];}
-  // 4.75. Unambiguous word-within-fullName — catches "SYAMIM" matching "AMIR SYAMIM"
-  // Useful when shortify() picks the wrong word (e.g. first word is also another person's nickname)
-  if(!found&&n.length>=3){const m=S.staff.filter(s=>(s.fullName||'').toUpperCase().split(/\s+/).includes(n));if(m.length===1)found=m[0];}
-  // 4.8. Unambiguous word-within-nickname — catches partial nickname word matches
-  if(!found&&n.length>=3){const m=S.staff.filter(s=>S.nicknames[s.id]&&S.nicknames[s.id].toUpperCase().split(/\s+/).includes(n));if(m.length===1)found=m[0];}
+  // Staff with a custom nickname can ONLY be found by their nickname.
+  // This prevents "AMIR" from matching "AMIR SYAMIM" when AMIRRUDDIN has nickname "AMIR".
+  const hasNick = s => !!S.nicknames[s.id];
+  const noNick  = s => !S.nicknames[s.id];
+
+  // 1. Exact nickname match — staff with nicknames stop here (highest priority)
+  let found = S.staff.find(s=>hasNick(s)&&S.nicknames[s.id].toUpperCase()===n);
+  if(found) return found;
+
+  // All steps below only search staff WITHOUT a custom nickname set
+  // 2. Exact shortName
+  if(!found) found=S.staff.find(s=>noNick(s)&&s.shortName.toUpperCase()===n);
+  // 3. Exact fullName
+  if(!found) found=S.staff.find(s=>noNick(s)&&(s.fullName||'').toUpperCase()===n);
+  // 4. Unambiguous prefix on shortName (min 3 chars)
+  if(!found){const m=S.staff.filter(s=>noNick(s)&&s.shortName.toUpperCase().length>=3&&(s.shortName.toUpperCase().startsWith(n)||n.startsWith(s.shortName.toUpperCase())));if(m.length===1)found=m[0];}
+  // 5. Unambiguous prefix on fullName (min 3 chars)
+  if(!found){const m=S.staff.filter(s=>noNick(s)&&(s.fullName||'').toUpperCase().length>=3&&((s.fullName||'').toUpperCase().startsWith(n)||n.startsWith((s.fullName||'').toUpperCase())));if(m.length===1)found=m[0];}
+  // 6. Unambiguous word-within-fullName — catches "SYAMIM" matching "AMIR SYAMIM"
+  if(!found&&n.length>=3){const m=S.staff.filter(s=>noNick(s)&&(s.fullName||'').toUpperCase().split(/\s+/).includes(n));if(m.length===1)found=m[0];}
   if(found) return found;
 
   // 5. Search towers — exact then startsWith
