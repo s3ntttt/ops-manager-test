@@ -3067,6 +3067,11 @@ function matchStaff(name){
   if(!found){const m=S.staff.filter(s=>s.shortName.toUpperCase().length>=3&&(s.shortName.toUpperCase().startsWith(n)||n.startsWith(s.shortName.toUpperCase())));if(m.length===1)found=m[0];}
   // 4.5. Unambiguous prefix match on fullName (min 3 chars)
   if(!found){const m=S.staff.filter(s=>(s.fullName||'').toUpperCase().length>=3&&((s.fullName||'').toUpperCase().startsWith(n)||n.startsWith((s.fullName||'').toUpperCase())));if(m.length===1)found=m[0];}
+  // 4.75. Unambiguous word-within-fullName — catches "SYAMIM" matching "AMIR SYAMIM"
+  // Useful when shortify() picks the wrong word (e.g. first word is also another person's nickname)
+  if(!found&&n.length>=3){const m=S.staff.filter(s=>(s.fullName||'').toUpperCase().split(/\s+/).includes(n));if(m.length===1)found=m[0];}
+  // 4.8. Unambiguous word-within-nickname — catches partial nickname word matches
+  if(!found&&n.length>=3){const m=S.staff.filter(s=>S.nicknames[s.id]&&S.nicknames[s.id].toUpperCase().split(/\s+/).includes(n));if(m.length===1)found=m[0];}
   if(found) return found;
 
   // 5. Search towers — exact then startsWith
