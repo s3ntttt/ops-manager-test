@@ -1802,7 +1802,8 @@ function availOf(v, shift){
   if(/^\(C[1-9T]\)/.test(raw)||/^\(Q[AO]\)/.test(raw)) return { st:'COURSE', lbl:'COURSE', cls:'course', badge:'bcr', raw };
   if(/^\(T[1-5]\)/.test(raw)) return { st:'TASK', lbl:'TASK', cls:'course', badge:'bcr', raw };
   const LV=['AL','LIL','EL','PIL','PTL','MTL','MRG','EXAM','CL','UPL','MRGL','ADML'];
-  if(LV.includes(raw)||raw.startsWith('(1/2) AL')||raw.startsWith('(1/2) LIL')||raw.startsWith('OFF: RPL'))
+  // Also match leave variants like 'AL (R)', 'AL RPL', 'EL OD' etc.
+  if(LV.includes(raw)||LV.some(lv=>raw.startsWith(lv+' ')||raw.startsWith(lv+'('))||raw.startsWith('(1/2) AL')||raw.startsWith('(1/2) LIL')||raw.startsWith('OFF: RPL'))
     return { st:'LEAVE', lbl:raw.substring(0,8), cls:'leave', badge:'blv', raw };
   if(['MC','HOSP','MIA','SOCSO'].includes(raw)) return { st:'ABSENT', lbl:raw, cls:'absent', badge:'bab', raw };
   if(['OD','RD'].includes(raw)) return { st:'OFF', lbl:raw, cls:'off', badge:'bof', raw };
