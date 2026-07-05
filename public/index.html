@@ -2281,17 +2281,27 @@ function _renderSummaryInner(el){
   const numList = (own, bkList=[], opts={}) => {
     const fOwn = own.filter(s => !assigned.has(displayName(s)));
     const fBk  = bkList.filter(b => !assigned.has(b.name+' (BK)'));
+    // Helper: timing/fly badge for any staff row
+    const timingTag = s => {
+      if(!s||s.isManualBk||s.isBackup) return '';
+      const raw=(s.schedVal||'').toUpperCase();
+      const flyM=raw.match(/\(F(\d)\)/);
+      if(flyM) return `<span style="font-size:7px;color:#fff;font-weight:700;margin-left:4px;background:#7C3AED;border-radius:3px;padding:0 4px;vertical-align:middle">F${flyM[1]}</span>`;
+      const tmM=raw.match(/\((\d{4})(?:-(\d{4}))?\)/);
+      if(tmM) return `<span style="font-size:7px;color:#0369A1;font-weight:700;margin-left:4px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:3px;padding:0 4px;vertical-align:middle">${tmM[1]}${tmM[2]?'-'+tmM[2]:''}</span>`;
+      return '';
+    };
 
     if(opts.ss){
       const ssOwn = fOwn.filter(s=>ssSet.has(s.id));
       const nmOwn = fOwn.filter(s=>!ssSet.has(s.id));
       let h='';
       h+=`<div style="font-size:8px;color:var(--amber);letter-spacing:1px;margin-bottom:2px;font-weight:700">SS</div>`;
-      ssOwn.forEach((s,i)=>{ const tp=s.acType||s.fleet||''; const dn=displayName(s); h+=`<div onclick="toggleSS('${s.id}')" title="Click to unmark SS" style="display:flex;gap:3px;cursor:pointer;padding:1px 0"><span style="font-size:9px;color:#1D4ED8;width:13px;flex-shrink:0;text-align:right">${i+1}</span><span style="font-size:10px;color:#1D4ED8;font-weight:700;line-height:1.6">${dn}${tp?` <span style="font-size:8px;color:#3B82F6">(${tp})</span>`:''}${roleBadge(dn)}</span></div>`; });
+      ssOwn.forEach((s,i)=>{ const tp=s.acType||s.fleet||''; const dn=displayName(s); const tt=timingTag(s); h+=`<div onclick="toggleSS('${s.id}')" title="Click to unmark SS" style="display:flex;gap:3px;cursor:pointer;padding:1px 0"><span style="font-size:9px;color:#1D4ED8;width:13px;flex-shrink:0;text-align:right">${i+1}</span><span style="font-size:10px;color:#1D4ED8;font-weight:700;line-height:1.6">${dn}${tp?` <span style="font-size:8px;color:#3B82F6">(${tp})</span>`:''}${tt}${roleBadge(dn)}</span></div>`; });
       for(let i=ssOwn.length;i<3;i++) h+=`<div style="display:flex;gap:3px;padding:1px 0"><span style="font-size:9px;color:#999;width:13px;text-align:right">${i+1}</span><span style="font-size:9px;color:#999;font-style:italic">click ↓ to assign</span></div>`;
       if(nmOwn.length||fBk.length){
         h+=`<div style="font-size:8px;color:#555;font-weight:700;letter-spacing:1px;margin:5px 0 2px">NORMAL</div>`;
-        nmOwn.forEach((s,i)=>{ const tp=s.acType||s.fleet||''; const dn=displayName(s); h+=`<div onclick="toggleSS('${s.id}')" title="Click to mark as SS" style="display:flex;gap:3px;cursor:pointer;padding:1px 0"><span style="font-size:9px;color:#555;width:13px;text-align:right">${ssOwn.length+i+1}</span><span style="font-size:10px;color:#000;font-weight:600;line-height:1.6">${dn}${tp?` <span style="font-size:8px;color:#555">(${tp})</span>`:''}${roleBadge(dn)}</span></div>`; });
+        nmOwn.forEach((s,i)=>{ const tp=s.acType||s.fleet||''; const dn=displayName(s); const tt=timingTag(s); h+=`<div onclick="toggleSS('${s.id}')" title="Click to mark as SS" style="display:flex;gap:3px;cursor:pointer;padding:1px 0"><span style="font-size:9px;color:#555;width:13px;text-align:right">${ssOwn.length+i+1}</span><span style="font-size:10px;color:#000;font-weight:600;line-height:1.6">${dn}${tp?` <span style="font-size:8px;color:#555">(${tp})</span>`:''}${tt}${roleBadge(dn)}</span></div>`; });
         fBk.forEach((b,i)=>{ h+=`<div style="display:flex;gap:3px;padding:1px 0"><span style="font-size:9px;color:#555;width:13px;text-align:right">${ssOwn.length+nmOwn.length+i+1}</span><span style="font-size:10px;color:#000;font-weight:600">${b.name}${b.type?` <span style="font-size:8px;color:#555">(${b.type})</span>`:''} <span style="font-size:8px;color:#555">(BK)</span></span></div>`; });
       }
       return h||'<div style="font-size:9px;color:var(--txt3)">—</div>';
