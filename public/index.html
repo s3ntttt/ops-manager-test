@@ -1496,16 +1496,16 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
     if(/^DAY\s*\(MD\)/.test(v))   return { matchesShift: selectedShift==='DAY',   dept };
     if(/^NIGHT\s*\(MD\)/.test(v)) return { matchesShift: selectedShift==='NIGHT', dept };
 
-    // ── Pattern 2: (D1)/(N1) etc prefix + B/U DAY/NIGHT ──
-    // e.g. "(N1) B/U NIGHT (LO)", "(D2) B/U DAY (IRR)"
-    if(/B\/U\s+DAY/.test(v)||/BU\s+DAY/.test(v)||/B\/UP\s+DAY/.test(v)||/BACKUP\s+DAY/.test(v))
+    // ── Pattern 2: B/U DAY/NIGHT — allow optional parenthesis e.g. "B/U (NIGHT)", "(N5) B/U (NIGHT)" ──
+    if(/B\/U\s*\(?\s*DAY/.test(v)||/BU\s*\(?\s*DAY/.test(v)||/B\/UP\s*\(?\s*DAY/.test(v)||/BACKUP\s*\(?\s*DAY/.test(v))
       return { matchesShift: selectedShift==='DAY',   dept };
-    if(/B\/U\s+NIGHT/.test(v)||/BU\s+NIGHT/.test(v)||/B\/UP\s+NIGHT/.test(v)||/BACKUP\s+NIGHT/.test(v))
+    if(/B\/U\s*\(?\s*NIGHT/.test(v)||/BU\s*\(?\s*NIGHT/.test(v)||/B\/UP\s*\(?\s*NIGHT/.test(v)||/BACKUP\s*\(?\s*NIGHT/.test(v))
       return { matchesShift: selectedShift==='NIGHT', dept };
 
-    // ── Pattern 3: Old bracket codes (D1)-(D6) / (N1)-(N5) standalone ──
-    if(/^\(D[1-6]\)(?:\*|\s*$)/.test(v)) return { matchesShift: selectedShift==='DAY',   dept };
-    if(/^\(N[1-5]\)(?:\*|\s*$)/.test(v)) return { matchesShift: selectedShift==='NIGHT', dept };
+    // ── Pattern 3: (D1)-(D6) / (N1)-(N5) prefix — match regardless of what follows ──
+    // e.g. "(N5) B/U (NIGHT)", "(D2)*", "(N1) B/U NIGHT (LO)"
+    if(/^\(D[1-6]\)/.test(v)) return { matchesShift: selectedShift==='DAY',   dept };
+    if(/^\(N[1-5]\)/.test(v)) return { matchesShift: selectedShift==='NIGHT', dept };
 
     // ── Pattern 4: (1),(2),(3) etc — generic backup slot for current shift ──
     // e.g. "(2) B737NG REC (CGK)" = backup slot 2
