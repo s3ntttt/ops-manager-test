@@ -653,7 +653,7 @@ async function clearDateData(){
   S.pdsc       = [{ reg:'', certifier:'' }];
   S.fgs        = [{ reg:'', remark:'' }];
   S.ops        = { ARR:'', DEP:'', TOW:'' };
-  S.actingGL   = { lo:'', irreg:'', wo:'' };
+  S.actingGL   = { lo:'', irreg:'', wo:'', cim:'' };
   S.roles      = {
     mocChaser: '',
     mojo: ['','',''],
@@ -742,8 +742,8 @@ function sanitizeState(data){
   // ops
   if(!data.ops||typeof data.ops!=='object') data.ops={ARR:'',DEP:'',TOW:''};
 
-  if(!data.actingGL||typeof data.actingGL!=='object') data.actingGL={lo:'',irreg:'',wo:''};
-  ['lo','irreg','wo'].forEach(k=>{ if(typeof data.actingGL[k]!=='string') data.actingGL[k]=''; });
+  if(!data.actingGL||typeof data.actingGL!=='object') data.actingGL={lo:'',irreg:'',wo:'',cim:''};
+  ['lo','irreg','wo','cim'].forEach(k=>{ if(typeof data.actingGL[k]!=='string') data.actingGL[k]=''; });
 
   // nicknames/overrides
   if(!data.nicknames||typeof data.nicknames!=='object') data.nicknames={};
@@ -827,7 +827,7 @@ const S = {
     ]
   },
   ssTechs: [],  // staff IDs of LO TECH marked as SS (earlier shift)
-  actingGL: { lo:'', irreg:'', wo:'' }, // manually appointed acting GLs
+  actingGL: { lo:'', irreg:'', wo:'', cim:'' }, // manually appointed acting GLs
   exclusions: [], // staff IDs permanently excluded from all lists
   soc: [{ flight:'', name:'', time:'', remark:'' }],
   pdsc: [{ reg:'', certifier:'' }],
@@ -2189,7 +2189,7 @@ function _renderSummaryInner(el){
 
   const glNames = team => {
     const dk = {LO:'lo',IRR:'irreg',WO:'wo',CIM:'cim'}[team]||'lo';
-    const key = {LO:'lo',IRR:'irreg',WO:'wo'}[team]||'lo';
+    const key = {LO:'lo',IRR:'irreg',WO:'wo',CIM:'cim'}[team]||'lo';
     // Check acting GL override first
     if(S.actingGL[key]) return S.actingGL[key];
     const rosterGL = S.staff.filter(s=>effectiveDept(s)===team&&s.category==='GL');
@@ -2488,6 +2488,7 @@ function _renderSummaryInner(el){
     ${lrow('GL LO', glNames('LO')+glBtn('LO'))}
     ${lrow('GL IRREG', glNames('IRR')+glBtn('IRR'))}
     ${lrow('GL WO', glNames('WO')+glBtn('WO'))}
+    ${lrow('GL CIM', glNames('CIM')+glBtn('CIM'))}
     ${lrow('MOC CHASER', r.mocChaser||'NIL')}
     ${shdr('MOJO')}
     ${(r.mojo||[]).map((n,i)=>`<div style="font-size:10px;font-weight:600;color:${n?'#000':'#999'};padding:2px 4px">${n||'NIL'}</div>`).join('')}
@@ -2899,7 +2900,7 @@ function openActingGLModal(team, key){
 }
 function closeActingGLModal(){ document.getElementById('actgl-ov').classList.remove('show'); }
 function setActingGL(key,name){
-  if(!S.actingGL) S.actingGL={lo:'',irreg:'',wo:''};
+  if(!S.actingGL) S.actingGL={lo:'',irreg:'',wo:'',cim:''};
   S.actingGL[key]=name;
   closeActingGLModal(); renderAll(); scheduleSave();
 }
@@ -3026,7 +3027,8 @@ function generateBriefingText(){
   txt+=`*MOC* : ${mocNames}\n`;
   txt+=`*GL LO* : ${glN('LO')}\n`;
   txt+=`*GL IRREG* : ${glN('IRR')}\n`;
-  txt+=`*GL WO* : ${glN('WO')}\n\n`;
+  txt+=`*GL WO* : ${glN('WO')}\n`;
+  txt+=`*GL CIM* : ${glN('CIM')}\n\n`;
   if(b1.length){ txt+=`*LAE B1*\n${b1.map(s=>dnHalf(s)).join(' / ')}\n\n`; }
   if(b2.length){ txt+=`*LAE B2*\n${b2.map(s=>dnHalf(s)).join(' / ')}\n\n`; }
   if(lat.length){ txt+=`*LAT*\n${lat.map(s=>dnHalf(s)).join(' / ')}\n\n`; }
