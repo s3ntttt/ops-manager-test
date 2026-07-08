@@ -2255,6 +2255,9 @@ function _renderSummaryInner(el){
     </table>`;
 
   const assigned = getAssignedNames();
+  // Acting GL names — exclude from certifier headcounts
+  const actingGLSet=new Set(Object.values(S.actingGL||{}).filter(n=>n).map(n=>n.toUpperCase()));
+  const excActingGL=arr=>arr.filter(s=>!actingGLSet.has((displayName(s)||'').toUpperCase()));
   const ssSet    = new Set(S.ssTechs);
   const traineeNames = new Set([...(S.trainees?.permanent||[]),...(S.trainees?.backups||[])].map(t=>(t.name||'').toUpperCase()));
 
@@ -2653,10 +2656,10 @@ function _renderSummaryInner(el){
           ${(()=>{
             let html='';
             [['TECH','TECH'],['LAT','LAT'],['LAE B1','LAE B1'],['LAE B2','LAE B2']].forEach(([lbl,cat])=>{
-              const loArr={'TECH':loTech,'LAT':loLat}[cat]||[];
-              const irArr={'TECH':irTech,'LAE B1':irB1,'LAE B2':irB2}[cat]||[];
-              const woArr={'TECH':woTech,'LAE B1':woB1,'LAE B2':woB2}[cat]||[];
-              const cmArr={'TECH':cimTech,'LAT':cimLat,'LAE B1':cimB1,'LAE B2':cimB2}[cat]||[];
+              const loArr=excActingGL({'TECH':loTech,'LAT':loLat}[cat]||[]);
+              const irArr=excActingGL({'TECH':irTech,'LAE B1':irB1,'LAE B2':irB2}[cat]||[]);
+              const woArr=excActingGL({'TECH':woTech,'LAE B1':woB1,'LAE B2':woB2}[cat]||[]);
+              const cmArr=excActingGL({'TECH':cimTech,'LAT':cimLat,'LAE B1':cimB1,'LAE B2':cimB2}[cat]||[]);
               const lv=hCount(loArr),iv=hCount(irArr),wv=hCount(woArr),cv=hCount(cmArr),tot=lv+iv+wv+cv;
               if(!tot) return;
               html+=`<tr><td style="padding:3px 6px;color:var(--txt2);border:1px solid var(--b)">${lbl}</td>
@@ -2666,8 +2669,8 @@ function _renderSummaryInner(el){
                 <td style="padding:3px 6px;text-align:center;color:${cv?'var(--green)':'var(--txt3)'};border:1px solid var(--b)">${fmtN(cv)||'—'}</td>
                 <td style="padding:3px 6px;text-align:center;color:var(--amber);font-weight:700;border:1px solid var(--b)">${fmtN(tot)}</td></tr>`;
             });
-            const tlo=hCount(loTech)+hCount(loLat),ti=hCount(irTech)+hCount(irB1)+hCount(irB2);
-            const tw=hCount(woTech)+hCount(woB1)+hCount(woB2),tc=hCount(cimTech)+hCount(cimLat)+hCount(cimB1)+hCount(cimB2);
+            const tlo=hCount(excActingGL(loTech))+hCount(excActingGL(loLat)),ti=hCount(excActingGL(irTech))+hCount(excActingGL(irB1))+hCount(excActingGL(irB2));
+            const tw=hCount(excActingGL(woTech))+hCount(excActingGL(woB1))+hCount(excActingGL(woB2)),tc=hCount(excActingGL(cimTech))+hCount(excActingGL(cimLat))+hCount(excActingGL(cimB1))+hCount(excActingGL(cimB2));
             html+=`<tr style="background:var(--surf2)"><td style="padding:3px 6px;color:var(--amber);font-weight:700;border:1px solid var(--b)">TOTAL</td>
               <td style="padding:3px 6px;text-align:center;color:var(--amber);font-weight:700;border:1px solid var(--b)">${fmtN(tlo)}</td>
               <td style="padding:3px 6px;text-align:center;color:var(--amber);font-weight:700;border:1px solid var(--b)">${fmtN(ti)}</td>
@@ -2925,7 +2928,7 @@ function generateBriefingText(){
 
   // GL names
   const glN=team=>{
-    const key={LO:'lo',IRR:'irreg',WO:'wo'}[team]||'lo';
+    const key={LO:'lo',IRR:'irreg',WO:'wo',CIM:'cim'}[team]||'lo';
     if(S.actingGL&&S.actingGL[key]) return S.actingGL[key];
     const dk=key;
     const gl=S.staff.filter(s=>effectiveDept(s)===team&&s.category==='GL');
@@ -2947,10 +2950,13 @@ function generateBriefingText(){
     return [...own,...xs,...mb];
   };
   const dn=s=>s._manual?s.shortName:displayName(s);
+  // Acting GL names — exclude from certifier lists and headcount
+  const actingGLNames=new Set(Object.values(S.actingGL||{}).filter(n=>n).map(n=>n.toUpperCase()));
+  const notActingGL=s=>!actingGLNames.has((dn(s)||'').toUpperCase());
   const teams=['LO','IRR','WO','CIM'];
-  const b1=teams.flatMap(t=>byCat(t,'LAE B1'));
-  const b2=teams.flatMap(t=>byCat(t,'LAE B2'));
-  const lat=teams.flatMap(t=>byCat(t,'LAT'));
+  const b1=teams.flatMap(t=>byCat(t,'LAE B1')).filter(notActingGL);
+  const b2=teams.flatMap(t=>byCat(t,'LAE B2')).filter(notActingGL);
+  const lat=teams.flatMap(t=>byCat(t,'LAT')).filter(notActingGL);
 
   // SS detection — runner timing starts with 06 or 12
   const isSS=t=>t&&(t.trim().startsWith('06')||t.trim().startsWith('12'));
