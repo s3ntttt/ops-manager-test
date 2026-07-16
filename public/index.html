@@ -1427,7 +1427,7 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
   }
 
   // 3. Detect column positions from any header row (row containing "Designation" or "Staff")
-  let cols = { id:null, name:null, desig:null, acType:null, desigCode:null, fleet:null, shift:null };
+  let cols = { id:null, name:null, desig:null, acType:null, desigCode:null, fleet:null, shift:null, team:null };
   for(let i=0;i<rows.length;i++){
     const row=rows[i];
     const joined=row.map(v=>String(v||'').toLowerCase()).join('|');
@@ -1441,6 +1441,7 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
       if(v.includes('desig code')                && cols.desigCode===null) cols.desigCode=j;
       if(v==='type'                               && cols.fleet===null)    cols.fleet=j;
       if(v==='shift'                              && cols.shift===null)    cols.shift=j;
+      if((v==='team'||v==='group')              && cols.team===null)    cols.team=j;
     });
     if(cols.id!==null||cols.name!==null) break;
   }
@@ -1461,6 +1462,9 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
       if(cols.shift!==null) break;
     }
   }
+  // Fallback: if Team column not found via header, it's the column just before Staff ID
+  if(cols.team===null && cols.id!==null && cols.id>0) cols.team=cols.id-1;
+
   // Fallback: find id col from first M##### occurrence
   if(cols.id===null){
     outer: for(let i=10;i<rows.length;i++){
@@ -1514,6 +1518,16 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
     return null; // plain DAY, NIGHT, STBY etc → not backup
   }
 
+  // Helper: map raw Team column value → internal team key
+  function teamKeyOf(raw){
+    const v=String(raw||'').toUpperCase().trim();
+    if(v==='LO') return 'LO';
+    if(v==='IRR'||v==='IRREG') return 'IRR';
+    if(v==='WO') return 'WO';
+    if(v==='CIM') return 'CIM';
+    return null;
+  }
+
   // 4. Walk rows — TWO passes in one loop:
   //    Pass A: collect Shift C own staff (existing logic)
   //    Pass B: collect backup staff from other shifts with matching backup code
@@ -1521,6 +1535,7 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
   let curSection=null;       // current Shift C section
   let curOtherSection=null;  // current other-shift section (for backup detection)
   let curOtherShift=null;    // 'A'|'B'|'D'
+  let curTransSection=false; // true = inside TRANSITION/DEPLOYMENT/LONG LEAVE section
 
   for(let i=0;i<rows.length;i++){
     const row=rows[i];
@@ -1541,12 +1556,15 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
           hdr.includes('TOOL CRIB')                                  || // Tool Crib team
           hdr.includes('SS NILAI')                                   || // SS Nilai outstation
           (hdr.includes('STORE') && hdr.includes('LOGISTIC'))        || // Store & Logistics
-          hdr.includes('TRANSITION') || hdr.includes('DEPLOYMENT')   || // Transition/Deployment/Long Leaves
-          hdr.includes('LONG LEAVE')                                 || // Long Leaves
           hdr.includes('PRODUCTION PLANNING')                        || // PPC management header
           hdr.includes('PPC');                                          // PPC SHIFT A/B/C/D (all variants)
         if(isExcluded){
-          curSection=null; curOtherSection=null; curOtherShift=null;
+          curSection=null; curOtherSection=null; curOtherShift=null; curTransSection=false;
+          continue;
+        }
+        // Detect TRANSITION / DEPLOYMENT / LONG LEAVE section — scan for own-shift staff
+        if(hdr.includes('TRANSITION')||hdr.includes('DEPLOYMENT')||hdr.includes('LONG LEAVE')){
+          curSection=null; curOtherSection=null; curOtherShift=null; curTransSection=true;
           continue;
         }
       }
@@ -1555,7 +1573,7 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
     // Detect own-shift section headers
     const sec=detectSection(row);
     if(sec!==null){
-      curSection=sec; curOtherSection=null; curOtherShift=null;
+      curSection=sec; curOtherSection=null; curOtherShift=null; curTransSection=false;
       if(!dbgSections[sec]) dbgSections[sec]={startRow:i,count:0};
       continue;
     }
@@ -1569,7 +1587,7 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
         for(const p of pats){ if(txt.includes(p)){ otherTeam=key; break; } }
         if(otherTeam) break;
       }
-      curOtherSection=otherTeam; curOtherShift=otherM[1]; curSection=null;
+      curOtherSection=otherTeam; curOtherShift=otherM[1]; curSection=null; curTransSection=false;
       continue;
     }
 
@@ -1633,6 +1651,40 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
         avail: { st:'WORKING', lbl:`BK-${curOtherShift||'?'}`, cls:'standby', badge:'bst', raw:schedVal },
         fromShift: curOtherShift||'?',
         isBackup: true });
+    }
+    // ── TRANSITION/DEPLOYMENT/LONG LEAVE section staff ──
+    else if(curTransSection){
+      const rawTeam = cols.team!==null ? String(row[cols.team]||'').trim() : '';
+      const tTeam   = teamKeyOf(rawTeam);
+      if(!tTeam) continue; // unknown/blank team column → skip
+      const schedUpper = schedVal.toUpperCase().trim();
+      const bk = parseBkCode(schedVal, shiftType);
+      const isOwnShift = schedUpper===shiftType || schedUpper===shiftType+' (MD)';
+      const isMatchingBk = bk && bk.matchesShift;
+      if(!isOwnShift && !isMatchingBk) continue; // not working this shift
+      if(staff.some(s=>s.id===id||s.id===id+'_BK')) continue; // already collected
+      const targetTeam = (bk&&bk.dept) || tTeam;
+      if(isOwnShift){
+        // Working own shift — appears as regular staff in their team
+        staff.push({ id, fullName,
+          shortName: sn[fullName]||shortify(fullName),
+          desig, acType, desigCode, fleet,
+          team: targetTeam, schedVal,
+          category: catOf(desigCode,desig),
+          avail: availOf(schedVal,shiftType),
+          fromShift: null,
+          isBackup: false });
+      } else {
+        // Has a backup code — appears as cross-shift backup labelled 'T' (Transition)
+        staff.push({ id: id+'_BK', fullName,
+          shortName: sn[fullName]||shortify(fullName),
+          desig, acType, desigCode, fleet,
+          team: targetTeam, schedVal,
+          category: catOf(desigCode,desig),
+          avail: { st:'WORKING', lbl:'BK-T', cls:'standby', badge:'bst', raw:schedVal },
+          fromShift: 'T',
+          isBackup: true });
+      }
     }
     // Only scan within known LO/IRREG/WO/CIM/MOC sections — no fallback for unknown sections
   }
