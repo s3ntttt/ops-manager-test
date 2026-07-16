@@ -1518,6 +1518,14 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
     return null; // plain DAY, NIGHT, STBY etc → not backup
   }
 
+  // Staff permanently excluded from TRANSITION/DEPLOYMENT/LONG LEAVE scanning
+  // (They are listed in that section but should not appear as working from it)
+  const TRANS_EXCL = new Set([
+    'M13339','M11057','M05673','M14100','M14795','M14794','M14973',
+    'M14844','M14845','M14972','M00136','M14911','M12122','M14465',
+    'M14966','M13594'
+  ]);
+
   // Helper: map raw Team column value → internal team key
   function teamKeyOf(raw){
     const v=String(raw||'').toUpperCase().trim();
@@ -1657,6 +1665,7 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
       const rawTeam = cols.team!==null ? String(row[cols.team]||'').trim() : '';
       const tTeam   = teamKeyOf(rawTeam);
       if(!tTeam) continue; // unknown/blank team column → skip
+      if(TRANS_EXCL.has(id)) continue; // this staff is excluded from transition scanning
       const schedUpper = schedVal.toUpperCase().trim();
       const bk = parseBkCode(schedVal, shiftType);
       const isOwnShift = schedUpper===shiftType || schedUpper===shiftType+' (MD)';
