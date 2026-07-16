@@ -1673,13 +1673,17 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
       if(!isOwnShift && !isMatchingBk) continue; // not working this shift
       if(staff.some(s=>s.id===id||s.id===id+'_BK')) continue; // already collected
       const targetTeam = (bk&&bk.dept) || tTeam;
+      // GL designation is irrelevant in TRANSITION context — treat as TECH so they
+      // appear in the numbered staff list, not in the GL slot of the allocation panel.
+      const rawCat = catOf(desigCode,desig);
+      const transCat = rawCat==='GL' ? 'TECH' : rawCat;
       if(isOwnShift){
         // Working own shift — appears as regular staff in their team
         staff.push({ id, fullName,
           shortName: sn[fullName]||shortify(fullName),
           desig, acType, desigCode, fleet,
           team: targetTeam, schedVal,
-          category: catOf(desigCode,desig),
+          category: transCat,
           avail: availOf(schedVal,shiftType),
           fromShift: null,
           isBackup: false });
@@ -1689,7 +1693,7 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
           shortName: sn[fullName]||shortify(fullName),
           desig, acType, desigCode, fleet,
           team: targetTeam, schedVal,
-          category: catOf(desigCode,desig),
+          category: transCat,
           avail: { st:'WORKING', lbl:'BK-T', cls:'standby', badge:'bst', raw:schedVal },
           fromShift: 'T',
           isBackup: true });
