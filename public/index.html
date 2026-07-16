@@ -3331,7 +3331,7 @@ function renderAllocPreview(parsed){
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
           <span style="font-size:9px;color:var(--txt3);font-weight:700">SWAP WITH:</span>
-          ${irrPool.slice(0,6).map((irS,si)=>{
+          ${irrPool.map((irS,si)=>{
             const key=`w${wi}_s${si}`;
             _allocStore[key]={allocName:dn,allocDept:dept,irrName:displayName(irS),allocId:s.id,irrId:irS.id};
             return `<button class="btn btn-ghost btn-sm" style="font-size:9px;padding:2px 8px" onclick="window._doSwap('${key}')">⇄ ${displayName(irS)}</button>`;
