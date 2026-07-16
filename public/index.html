@@ -2263,7 +2263,7 @@ function _renderSummaryInner(el){
   };
 
   const glBtn = team => {
-    const key={LO:'lo',IRR:'irreg',WO:'wo'}[team]||'lo';
+    const key={LO:'lo',IRR:'irreg',WO:'wo',CIM:'cim'}[team]||'lo';
     return `<button class="btn btn-ghost btn-sm np" style="font-size:8px;padding:1px 5px;margin-left:4px" onclick="openActingGLModal('${team}','${key}')">✎</button>`;
   };
   const mocStaff   = S.staff.filter(s=>isMocStaff(s)&&isActive(effAvail(s)));
