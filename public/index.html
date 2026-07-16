@@ -1651,11 +1651,15 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
       if((!bk||!bk.matchesShift)&&!isPlainMatch) continue;
       if(staff.some(s=>s.id===id||s.id===id+'_BK')) continue; // already in own shift
       const targetTeam=(bk&&bk.dept)||curOtherSection;
+      // Backup GLs fill a working slot — if they're backing up it means the own-shift
+      // GL is already present, so treat them as TECH in the numbered list.
+      const bkRawCat=catOf(desigCode,desig);
+      const bkCat=bkRawCat==='GL'?'TECH':bkRawCat;
       staff.push({ id: id+'_BK', fullName,
         shortName: sn[fullName]||shortify(fullName),
         desig, acType, desigCode, fleet,
         team: targetTeam, schedVal,
-        category: catOf(desigCode,desig),
+        category: bkCat,
         avail: { st:'WORKING', lbl:`BK-${curOtherShift||'?'}`, cls:'standby', badge:'bst', raw:schedVal },
         fromShift: curOtherShift||'?',
         isBackup: true });
