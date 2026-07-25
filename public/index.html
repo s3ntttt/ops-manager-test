@@ -1650,7 +1650,11 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
       const isPlainMatch=schedUpper===shiftType||schedUpper===shiftType+' (MD)';
       if((!bk||!bk.matchesShift)&&!isPlainMatch) continue;
       if(staff.some(s=>s.id===id||s.id===id+'_BK')) continue; // already in own shift
-      const targetTeam=(bk&&bk.dept)||curOtherSection;
+      // Use Team column value as tiebreaker: bk.dept > Team column > section header.
+      // This fixes cases where a staff is physically listed under the wrong section
+      // (e.g. an LO/IRR person grouped under CIM in the other shift's roster).
+      const bkColTeam = cols.team!==null ? teamKeyOf(String(row[cols.team]||'').trim()) : null;
+      const targetTeam=(bk&&bk.dept)||bkColTeam||curOtherSection;
       // Backup GLs fill a working slot — if they're backing up it means the own-shift
       // GL is already present, so treat them as TECH in the numbered list.
       const bkRawCat=catOf(desigCode,desig);
