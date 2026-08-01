@@ -1280,7 +1280,9 @@ async function loadRoster(){
     S.ops={ARR:'',DEP:'',TOW:''}; S.roles={
       mocChaser:'',mojo:['','',''],
       wc:[{primary:'',asst:''},{primary:'',asst:''}],
-      runners:[{name:'',timing:'0700-1300'},{name:'',timing:'0700-1300'},{name:'',timing:'1300-1900'},{name:'',timing:'1300-1900'}],
+      runners:shift==='NIGHT'
+        ?[{name:'',timing:'1900-0100'},{name:'',timing:'1900-0100'},{name:'',timing:'0100-0700'},{name:'',timing:'0100-0700'}]
+        :[{name:'',timing:'0700-1300'},{name:'',timing:'0700-1300'},{name:'',timing:'1300-1900'},{name:'',timing:'1300-1900'}],
       towerSlots:[{a:'',b:'',backup:''},{a:'',b:'',backup:''},{a:'',b:'',backup:''},{a:'',b:'',backup:''}]
     };
     S.loaded = true;
@@ -2247,10 +2249,9 @@ function _renderSummaryInner(el){
     S.roles = {
       mocChaser:'', mojo:['','',''],
       wc:[{primary:'',asst:''},{primary:'',asst:''}],
-      runners:[
-        {name:'',timing:'0700-1300'},{name:'',timing:'0700-1300'},
-        {name:'',timing:'1300-1900'},{name:'',timing:'1300-1900'}
-      ],
+      runners:isDay
+        ?[{name:'',timing:'0700-1300'},{name:'',timing:'0700-1300'},{name:'',timing:'1300-1900'},{name:'',timing:'1300-1900'}]
+        :[{name:'',timing:'1900-0100'},{name:'',timing:'1900-0100'},{name:'',timing:'0100-0700'},{name:'',timing:'0100-0700'}],
       towerSlots:[{a:'',b:'',backup:''},{a:'',b:'',backup:''},{a:'',b:'',backup:''},{a:'',b:'',backup:''}]
     };
   }
@@ -2359,7 +2360,7 @@ function _renderSummaryInner(el){
   const roleBadge=name=>{
     const label=roleMap[name];
     if(!label) return '';
-    const colors={'MOC':'var(--amber)','MOJO':'#0369A1','WC1':'#1D4ED8','WC2':'#1D4ED8','RNR1':'#1D4ED8','RNR2':'#555','RNR3':'#1D4ED8','RNR4':'#555','TWR1':'var(--amber)','TWR2':'var(--amber)','TWR3':'var(--amber)','TWR4':'var(--amber)','GL':'var(--amber)'};
+    const colors={'MOC':'var(--amber)','MOJO':'#0369A1','WC1':'#1D4ED8','WC2':'#1D4ED8','RNR1':'#555','RNR2':'#555','RNR3':'#555','RNR4':'#555','TWR1':'var(--amber)','TWR2':'var(--amber)','TWR3':'var(--amber)','TWR4':'var(--amber)','GL':'var(--amber)'};
     const c=colors[label]||'#555';
     return `<span style="font-size:7px;font-weight:800;color:#fff;background:${c};border-radius:3px;padding:0 4px;margin-left:4px;letter-spacing:0.5px;vertical-align:middle">${label}</span>`;
   };
@@ -2592,17 +2593,14 @@ function _renderSummaryInner(el){
     ${(r.runners||[]).map((rn,i)=>{
       const parts=(rn.timing||'').split('/').map(s=>s.trim());
       const dispTiming=isDay?(parts[0]||rn.timing):(parts[1]||parts[0]||rn.timing);
-      const t=dispTiming.trim();
-      const ss=t.startsWith('06')||t.startsWith('12')||t.startsWith('18')||t.startsWith('00');
       return `<div style="display:grid;grid-template-columns:1fr auto;gap:6px;padding:2px 0;border-bottom:1px solid var(--b);align-items:center">
-        <span style="font-size:9px;font-weight:600;color:${rn.name?(ss?'#1D4ED8':'#000'):'#999'};min-width:0">${rn.name||'NIL'}</span>
-        <span style="font-size:9px;font-weight:600;color:${ss?'#1D4ED8':'#333'};white-space:nowrap;text-align:right">${dispTiming}</span>
+        <span style="font-size:9px;font-weight:600;color:${rn.name?'#000':'#999'};min-width:0">${rn.name||'NIL'}</span>
+        <span style="font-size:9px;font-weight:600;color:#333;white-space:nowrap;text-align:right">${dispTiming}</span>
       </div>`;
     }).join('')}
     ${shdr('TOWER')}
     ${(r.towerSlots||[]).map((ts,i)=>{
-      const ss=i===0||ts.ss;
-      const col=ss?'#1D4ED8':'#000';
+      const col='#000';
       const primary=ts.a&&ts.b?ts.a+' / '+ts.b:ts.a||ts.b||'NIL';
       return `<div style="display:grid;grid-template-columns:1fr 12px 1fr;gap:2px;padding:2px 0;border-bottom:1px solid var(--b);align-items:center">
         <span style="font-size:9px;font-weight:600;color:${(ts.a||ts.b)?col:'#999'};min-width:0">${primary}</span>
