@@ -659,10 +659,10 @@ async function clearDateData(){
     mojo: ['','',''],
     wc: [{ primary:'', asst:'' },{ primary:'', asst:'' }],
     runners: [
-      { name:'', timing:'0600-1200 / 1800-0000' },
-      { name:'', timing:'0700-1300 / 1900-0100' },
-      { name:'', timing:'1200-1800 / 0000-0600' },
-      { name:'', timing:'1300-1900 / 0100-0700' }
+      { name:'', timing:'0700-1300' },
+      { name:'', timing:'0700-1300' },
+      { name:'', timing:'1300-1900' },
+      { name:'', timing:'1300-1900' }
     ],
     towerSlots: [
       { a:'', b:'', backup:'' },
@@ -757,8 +757,8 @@ function sanitizeState(data){
     mocChaser:'', mojo:['','',''],
     wc:[{primary:'',asst:''},{primary:'',asst:''}],
     runners:[
-      {name:'',timing:'0600-1200 / 1800-0000'},{name:'',timing:'0700-1300 / 1900-0100'},
-      {name:'',timing:'1200-1800 / 0000-0600'},{name:'',timing:'1300-1900 / 0100-0700'}
+      {name:'',timing:'0700-1300'},{name:'',timing:'0700-1300'},
+      {name:'',timing:'1300-1900'},{name:'',timing:'1300-1900'}
     ],
     towerSlots:[{a:'',b:'',backup:''},{a:'',b:'',backup:''},{a:'',b:'',backup:''},{a:'',b:'',backup:''}]
   };
@@ -769,6 +769,9 @@ function sanitizeState(data){
     r.wc=[0,1].map(i=>({primary:r.wc?.[i]?.primary||'',asst:r.wc?.[i]?.asst||''}));
   if(!Array.isArray(r.runners)||r.runners.length<4)
     r.runners=defRoles.runners.map((d,i)=>({name:r.runners?.[i]?.name||'',timing:r.runners?.[i]?.timing||d.timing}));
+  // Aug 2026: update old slash-format runner timings to new flat schedule
+  { const nt=['0700-1300','0700-1300','1300-1900','1300-1900'];
+    r.runners.forEach((rn,i)=>{ if(rn.timing&&rn.timing.includes('/')) rn.timing=nt[i]||rn.timing; }); }
   if(!Array.isArray(r.towerSlots)||r.towerSlots.length<4)
     r.towerSlots=[0,1,2,3].map(i=>({a:r.towerSlots?.[i]?.a||'',b:r.towerSlots?.[i]?.b||'',backup:r.towerSlots?.[i]?.backup||''}));
   if(typeof r.mocChaser!=='string') r.mocChaser='';
@@ -814,10 +817,10 @@ const S = {
     mojo: ['', '', ''],
     wc: [{ primary:'', asst:'' }, { primary:'', asst:'' }],
     runners: [
-      { name:'', timing:'0600-1200 / 1800-0000' },
-      { name:'', timing:'0700-1300 / 1900-0100' },
-      { name:'', timing:'1200-1800 / 0000-0600' },
-      { name:'', timing:'1300-1900 / 0100-0700' }
+      { name:'', timing:'0700-1300' },
+      { name:'', timing:'0700-1300' },
+      { name:'', timing:'1300-1900' },
+      { name:'', timing:'1300-1900' }
     ],
     towerSlots: [
       { a:'', b:'', backup:'' },
@@ -1277,7 +1280,7 @@ async function loadRoster(){
     S.ops={ARR:'',DEP:'',TOW:''}; S.roles={
       mocChaser:'',mojo:['','',''],
       wc:[{primary:'',asst:''},{primary:'',asst:''}],
-      runners:[{name:'',timing:'0600-1200 / 1800-0000'},{name:'',timing:'0700-1300 / 1900-0100'},{name:'',timing:'1200-1800 / 0000-0600'},{name:'',timing:'1300-1900 / 0100-0700'}],
+      runners:[{name:'',timing:'0700-1300'},{name:'',timing:'0700-1300'},{name:'',timing:'1300-1900'},{name:'',timing:'1300-1900'}],
       towerSlots:[{a:'',b:'',backup:''},{a:'',b:'',backup:''},{a:'',b:'',backup:''},{a:'',b:'',backup:''}]
     };
     S.loaded = true;
@@ -2245,8 +2248,8 @@ function _renderSummaryInner(el){
       mocChaser:'', mojo:['','',''],
       wc:[{primary:'',asst:''},{primary:'',asst:''}],
       runners:[
-        {name:'',timing:'0600-1200 / 1800-0000'},{name:'',timing:'0700-1300 / 1900-0100'},
-        {name:'',timing:'1200-1800 / 0000-0600'},{name:'',timing:'1300-1900 / 0100-0700'}
+        {name:'',timing:'0700-1300'},{name:'',timing:'0700-1300'},
+        {name:'',timing:'1300-1900'},{name:'',timing:'1300-1900'}
       ],
       towerSlots:[{a:'',b:'',backup:''},{a:'',b:'',backup:''},{a:'',b:'',backup:''},{a:'',b:'',backup:''}]
     };
@@ -3094,15 +3097,14 @@ function generateBriefingText(){
     let line=cleanRoleName(t.a);
     if(t.b) line+=` / ${cleanRoleName(t.b)}`;
     if(t.backup) line+=` + ${cleanRoleName(t.backup)}`;
-    const ss=i===0||t.ss||ssPersons.has(t.a)||ssPersons.has(t.b);
-    if(ss) line+=` - SS`;
+    // Towers no longer get '- SS' label (Aug 2026)
     return line;
   });
 
   // Runners
   const runnerLines=r.runners.filter(rn=>rn.name).map(rn=>{
     const t=(rn.timing||'').split('/')[0].trim().replace(/[^\d-]/g,'');
-    return `${cleanRoleName(rn.name)} ${t}${isSS(rn.timing)?' - SS':''}`;
+    return `${cleanRoleName(rn.name)} ${t}`;
   });
 
   let txt='';
