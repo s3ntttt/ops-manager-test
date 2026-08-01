@@ -1571,7 +1571,7 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
           continue;
         }
         // Detect TRANSITION / DEPLOYMENT / LONG LEAVE section — scan for own-shift staff
-        if(hdr.includes('TRANSITION')||hdr.includes('DEPLOYMENT')||hdr.includes('LONG LEAVE')){
+        if(hdr.includes('TRANSITION')||hdr.includes('DEPLOYMENT')||hdr.includes('LONG LEAVE')||hdr.includes('INDUCTION')){
           curSection=null; curOtherSection=null; curOtherShift=null; curTransSection=true;
           continue;
         }
@@ -1679,6 +1679,13 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
       const isOwnShift = schedUpper===shiftType || schedUpper===shiftType+' (MD)';
       const isMatchingBk = bk && bk.matchesShift;
       if(!isOwnShift && !isMatchingBk) continue; // not working this shift
+      // Duplicate check — but for own-shift: if previously added as cross-shift _BK
+      // (because the person is still listed in another shift's section), upgrade to
+      // own-shift by removing the backup entry first.
+      if(isOwnShift){
+        const prevBkIdx = staff.findIndex(s=>s.id===id+'_BK');
+        if(prevBkIdx!==-1) staff.splice(prevBkIdx,1); // remove stale cross-shift BK entry
+      }
       if(staff.some(s=>s.id===id||s.id===id+'_BK')) continue; // already collected
       const targetTeam = (bk&&bk.dept) || tTeam;
       // GL designation is irrelevant in TRANSITION context — treat as TECH so they
