@@ -772,6 +772,9 @@ function sanitizeState(data){
   // Aug 2026: update old slash-format runner timings to new flat schedule
   { const nt=['0700-1300','0700-1300','1300-1900','1300-1900'];
     r.runners.forEach((rn,i)=>{ if(rn.timing&&rn.timing.includes('/')) rn.timing=nt[i]||rn.timing; }); }
+  // Aug 2026: migrate old SS night-runner timings to new schedule
+  { const nm={'1800-0000':'1900-0100','1800-2400':'1900-0100','0000-0600':'0100-0700','0000-0700':'0100-0700'};
+    r.runners.forEach(rn=>{ const t=(rn.timing||'').trim(); if(nm[t]) rn.timing=nm[t]; }); }
   if(!Array.isArray(r.towerSlots)||r.towerSlots.length<4)
     r.towerSlots=[0,1,2,3].map(i=>({a:r.towerSlots?.[i]?.a||'',b:r.towerSlots?.[i]?.b||'',backup:r.towerSlots?.[i]?.backup||''}));
   if(typeof r.mocChaser!=='string') r.mocChaser='';
