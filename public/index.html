@@ -1579,7 +1579,7 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
           continue;
         }
         // Detect TRANSITION / DEPLOYMENT / LONG LEAVE section — scan for own-shift staff
-        if(hdr.includes('TRANSITION')||hdr.includes('DEPLOYMENT')||hdr.includes('LONG LEAVE')||hdr.includes('INDUCTION')){
+        if(hdr.includes('TRANSITION')||hdr.includes('DEPLOYMENT')||hdr.includes('LONG LEAVE')||hdr.includes('INDUCTION')||hdr.includes('BAT VAML')){
           curSection=null; curOtherSection=null; curOtherShift=null; curTransSection=true;
           continue;
         }
