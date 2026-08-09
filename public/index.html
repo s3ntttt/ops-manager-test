@@ -1666,10 +1666,10 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
       // (e.g. an LO/IRR person grouped under CIM in the other shift's roster).
       const bkColTeam = cols.team!==null ? teamKeyOf(String(row[cols.team]||'').trim()) : null;
       const targetTeam=(bk&&bk.dept)||bkColTeam||curOtherSection;
-      // Backup GLs fill a working slot — if they're backing up it means the own-shift
-      // GL is already present, so treat them as TECH in the numbered list.
+      // Backup GLs → TECH (own-shift GL is present). NON-CS LAE → TECH (cannot certify).
       const bkRawCat=catOf(desigCode,desig);
-      const bkCat=bkRawCat==='GL'?'TECH':bkRawCat;
+      const bkIsNonCS=desig.toUpperCase().includes('(NON-CS)');
+      const bkCat=(bkRawCat==='GL'||bkIsNonCS)?'TECH':bkRawCat;
       staff.push({ id: id+'_BK', fullName,
         shortName: sn[fullName]||shortify(fullName),
         desig, acType, desigCode, fleet,
@@ -1699,10 +1699,11 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
       }
       if(staff.some(s=>s.id===id||s.id===id+'_BK')) continue; // already collected
       const targetTeam = (bk&&bk.dept) || tTeam;
-      // GL designation is irrelevant in TRANSITION context — treat as TECH so they
-      // appear in the numbered staff list, not in the GL slot of the allocation panel.
+      // GL and NON-CS → TECH in TRANSITION context.
+      // GL: supervisory role irrelevant on posting. NON-CS: cannot certify, functions as TECH.
       const rawCat = catOf(desigCode,desig);
-      const transCat = rawCat==='GL' ? 'TECH' : rawCat;
+      const isNonCS = desig.toUpperCase().includes('(NON-CS)');
+      const transCat = (rawCat==='GL' || isNonCS) ? 'TECH' : rawCat;
       if(isOwnShift){
         // Working own shift — appears as regular staff in their team
         staff.push({ id, fullName,
