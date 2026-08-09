@@ -1551,7 +1551,8 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
   let curSection=null;       // current Shift C section
   let curOtherSection=null;  // current other-shift section (for backup detection)
   let curOtherShift=null;    // 'A'|'B'|'D'
-  let curTransSection=false; // true = inside TRANSITION/DEPLOYMENT/LONG LEAVE section
+  let curTransSection=false;      // true = inside TRANSITION/DEPLOYMENT/LONG LEAVE section
+  let curTransDefaultTeam=null;  // fallback team when Team column blank in trans section
 
   for(let i=0;i<rows.length;i++){
     const row=rows[i];
@@ -1575,12 +1576,14 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
           hdr.includes('PRODUCTION PLANNING')                        || // PPC management header
           hdr.includes('PPC');                                          // PPC SHIFT A/B/C/D (all variants)
         if(isExcluded){
-          curSection=null; curOtherSection=null; curOtherShift=null; curTransSection=false;
+          curSection=null; curOtherSection=null; curOtherShift=null; curTransSection=false; curTransDefaultTeam=null;
           continue;
         }
         // Detect TRANSITION / DEPLOYMENT / LONG LEAVE section — scan for own-shift staff
         if(hdr.includes('TRANSITION')||hdr.includes('DEPLOYMENT')||hdr.includes('LONG LEAVE')||hdr.includes('INDUCTION')||hdr.includes('BAT VAML')){
           curSection=null; curOtherSection=null; curOtherShift=null; curTransSection=true;
+          // BAT VAML section has no Team column — default to IRR (LAE/TECH on posting)
+          curTransDefaultTeam = hdr.includes('BAT VAML') ? 'IRR' : null;
           continue;
         }
       }
@@ -1589,7 +1592,7 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
     // Detect own-shift section headers
     const sec=detectSection(row);
     if(sec!==null){
-      curSection=sec; curOtherSection=null; curOtherShift=null; curTransSection=false;
+      curSection=sec; curOtherSection=null; curOtherShift=null; curTransSection=false; curTransDefaultTeam=null;
       if(!dbgSections[sec]) dbgSections[sec]={startRow:i,count:0};
       continue;
     }
@@ -1603,7 +1606,7 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
         for(const p of pats){ if(txt.includes(p)){ otherTeam=key; break; } }
         if(otherTeam) break;
       }
-      curOtherSection=otherTeam; curOtherShift=otherM[1]; curSection=null; curTransSection=false;
+      curOtherSection=otherTeam; curOtherShift=otherM[1]; curSection=null; curTransSection=false; curTransDefaultTeam=null;
       continue;
     }
 
@@ -1679,7 +1682,7 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
     // ── TRANSITION/DEPLOYMENT/LONG LEAVE section staff ──
     else if(curTransSection){
       const rawTeam = cols.team!==null ? String(row[cols.team]||'').trim() : '';
-      const tTeam   = teamKeyOf(rawTeam);
+      const tTeam   = teamKeyOf(rawTeam) || curTransDefaultTeam;
       if(!tTeam) continue; // unknown/blank team column → skip
       if(TRANS_EXCL.has(id)) continue; // this staff is excluded from transition scanning
       const schedUpper = schedVal.toUpperCase().trim();
