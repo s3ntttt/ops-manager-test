@@ -96,6 +96,7 @@ select option{background:var(--surf2)}
 .toast.out{animation:toastOut .25s ease forwards}
 @keyframes toastIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
 @keyframes toastOut{to{opacity:0;transform:translateX(30px)}}
+@keyframes cardIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
 /* ── CATEGORY SECTION ── */
 .cat-sec{margin-bottom:20px}
@@ -766,6 +767,20 @@ function clearSearch(){
   const inp=document.getElementById('staff-search');
   if(inp){inp.value='';filterStaff('');}
 }
+function staggerCards(){
+  requestAnimationFrame(()=>{
+    const cards=document.querySelectorAll('.card');
+    cards.forEach((card,i)=>{
+      card.style.opacity='0';
+      card.style.animation='none';
+      const delay=Math.min(i*28,700);
+      setTimeout(()=>{
+        card.style.opacity='';
+        card.style.animation=`cardIn .3s ease ${delay}ms both`;
+      },0);
+    });
+  });
+}
 function showToast(msg,type='info',ms=2500){
   const w=document.getElementById('toast-wrap'); if(!w) return;
   const t=document.createElement('div');
@@ -1383,6 +1398,7 @@ async function loadRoster(){
     }
     _restoringFromFb = true; // block scheduleSave until fbLoad finishes (Firebase overrides localStorage)
     renderAll();
+    staggerCards();
     // Load saved Firebase state — if not ready yet, fbSignIn will call fbLoad when auth completes
     if(fbReady) fbLoad(); else _restoringFromFb = false;
   }catch(err){
