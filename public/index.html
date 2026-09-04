@@ -6,186 +6,7 @@
 <title>OPS MANAGER · SHIFT C</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Inter+Tight:wght@600;700;800;900&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js">
-
-// ═══════════════════════════════════════════════════════
-// ROSTER SNAPSHOT
-// ═══════════════════════════════════════════════════════
-function openSnap(){
-  document.getElementById('snap-ov').classList.add('show');
-  loadSnapList();
-}
-function closeSnap(){ document.getElementById('snap-ov').classList.remove('show'); }
-
-async function takeSnapshot(){
-  if(!S.loaded){ showToast('Load a roster first','err'); return; }
-  if(!fbReady){ showToast('Firebase not ready','err'); return; }
-  const key=fbKey(); if(!key) return;
-  const avail=S.staff.filter(s=>{ const a=effAvail(s); return a.st==='WORKING'||a.st==='BACKUP_SHIFT'; }).length;
-  const total=S.staff.filter(s=>!s.isBackup).length;
-  const ts=Date.now();
-  const payload={
-    _takenAt:ts,
-    label:`${document.getElementById('dp').value} ${document.getElementById('shift-sel').value} ${document.getElementById('shift-group-sel').value}`,
-    avail, total,
-    overrides:JSON.parse(JSON.stringify(S.overrides)),
-    roles:JSON.parse(JSON.stringify(S.roles||{})),
-    ssTechs:JSON.parse(JSON.stringify(S.ssTechs||[]))
-  };
-  try{
-    await fbDb.ref(`snapshots/${key}/${ts}`).set(payload);
-    showToast('Snapshot saved 📸','ok'); loadSnapList();
-  }catch(e){ showToast('Snapshot failed: '+e.code,'err'); }
-}
-
-async function loadSnapList(){
-  const key=fbKey(); if(!key||!fbReady) return;
-  const el=document.getElementById('snap-list'); if(!el) return;
-  el.innerHTML='<div style="color:var(--txt3);font-size:11px;padding:10px">Loading…</div>';
-  try{
-    const snap=await fbDb.ref(`snapshots/${key}`).get();
-    if(!snap.exists()){ el.innerHTML='<div style="color:var(--txt3);font-size:12px;padding:20px 0;text-align:center">No snapshots yet.</div>'; return; }
-    const sorted=Object.entries(snap.val()).sort((a,b)=>b[0]-a[0]);
-    el.innerHTML=sorted.map(([ts,d])=>{
-      const dt=new Date(parseInt(ts));
-      const tStr=dt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-      const dStr=dt.toLocaleDateString([],{day:'2-digit',month:'short'});
-      return `<div class="snap-row" onclick="viewSnapshot('${key}','${ts}')">
-        <div>
-          <div class="snap-ts">${dStr} ${tStr}</div>
-          <div class="snap-meta">Avail: ${d.avail??'?'}/${d.total??'?'} &nbsp;·&nbsp; ${Object.keys(d.overrides||{}).length} overrides</div>
-        </div>
-        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteSnapshot('${key}','${ts}')" style="color:var(--red);border-color:var(--red);font-size:9px;padding:2px 5px">🗑</button>
-      </div>`;
-    }).join('');
-  }catch(e){ el.innerHTML='<div style="color:var(--red);font-size:11px;padding:10px">Error: '+e.message+'</div>'; }
-}
-
-async function viewSnapshot(key,ts){
-  if(!fbReady) return;
-  try{
-    const snap=await fbDb.ref(`snapshots/${key}/${ts}`).get();
-    if(!snap.exists()) return;
-    const d=snap.val();
-    const dt=new Date(parseInt(ts));
-    const overList=Object.entries(d.overrides||{}).map(([id,v])=>`  ${id}: ${v}`).join('\n')||'  None';
-    alert(`📸 Snapshot — ${dt.toLocaleString()}\n\nAvail: ${d.avail}/${d.total}\nOverrides:\n${overList}`);
-  }catch(e){ showToast('Load failed','err'); }
-}
-
-async function deleteSnapshot(key,ts){
-  if(!confirm('Delete this snapshot?')) return;
-  try{ await fbDb.ref(`snapshots/${key}/${ts}`).remove(); showToast('Deleted','ok',1500); loadSnapList(); }
-  catch(e){ showToast('Delete failed','err'); }
-}
-
-// ═══════════════════════════════════════════════════════
-// DUPLICATE NAME WARNING
-// ═══════════════════════════════════════════════════════
-function checkDuplicateNames(){
-  if(!S.staff||!S.staff.length) return;
-  const seen={};
-  S.staff.forEach(s=>{
-    if(s.isBackup) return;
-    const nm=(displayName(s)||'').toUpperCase().trim();
-    if(!nm) return;
-    if(!seen[nm]) seen[nm]=[];
-    seen[nm].push(s);
-  });
-  const dups=Object.entries(seen).filter(([,arr])=>arr.length>1);
-  dups.forEach(([nm,arr])=>{
-    showToast(`⚠ Duplicate name: ${nm} (${arr.length} staff)`, 'err', 5000);
-  });
-}
-
-// ═══════════════════════════════════════════════════════
-// ACTIVITY LOG
-// ═══════════════════════════════════════════════════════
-const _actLog=[];
-let _actLogOpen=false;
-
-function logActivity(staffId, action){
-  const s=S.staff.find(x=>x.id===staffId);
-  const name=s?displayName(s):staffId;
-  const entry={ts:Date.now(), name, action};
-  _actLog.unshift(entry);
-  if(_actLog.length>200) _actLog.length=200;
-  if(fbReady){ const key=fbKey(); if(key) fbDb.ref(`activityLog/${key}`).push(entry).catch(()=>{}); }
-  _renderActLog();
-}
-
-function _actCls(action){
-  const a=(action||'').toUpperCase();
-  if(a.includes('MC')) return 'mc';
-  if(a.includes('AL/OFF')) return 'al';
-  if(a.includes('WORKING')) return 'wk';
-  if(a.includes('FLYING')) return 'fly';
-  if(a.includes('RESTORED')) return 'rst';
-  return '';
-}
-
-function _renderActLog(){
-  const el=document.getElementById('actlog-list'); if(!el) return;
-  if(!_actLog.length){ el.innerHTML='<div style="padding:20px;color:var(--txt3);font-size:12px;text-align:center">No activity yet this session.</div>'; return; }
-  el.innerHTML=_actLog.map(e=>{
-    const t=new Date(e.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-    return `<div class="alog-row"><span class="alog-t">${t}</span><span><span class="alog-nm">${e.name}</span> <span class="alog-ac ${_actCls(e.action)}">→ ${e.action}</span></span></div>`;
-  }).join('');
-}
-
-async function loadActLogFromFb(){
-  if(!fbReady) return;
-  const key=fbKey(); if(!key) return;
-  try{
-    const snap=await fbDb.ref(`activityLog/${key}`).limitToLast(80).get();
-    if(snap.exists()){
-      const entries=Object.values(snap.val()).sort((a,b)=>b.ts-a.ts);
-      entries.forEach(e=>{ if(!_actLog.find(x=>x.ts===e.ts&&x.name===e.name)) _actLog.push(e); });
-      _actLog.sort((a,b)=>b.ts-a.ts);
-      if(_actLog.length>200) _actLog.length=200;
-      _renderActLog();
-    }
-  }catch(e){ console.warn('actlog:',e); }
-}
-
-function toggleActLog(){
-  _actLogOpen=!_actLogOpen;
-  document.getElementById('actlog-panel').classList.toggle('open',_actLogOpen);
-  if(_actLogOpen) _renderActLog();
-}
-
-// ═══════════════════════════════════════════════════════
-// MULTI-USER PRESENCE
-// ═══════════════════════════════════════════════════════
-const _presId=Math.random().toString(36).slice(2,10);
-let _presRef=null, _presKey=null, _presListener=null;
-
-function setupPresence(){
-  if(!fbReady) return;
-  const key=fbKey(); if(!key||key===_presKey) return;
-  _presKey=key;
-  // Remove old ref
-  if(_presRef){ _presRef.onDisconnect().cancel(); _presRef.remove().catch(()=>{}); }
-  if(_presListener){ fbDb.ref(`presence/${_presKey}`).off('value',_presListener); }
-  _presRef=fbDb.ref(`presence/${key}/${_presId}`);
-  _presRef.onDisconnect().remove();
-  _presRef.set({at:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{});
-  // Listen to count
-  _presListener=fbDb.ref(`presence/${key}`).on('value',snap=>{
-    const count=snap.exists()?Object.keys(snap.val()).length:1;
-    const chip=document.getElementById('presence-chip');
-    if(chip){
-      chip.style.display='inline-block';
-      chip.textContent=`👁 ${count}`;
-      chip.classList.toggle('multi',count>1);
-      chip.title=count===1?'Only you are viewing':`${count} people viewing`;
-    }
-  });
-}
-
-window.addEventListener('beforeunload',()=>{ if(_presRef) _presRef.remove().catch(()=>{}); });
-
-</script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
@@ -4430,6 +4251,186 @@ function showDebug(){
     </div>
   </div>`);
 }
+
+
+// ═══════════════════════════════════════════════════════
+// ROSTER SNAPSHOT
+// ═══════════════════════════════════════════════════════
+function openSnap(){
+  document.getElementById('snap-ov').classList.add('show');
+  loadSnapList();
+}
+function closeSnap(){ document.getElementById('snap-ov').classList.remove('show'); }
+
+async function takeSnapshot(){
+  if(!S.loaded){ showToast('Load a roster first','err'); return; }
+  if(!fbReady){ showToast('Firebase not ready','err'); return; }
+  const key=fbKey(); if(!key) return;
+  const avail=S.staff.filter(s=>{ const a=effAvail(s); return a.st==='WORKING'||a.st==='BACKUP_SHIFT'; }).length;
+  const total=S.staff.filter(s=>!s.isBackup).length;
+  const ts=Date.now();
+  const payload={
+    _takenAt:ts,
+    label:`${document.getElementById('dp').value} ${document.getElementById('shift-sel').value} ${document.getElementById('shift-group-sel').value}`,
+    avail, total,
+    overrides:JSON.parse(JSON.stringify(S.overrides)),
+    roles:JSON.parse(JSON.stringify(S.roles||{})),
+    ssTechs:JSON.parse(JSON.stringify(S.ssTechs||[]))
+  };
+  try{
+    await fbDb.ref(`snapshots/${key}/${ts}`).set(payload);
+    showToast('Snapshot saved 📸','ok'); loadSnapList();
+  }catch(e){ showToast('Snapshot failed: '+e.code,'err'); }
+}
+
+async function loadSnapList(){
+  const key=fbKey(); if(!key||!fbReady) return;
+  const el=document.getElementById('snap-list'); if(!el) return;
+  el.innerHTML='<div style="color:var(--txt3);font-size:11px;padding:10px">Loading…</div>';
+  try{
+    const snap=await fbDb.ref(`snapshots/${key}`).get();
+    if(!snap.exists()){ el.innerHTML='<div style="color:var(--txt3);font-size:12px;padding:20px 0;text-align:center">No snapshots yet.</div>'; return; }
+    const sorted=Object.entries(snap.val()).sort((a,b)=>b[0]-a[0]);
+    el.innerHTML=sorted.map(([ts,d])=>{
+      const dt=new Date(parseInt(ts));
+      const tStr=dt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+      const dStr=dt.toLocaleDateString([],{day:'2-digit',month:'short'});
+      return `<div class="snap-row" onclick="viewSnapshot('${key}','${ts}')">
+        <div>
+          <div class="snap-ts">${dStr} ${tStr}</div>
+          <div class="snap-meta">Avail: ${d.avail??'?'}/${d.total??'?'} &nbsp;·&nbsp; ${Object.keys(d.overrides||{}).length} overrides</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteSnapshot('${key}','${ts}')" style="color:var(--red);border-color:var(--red);font-size:9px;padding:2px 5px">🗑</button>
+      </div>`;
+    }).join('');
+  }catch(e){ el.innerHTML='<div style="color:var(--red);font-size:11px;padding:10px">Error: '+e.message+'</div>'; }
+}
+
+async function viewSnapshot(key,ts){
+  if(!fbReady) return;
+  try{
+    const snap=await fbDb.ref(`snapshots/${key}/${ts}`).get();
+    if(!snap.exists()) return;
+    const d=snap.val();
+    const dt=new Date(parseInt(ts));
+    const overList=Object.entries(d.overrides||{}).map(([id,v])=>`  ${id}: ${v}`).join('\n')||'  None';
+    alert(`📸 Snapshot — ${dt.toLocaleString()}\n\nAvail: ${d.avail}/${d.total}\nOverrides:\n${overList}`);
+  }catch(e){ showToast('Load failed','err'); }
+}
+
+async function deleteSnapshot(key,ts){
+  if(!confirm('Delete this snapshot?')) return;
+  try{ await fbDb.ref(`snapshots/${key}/${ts}`).remove(); showToast('Deleted','ok',1500); loadSnapList(); }
+  catch(e){ showToast('Delete failed','err'); }
+}
+
+// ═══════════════════════════════════════════════════════
+// DUPLICATE NAME WARNING
+// ═══════════════════════════════════════════════════════
+function checkDuplicateNames(){
+  if(!S.staff||!S.staff.length) return;
+  const seen={};
+  S.staff.forEach(s=>{
+    if(s.isBackup) return;
+    const nm=(displayName(s)||'').toUpperCase().trim();
+    if(!nm) return;
+    if(!seen[nm]) seen[nm]=[];
+    seen[nm].push(s);
+  });
+  const dups=Object.entries(seen).filter(([,arr])=>arr.length>1);
+  dups.forEach(([nm,arr])=>{
+    showToast(`⚠ Duplicate name: ${nm} (${arr.length} staff)`, 'err', 5000);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// ACTIVITY LOG
+// ═══════════════════════════════════════════════════════
+const _actLog=[];
+let _actLogOpen=false;
+
+function logActivity(staffId, action){
+  const s=S.staff.find(x=>x.id===staffId);
+  const name=s?displayName(s):staffId;
+  const entry={ts:Date.now(), name, action};
+  _actLog.unshift(entry);
+  if(_actLog.length>200) _actLog.length=200;
+  if(fbReady){ const key=fbKey(); if(key) fbDb.ref(`activityLog/${key}`).push(entry).catch(()=>{}); }
+  _renderActLog();
+}
+
+function _actCls(action){
+  const a=(action||'').toUpperCase();
+  if(a.includes('MC')) return 'mc';
+  if(a.includes('AL/OFF')) return 'al';
+  if(a.includes('WORKING')) return 'wk';
+  if(a.includes('FLYING')) return 'fly';
+  if(a.includes('RESTORED')) return 'rst';
+  return '';
+}
+
+function _renderActLog(){
+  const el=document.getElementById('actlog-list'); if(!el) return;
+  if(!_actLog.length){ el.innerHTML='<div style="padding:20px;color:var(--txt3);font-size:12px;text-align:center">No activity yet this session.</div>'; return; }
+  el.innerHTML=_actLog.map(e=>{
+    const t=new Date(e.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    return `<div class="alog-row"><span class="alog-t">${t}</span><span><span class="alog-nm">${e.name}</span> <span class="alog-ac ${_actCls(e.action)}">→ ${e.action}</span></span></div>`;
+  }).join('');
+}
+
+async function loadActLogFromFb(){
+  if(!fbReady) return;
+  const key=fbKey(); if(!key) return;
+  try{
+    const snap=await fbDb.ref(`activityLog/${key}`).limitToLast(80).get();
+    if(snap.exists()){
+      const entries=Object.values(snap.val()).sort((a,b)=>b.ts-a.ts);
+      entries.forEach(e=>{ if(!_actLog.find(x=>x.ts===e.ts&&x.name===e.name)) _actLog.push(e); });
+      _actLog.sort((a,b)=>b.ts-a.ts);
+      if(_actLog.length>200) _actLog.length=200;
+      _renderActLog();
+    }
+  }catch(e){ console.warn('actlog:',e); }
+}
+
+function toggleActLog(){
+  _actLogOpen=!_actLogOpen;
+  document.getElementById('actlog-panel').classList.toggle('open',_actLogOpen);
+  if(_actLogOpen) _renderActLog();
+}
+
+// ═══════════════════════════════════════════════════════
+// MULTI-USER PRESENCE
+// ═══════════════════════════════════════════════════════
+const _presId=Math.random().toString(36).slice(2,10);
+let _presRef=null, _presKey=null, _presListener=null;
+
+function setupPresence(){
+  if(!fbReady) return;
+  const key=fbKey(); if(!key||key===_presKey) return;
+  _presKey=key;
+  // Remove old ref
+  if(_presRef){ _presRef.onDisconnect().cancel(); _presRef.remove().catch(()=>{}); }
+  if(_presListener){ fbDb.ref(`presence/${_presKey}`).off('value',_presListener); }
+  _presRef=fbDb.ref(`presence/${key}/${_presId}`);
+  _presRef.onDisconnect().remove();
+  _presRef.set({at:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{});
+  // Listen to count
+  _presListener=fbDb.ref(`presence/${key}`).on('value',snap=>{
+    const count=snap.exists()?Object.keys(snap.val()).length:1;
+    const chip=document.getElementById('presence-chip');
+    if(chip){
+      chip.style.display='inline-block';
+      chip.textContent=`👁 ${count}`;
+      chip.classList.toggle('multi',count>1);
+      chip.title=count===1?'Only you are viewing':`${count} people viewing`;
+    }
+  });
+}
+
+window.addEventListener('beforeunload',()=>{ if(_presRef) _presRef.remove().catch(()=>{}); });
+
+
 </script>
 <div id="toast-wrap"></div>
 
