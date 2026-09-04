@@ -27,15 +27,37 @@
   --mono:'Inter',sans-serif;
   --cond:'Inter Tight',sans-serif;
 }
+body.dark{
+  --bg:#0D1117;--surf:#161B22;--surf2:#1C2128;--surf3:#21262D;
+  --b:#30363D;--b2:#444C56;
+  --amber:#F59E0B;--amber2:#FCD34D;
+  --txt:#E6EDF3;--txt2:#8B949E;--txt3:#6E7681;
+  --green:#3FB950;--gbg:#122120;
+  --blue:#58A6FF;--bbg:#0D2137;
+  --orange:#FFA657;--obg:#2D1900;
+  --red:#F85149;--rbg:#2D1117;
+  --purple:#BC8CFF;--pbg:#1E1435;
+  --yellow:#E3B341;--ybg:#2B2100;
+  --teal:#2DD4BF;--tbg:#0A2520;
+}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{font-size:14px}
 body{font-family:var(--mono);background:var(--bg);color:var(--txt);min-height:100vh;line-height:1.5}
 
 /* ── HEADER ── */
-#hdr{background:var(--surf);border-bottom:1px solid var(--b);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:52px;position:sticky;top:0;z-index:100}
-.logo{font-family:var(--cond);font-size:20px;font-weight:700;color:var(--amber);letter-spacing:3px}
+#hdr{background:var(--surf);border-bottom:1px solid var(--b);border-top:3px solid var(--amber);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100}
+.logo{font-family:var(--cond);font-size:22px;font-weight:900;color:var(--amber);letter-spacing:4px}
 .logo em{color:var(--txt2);font-style:normal;font-weight:400}
 
+/* ── DARK MODE TOGGLE ── */
+#darkToggle{background:none;border:1px solid var(--b2);border-radius:20px;padding:4px 10px;cursor:pointer;font-size:12px;color:var(--txt2);transition:all .2s;white-space:nowrap}
+#darkToggle:hover{border-color:var(--amber);color:var(--amber)}
+/* ── SEARCH BAR ── */
+#searchbar{background:var(--surf);border-bottom:1px solid var(--b);padding:6px 20px;display:flex;align-items:center;gap:8px}
+#searchbar input{flex:1;max-width:280px;background:var(--surf2);border:1px solid var(--b);border-radius:20px;padding:5px 14px;font-family:var(--mono);font-size:12px;color:var(--txt);outline:none;transition:border-color .15s}
+#searchbar input:focus{border-color:var(--amber)}
+#searchbar input::placeholder{color:var(--txt3)}
+#search-clr{background:none;border:none;cursor:pointer;color:var(--txt3);font-size:14px;padding:0 4px;display:none}
 /* ── CONTROL BAR ── */
 #ctrlbar{background:var(--surf2);border-bottom:1px solid var(--b);padding:10px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .clbl{font-size:10px;color:var(--txt2);letter-spacing:1.5px}
@@ -70,9 +92,9 @@ select option{background:var(--surf2)}
 /* ── CATEGORY SECTION ── */
 .cat-sec{margin-bottom:20px}
 .cat-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.cat-lbl{font-family:var(--cond);font-size:11px;font-weight:700;letter-spacing:3px;color:var(--txt2)}
+.cat-lbl{font-family:var(--cond);font-size:10px;font-weight:800;letter-spacing:2.5px;color:var(--txt3);background:var(--surf3);padding:2px 8px;border-radius:4px}
 .cat-div{flex:1;height:1px;background:var(--b)}
-.cat-cnt{font-size:10px;color:var(--txt3)}
+.cat-cnt{font-size:10px;font-weight:700;color:var(--txt3)}
 
 /* ── STAFF GRID ── */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:8px}
@@ -251,6 +273,7 @@ select option{background:var(--surf2)}
   <div style="display:flex;align-items:center;gap:10px">
     <span id="save-ts" style="font-size:10px;color:var(--txt3)"></span>
     <span id="fetch-ts" style="font-size:10px;color:var(--txt3)"></span>
+    <button id="darkToggle" onclick="toggleDark()">🌙 DARK</button>
     <button class="btn btn-ghost btn-sm np" onclick="openSettings()">⚙ CONFIG</button>
   </div>
 </div>
@@ -289,6 +312,13 @@ select option{background:var(--surf2)}
   <span id="fetch-st" style="font-size:11px;color:var(--txt2)"></span>
 </div>
 
+<!-- SEARCH BAR -->
+<div id="searchbar">
+  <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--txt3)">🔍</span>
+  <input type="text" id="staff-search" placeholder="Search staff by name…" oninput="filterStaff(this.value)">
+  <button id="search-clr" onclick="clearSearch()" title="Clear">✕</button>
+  <span id="search-info" style="font-size:10px;color:var(--txt3);margin-left:4px"></span>
+</div>
 <!-- TABS -->
 <div id="tabs">
   <div class="tab active" id="tab-lo"      onclick="switchTab('lo')">LO <span class="cnt" id="cnt-lo">—</span></div>
@@ -696,6 +726,38 @@ async function loadLastDate(){
 function saveSocNow(){ if(fbReady&&S.loaded) fbSave(); }
 
 let saveTimer=null, pendingSave=false;
+// ── DARK MODE ──
+function toggleDark(){
+  const dark=document.body.classList.toggle('dark');
+  localStorage.setItem('opsDark',dark?'1':'0');
+  document.getElementById('darkToggle').textContent=dark?'☀ LIGHT':'🌙 DARK';
+}
+(function(){
+  if(localStorage.getItem('opsDark')==='1'){
+    document.body.classList.add('dark');
+    const btn=document.getElementById('darkToggle');
+    if(btn)btn.textContent='☀ LIGHT';
+  }
+})();
+// ── STAFF SEARCH ──
+function filterStaff(q){
+  const query=q.toLowerCase().trim();
+  const clr=document.getElementById('search-clr');
+  const info=document.getElementById('search-info');
+  if(clr)clr.style.display=query?'':'none';
+  let shown=0,total=0;
+  document.querySelectorAll('.card').forEach(card=>{
+    const name=(card.querySelector('.cname')?.textContent||'').toLowerCase();
+    const match=!query||name.includes(query);
+    card.style.display=match?'':'none';
+    total++; if(match)shown++;
+  });
+  if(info)info.textContent=query?`${shown}/${total} staff`:''
+}
+function clearSearch(){
+  const inp=document.getElementById('staff-search');
+  if(inp){inp.value='';filterStaff('');}
+}
 let _restoringFromFb=false; // true while fbLoad() is running — blocks scheduleSave from overwriting Firebase with blank state
 
 
@@ -2883,6 +2945,7 @@ function rmFgs(i) { S.fgs.splice(i,1); renderSummary(); scheduleSave(); }
 // TABS
 // ═══════════════════════════════════
 function switchTab(t){
+  clearSearch();
   S.tab=t;
   document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(el=>el.classList.remove('active'));
