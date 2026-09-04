@@ -75,7 +75,7 @@ select option{background:var(--surf2)}
 .btn-ghost:hover{border-color:var(--amber);color:var(--amber)}
 .btn-sm{padding:4px 10px;font-size:10px}
 .btn-red{background:var(--rbg);color:var(--red);border:1px solid #3A1010}
-.btn-teal{background:var(--tbg);color:var(--teal);border:1px solid #063830}
+.btn-teal{background:var(--tbg);color:var(--teal);border:1px solid var(--teal)}
 
 /* ── TABS ── */
 #tabs{background:var(--surf);border-bottom:2px solid var(--b);padding:0 16px;display:flex;gap:2px}
@@ -117,10 +117,10 @@ select option{background:var(--surf2)}
 .card.absent{border-left-color:var(--red)}
 .card.flying{border-left-color:var(--blue)}
 .card.posting{border-left-color:var(--purple)}
-.card.xfer{border-left-color:#2DD4BF;opacity:.4}
-.bxf{background:#041A18;color:#2DD4BF;border-color:#063830}
+.card.xfer{border-left-color:var(--teal);opacity:.4}
+.bxf{background:var(--tbg);color:var(--teal);border-color:var(--teal)}
 .card-moved{border-left-color:var(--blue)!important;border-style:dashed!important}
-.card-eng{border-left:3px solid #92400E!important;background:linear-gradient(135deg,#1A1200 0%,var(--card) 40%)!important}
+.card-eng{border-left:3px solid var(--yellow)!important;background:linear-gradient(135deg,var(--ybg) 0%,var(--surf) 40%)!important}
 .card.course{border-left-color:var(--yellow)}
 .card.off{border-left-color:var(--txt3);opacity:.55}
 .card.bkcard{border-left-color:var(--teal)}
@@ -128,16 +128,16 @@ select option{background:var(--surf2)}
 .card.bkcard .cname{color:var(--amber2)}
 .cmeta{font-size:10px;color:var(--txt2);margin-bottom:7px}
 .badge{display:inline-block;font-size:9px;font-weight:800;letter-spacing:1.5px;padding:2px 8px;border-radius:20px;border:1.5px solid}
-.bwk{background:var(--gbg);color:var(--green);border-color:#0D3A24}
-.bst{background:var(--bbg);color:var(--blue);border-color:#0D2A48}
-.blv{background:var(--obg);color:var(--orange);border-color:#3A1A04}
-.bab{background:var(--rbg);color:var(--red);border-color:#3A0D0D}
-.bfl{background:var(--bbg);color:#93C5FD;border-color:#0D2A48}
+.bwk{background:var(--gbg);color:var(--green);border-color:var(--green)}
+.bst{background:var(--bbg);color:var(--blue);border-color:var(--blue)}
+.blv{background:var(--obg);color:var(--orange);border-color:var(--orange)}
+.bab{background:var(--rbg);color:var(--red);border-color:var(--red)}
+.bfl{background:var(--bbg);color:var(--blue);border-color:var(--blue)}
 .bps{background:var(--pbg);color:var(--purple);border-color:#2A0848}
 .bcr{background:var(--ybg);color:var(--yellow);border-color:#3A2A04}
 .bof{background:var(--bg);color:var(--gray);border-color:var(--b)}
-.bbk{background:var(--tbg);color:var(--teal);border-color:#063830}
-.bktag{display:inline-block;font-size:8px;font-weight:700;letter-spacing:1px;padding:1px 4px;background:#1C1500;color:var(--amber);border:1px solid #3A2A00;border-radius:2px;margin-left:4px;vertical-align:middle}
+.bbk{background:var(--tbg);color:var(--teal);border-color:var(--teal)}
+.bktag{display:inline-block;font-size:8px;font-weight:700;letter-spacing:1px;padding:1px 4px;background:var(--ybg);color:var(--amber);border:1px solid var(--amber);border-radius:2px;margin-left:4px;vertical-align:middle}
 .ovr-star{color:var(--amber);font-size:9px}
 
 /* ── BACKUP SECTION ── */
@@ -182,7 +182,7 @@ select option{background:var(--surf2)}
 .sec-t{font-family:var(--cond);font-size:11px;font-weight:700;letter-spacing:3px;color:var(--amber);margin-bottom:10px}
 
 /* ── ALERT ── */
-.alert{background:#1A0C04;border:1px solid #3A1A04;border-radius:var(--r);padding:8px 14px;font-size:11px;color:var(--orange);margin-bottom:12px}
+.alert{background:var(--obg);border:1px solid var(--orange);border-radius:var(--r);padding:8px 14px;font-size:11px;color:var(--orange);margin-bottom:12px}
 
 /* ── DIVIDER ── */
 .divider{height:1px;background:var(--b);margin:8px 0}
@@ -202,7 +202,7 @@ select option{background:var(--surf2)}
 .loading-wrap{padding:40px 0;display:flex;align-items:center;gap:10px;color:var(--txt2);font-size:12px}
 .spinner{width:16px;height:16px;border:2px solid var(--b2);border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
-.err-box{background:var(--rbg);border:1px solid #3A0D0D;border-radius:var(--r);padding:12px 16px;color:var(--red);font-size:12px;margin-top:12px;white-space:pre-wrap}
+.err-box{background:var(--rbg);border:1px solid var(--red);border-radius:var(--r);padding:12px 16px;color:var(--red);font-size:12px;margin-top:12px;white-space:pre-wrap}
 
 /* ── PRINT ── */
 @media print{
@@ -2101,8 +2101,8 @@ function renderDept(elId, teamKey, dk){
 
   // Moved-out notice
   if(movedOut.length){
-    h+=`<div style="background:#0A1224;border:1px solid #1A2A44;border-radius:var(--r);padding:8px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <span style="background:#1A2A44;color:#60A5FA;border:1px solid #1D4ED8;border-radius:3px;padding:1px 7px;font-size:9px;font-weight:700;letter-spacing:1px">${movedOut.length} MOVED OUT</span>
+    h+=`<div style="background:var(--bbg);border:1px solid var(--blue);border-radius:var(--r);padding:8px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="background:var(--bbg);color:var(--blue);border:1px solid var(--blue);border-radius:3px;padding:1px 7px;font-size:9px;font-weight:700;letter-spacing:1px">${movedOut.length} MOVED OUT</span>
       <span style="font-size:10px;color:var(--txt2)">${movedOut.map(s=>{const ed=effectiveDept(s);return`${displayName(s)} → ${ed}`;}).join(' · ')}</span>
       <button class="btn btn-ghost btn-sm np" style="margin-left:auto;font-size:9px" onclick="openSwapModal()">⇄ MANAGE</button>
     </div>`;
@@ -2114,9 +2114,9 @@ function renderDept(elId, teamKey, dk){
       const a=effAvail(s);
       return `<span onclick="cycleOvr('${s.id}')" title="Click to restore ${s.shortName}" style="cursor:pointer;text-decoration:underline dotted;color:#86EFAC">${s.shortName}</span> <span style="color:var(--txt3)">(${a.lbl})</span>`;
     }).join(' &nbsp;·&nbsp; ');
-    h+=`<div style="background:#0D1A0A;border:1px solid #1A3A14;border-radius:var(--r);padding:8px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    h+=`<div style="background:var(--gbg);border:1px solid var(--green);border-radius:var(--r);padding:8px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="background:#1A3A14;color:#4ade80;border:1px solid #2A5A24;border-radius:3px;padding:1px 7px;font-size:9px;font-weight:700;letter-spacing:1px">${xferred.length} HIDDEN</span>
+        <span style="background:var(--gbg);color:var(--green);border:1px solid var(--green);border-radius:3px;padding:1px 7px;font-size:9px;font-weight:700;letter-spacing:1px">${xferred.length} HIDDEN</span>
         <span style="font-size:10px;color:var(--txt2)">Transferred out · not counted</span>
         <span style="font-size:9px;color:var(--txt3)">(click name to restore)</span>
       </div>
@@ -2234,11 +2234,11 @@ function cardHTML(s, viewingDept){
   const hasCustomNick = !!S.nicknames[s.id];
   const raw = s.schedVal&&s.schedVal!==a.lbl?`<span style="font-size:8px;color:var(--txt3);margin-left:4px">${s.schedVal.substring(0,10)}</span>`:'';
   const fromTag = (mv && viewingDept && effectiveDept(s)===viewingDept && s.team!==viewingDept)
-    ? `<span style="display:inline-block;margin-left:4px;padding:1px 5px;background:#0A1929;color:#93C5FD;border:1px solid #1D4ED8;border-radius:2px;font-size:8px;font-weight:700;letter-spacing:.5px">FROM ${s.team}</span>`
+    ? `<span style="display:inline-block;margin-left:4px;padding:1px 5px;background:var(--bbg);color:var(--blue);border:1px solid var(--blue);border-radius:2px;font-size:8px;font-weight:700;letter-spacing:.5px">FROM ${s.team}</span>`
     : '';
   const isEng = S.engSpecialists.includes(s.id);
   const engTag = isEng
-    ? `<span style="display:inline-block;padding:1px 6px;background:#1A1200;color:#FCD34D;border:1px solid #92400E;border-radius:2px;font-size:8px;font-weight:700;letter-spacing:.5px">⚙ ENG</span>`
+    ? `<span style="display:inline-block;padding:1px 6px;background:var(--ybg);color:var(--yellow);border:1px solid var(--yellow);border-radius:2px;font-size:8px;font-weight:700;letter-spacing:.5px">⚙ ENG</span>`
     : '';
   return `<div class="card ${a.cls}${mv?' card-moved':''}${isEng?' card-eng':''}" onclick="cycleOvr('${s.id}')" title="${s.fullName}\n${s.desig}\n${s.acType}\nScheduled: ${s.schedVal||'—'}\nClick to cycle status">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2px">
@@ -2267,8 +2267,8 @@ function bkCardHTML(b, dk, i){
         : `<span class="badge bbk">BACKUP</span>`}
       <button class="btn btn-sm np" onclick="event.stopPropagation();toggleBkMcEl('${dk}',${i})"
         style="font-size:8px;padding:1px 6px;${mcEl
-          ? 'background:var(--gbg);color:var(--green);border:1px solid #0D3A24'
-          : 'background:var(--rbg);color:var(--red);border:1px solid #3A0D0D'}"
+          ? 'background:var(--gbg);color:var(--green);border:1px solid var(--green)'
+          : 'background:var(--rbg);color:var(--red);border:1px solid var(--red)'}"
         title="${mcEl?'Mark as available':'Mark as MC/EL'}">
         ${mcEl?'✓ RESTORE':'MC/EL'}
       </button>
@@ -2334,7 +2334,7 @@ function renderSummary(){
     _renderSummaryInner(el);
   } catch(err){
     el.innerHTML=`<div style="padding:20px;max-width:600px">
-      <div style="background:#1A0A0A;border:1px solid #3A0D0D;border-radius:8px;padding:16px 20px">
+      <div style="background:var(--rbg);border:1px solid var(--red);border-radius:8px;padding:16px 20px">
         <div style="color:var(--red);font-weight:700;font-size:13px;margin-bottom:6px">⚠ Summary render error</div>
         <div style="color:var(--orange);font-size:11px;margin-bottom:8px">${err.message}</div>
         <button class="btn btn-amber btn-sm" onclick="renderSummary()">⟳ RETRY</button>
@@ -2462,7 +2462,7 @@ function _renderSummaryInner(el){
   const roleBadge=name=>{
     const label=roleMap[name];
     if(!label) return '';
-    const colors={'CHASER':'var(--amber)','MOJO':'#0369A1','WC1':'#1D4ED8','WC2':'#1D4ED8','RNR1':'#555','RNR2':'#555','RNR3':'#555','RNR4':'#555','TWR1':'var(--amber)','TWR2':'var(--amber)','TWR3':'var(--amber)','TWR4':'var(--amber)','GL':'var(--amber)'};
+    const colors={'CHASER':'var(--amber)','MOJO':'#0369A1','WC1':'var(--blue)','WC2':'var(--blue)','RNR1':'#555','RNR2':'#555','RNR3':'#555','RNR4':'#555','TWR1':'var(--amber)','TWR2':'var(--amber)','TWR3':'var(--amber)','TWR4':'var(--amber)','GL':'var(--amber)'};
     const c=colors[label]||'#555';
     return `<span style="font-size:7px;font-weight:800;color:#fff;background:${c};border-radius:3px;padding:0 4px;margin-left:4px;letter-spacing:0.5px;vertical-align:middle">${label}</span>`;
   };
@@ -2486,7 +2486,7 @@ function _renderSummaryInner(el){
       const nmOwn = fOwn.filter(s=>!ssSet.has(s.id));
       let h='';
       h+=`<div style="font-size:8px;color:var(--amber);letter-spacing:1px;margin-bottom:2px;font-weight:700">SS</div>`;
-      ssOwn.forEach((s,i)=>{ const tp=s.acType||s.fleet||''; const dn=displayName(s); const tt=timingTag(s); h+=`<div onclick="toggleSS('${s.id}')" title="Click to unmark SS" style="display:flex;gap:3px;cursor:pointer;padding:1px 0"><span style="font-size:9px;color:#1D4ED8;width:13px;flex-shrink:0;text-align:right">${i+1}</span><span style="font-size:10px;color:#1D4ED8;font-weight:700;line-height:1.6">${dn}${tp?` <span style="font-size:8px;color:#3B82F6">(${tp})</span>`:''}${tt}${roleBadge(dn)}</span></div>`; });
+      ssOwn.forEach((s,i)=>{ const tp=s.acType||s.fleet||''; const dn=displayName(s); const tt=timingTag(s); h+=`<div onclick="toggleSS('${s.id}')" title="Click to unmark SS" style="display:flex;gap:3px;cursor:pointer;padding:1px 0"><span style="font-size:9px;color:var(--blue);width:13px;flex-shrink:0;text-align:right">${i+1}</span><span style="font-size:10px;color:var(--blue);font-weight:700;line-height:1.6">${dn}${tp?` <span style="font-size:8px;color:#3B82F6">(${tp})</span>`:''}${tt}${roleBadge(dn)}</span></div>`; });
       for(let i=ssOwn.length;i<3;i++) h+=`<div style="display:flex;gap:3px;padding:1px 0"><span style="font-size:9px;color:#999;width:13px;text-align:right">${i+1}</span><span style="font-size:9px;color:#999;font-style:italic">click ↓ to assign</span></div>`;
       if(nmOwn.length||fBk.length){
         h+=`<div style="font-size:8px;color:#555;font-weight:700;letter-spacing:1px;margin:5px 0 2px">NORMAL</div>`;
@@ -2684,7 +2684,7 @@ function _renderSummaryInner(el){
     ${shdr('WC / GSE')}
     ${(r.wc||[]).map((wc,i)=>{
       const ss=i===0||wc.ss;
-      const col=ss?'#1D4ED8':'#000';
+      const col=ss?'var(--blue)':'var(--txt)';
       return `<div style="display:grid;grid-template-columns:1fr 12px 1fr;gap:2px;padding:2px 0;border-bottom:1px solid var(--b);align-items:center">
         <span style="font-size:9px;font-weight:600;color:${wc.primary?col:'#999'};min-width:0">${wc.primary||'NIL'}</span>
         <span style="font-size:9px;font-weight:700;color:#999;text-align:center">${wc.asst?'+':''}</span>
@@ -2741,7 +2741,7 @@ function _renderSummaryInner(el){
           const isExt=rmk.includes('EXT');
           const isHo=rmk.includes('HO');
           const rowBg=done?'#D1FAE5':isExt?'#CFFAFE':isHo?'#FEF3C7':'transparent';
-          const rowTxt=done?'#065F46':isExt?'#0E7490':isHo?'#92400E':'var(--txt)';
+          const rowTxt=done?'#065F46':isExt?'#0E7490':isHo?'var(--yellow)':'var(--txt)';
           return `<tr style="background:${rowBg};color:${rowTxt}">
           <td style="padding:1px 3px;border:1px solid var(--b);font-size:8px;color:#555">${i+1}</td>
           <td style="padding:1px 3px;border:1px solid var(--b)"><input value="${sr.flight}" oninput="S.soc[${i}].flight=this.value;scheduleSave()" placeholder="LDG" style="background:transparent;border:none;color:${rowTxt};font-family:var(--mono);font-size:8px;width:32px;outline:none"></td>
@@ -2880,8 +2880,8 @@ function _renderSummaryInner(el){
   const xsBkByShift = {};
   xsBkAll2.forEach(s=>{ const sh=s.fromShift||'?'; if(!xsBkByShift[sh]) xsBkByShift[sh]=[]; xsBkByShift[sh].push(s); });
   const xsBanner = xsBkAll2.length ? `
-    <div style="background:#0A1929;border:1px solid #1D4ED8;border-radius:var(--r);padding:8px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <span style="background:#1D4ED8;color:#fff;border-radius:3px;padding:1px 7px;font-size:9px;font-weight:700;letter-spacing:1px">${xsBkAll2.length} CROSS-SHIFT BK</span>
+    <div style="background:var(--bbg);border:1px solid var(--blue);border-radius:var(--r);padding:8px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="background:var(--blue);color:#fff;border-radius:3px;padding:1px 7px;font-size:9px;font-weight:700;letter-spacing:1px">${xsBkAll2.length} CROSS-SHIFT BK</span>
       <span style="font-size:10px;color:var(--blue)">${Object.entries(xsBkByShift).map(([sh,ppl])=>`SHIFT ${sh}: ${ppl.map(s=>displayName(s)).join(', ')}`).join(' · ')}</span>
     </div>` : '';
 
@@ -3012,7 +3012,7 @@ function showErr(m){
     : '· Check your API key, Sheet ID, and Tab name in ⚙ CONFIG.\n· Make sure the sheet is shared as "Anyone with the link - Viewer".';
   document.getElementById('content').innerHTML=`
     <div style="padding:24px;max-width:600px">
-      <div style="background:var(--rbg);border:1px solid #3A0D0D;border-radius:var(--r);padding:16px 20px;margin-bottom:12px">
+      <div style="background:var(--rbg);border:1px solid var(--red);border-radius:var(--r);padding:16px 20px;margin-bottom:12px">
         <div style="color:var(--red);font-weight:700;font-size:13px;margin-bottom:6px">⚠ Failed to load roster</div>
         <div style="color:var(--orange);font-size:12px;margin-bottom:10px">${m}</div>
         <div style="color:var(--txt2);font-size:11px;white-space:pre-line;line-height:2">${tips}</div>
@@ -3688,7 +3688,7 @@ function renderTowersSection(){
         const fn = t.isPerm ? `toggleTower('perm',${t.idx})` : `toggleTower('bk',${t.idx})`;
         return `<div onclick="${fn}" style="background:${isAvail?'#1A0A2A':'var(--surf)'};border:1px solid ${isAvail?'#6B21A8':'var(--b)'};border-radius:var(--r);padding:9px 11px;cursor:pointer;transition:border-color .15s">
           <div style="font-family:var(--cond);font-size:14px;font-weight:700;color:${isAvail?'#C084FC':'var(--txt2)'};letter-spacing:.5px;margin-bottom:4px">
-            ${t.name}${!t.isPerm?` <span style="font-size:8px;padding:1px 4px;background:#1C1500;color:var(--amber);border:1px solid #3A2A00;border-radius:2px">BK</span>`:''}
+            ${t.name}${!t.isPerm?` <span style="font-size:8px;padding:1px 4px;background:var(--ybg);color:var(--amber);border:1px solid var(--amber);border-radius:2px">BK</span>`:''}
           </div>
           <span style="display:inline-block;font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 6px;border-radius:3px;border:1px solid;${isAvail?'background:#1A0A2A;color:#C084FC;border-color:#6B21A8':'background:var(--bg);color:var(--gray);border-color:var(--b)'}">
             ${isAvail?'AVAIL':'OFF'}
@@ -3805,7 +3805,7 @@ function renderTraineesSection(){
         const fn = t.isPerm ? `toggleTrainee('perm',${t.idx})` : `toggleTrainee('bk',${t.idx})`;
         return `<div onclick="${fn}" style="background:${isAvail?'#0A1A0A':'var(--surf)'};border:1px solid ${isAvail?'#166534':'var(--b)'};border-radius:var(--r);padding:9px 11px;cursor:pointer;transition:border-color .15s">
           <div style="font-family:var(--cond);font-size:14px;font-weight:700;color:${isAvail?'#4ade80':'var(--txt2)'};letter-spacing:.5px;margin-bottom:4px">
-            ${t.name}${!t.isPerm?` <span style="font-size:8px;padding:1px 4px;background:#1C1500;color:var(--amber);border:1px solid #3A2A00;border-radius:2px">BK</span>`:''}
+            ${t.name}${!t.isPerm?` <span style="font-size:8px;padding:1px 4px;background:var(--ybg);color:var(--amber);border:1px solid var(--amber);border-radius:2px">BK</span>`:''}
           </div>
           <span style="display:inline-block;font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 6px;border-radius:3px;border:1px solid;${isAvail?'background:#0A1A0A;color:#4ade80;border-color:#166534':'background:var(--bg);color:var(--gray);border-color:var(--b)'}">
             ${isAvail?'AVAIL':'OFF'}
@@ -3910,24 +3910,24 @@ function renderMocSection(){
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:7px;margin-bottom:12px">
       ${mocStaff.map(s=>{
         const a=effAvail(s), avl=isActive(a), nm=displayName(s), hasNick=!!S.nicknames[s.id];
-        return `<div style="background:${avl?'#1A1200':'var(--surf)'};border:1px solid ${avl?'var(--amber)':'var(--b)'};border-radius:var(--r);padding:9px 11px;opacity:${avl?1:0.6}">
+        return `<div style="background:${avl?'var(--ybg)':'var(--surf)'};border:1px solid ${avl?'var(--amber)':'var(--b)'};border-radius:var(--r);padding:9px 11px;opacity:${avl?1:0.6}">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px">
             <div style="font-family:var(--cond);font-size:14px;font-weight:700;color:${avl?'var(--amber2)':'var(--txt2)'}">${nm}${hasNick?`<span style="font-size:7px;color:var(--txt3);margin-left:3px">✎</span>`:''}
             </div>
             <button onclick="editNickname('${s.id}','${(s.fullName||'').replace(/'/g,"\\'")}',event)" class="np" title="Edit nickname" style="background:transparent;border:none;color:var(--txt3);font-size:10px;cursor:pointer;padding:0;line-height:1;flex-shrink:0">✎</button>
           </div>
           <div style="font-size:9px;color:var(--txt3);margin-bottom:4px">${s.desigCode||s.desig}</div>
-          <span style="display:inline-block;font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 6px;border-radius:3px;border:1px solid;background:${avl?'#1A1200':'var(--bg)'};color:${avl?'var(--amber)':'var(--gray)'};border-color:${avl?'#92400e':'var(--b)'}">
+          <span style="display:inline-block;font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 6px;border-radius:3px;border:1px solid;background:${avl?'var(--ybg)':'var(--bg)'};color:${avl?'var(--amber)':'var(--gray)'};border-color:${avl?'var(--amber)':'var(--b)'}">
             ${avl?'AVAIL':a.lbl||'OFF'}
           </span>
         </div>`;
       }).join('')}
-      ${mocBk.map((b,i)=>`<div style="background:${b.status==='AVAIL'?'#1A1200':'var(--surf)'};border:1px solid ${b.status==='AVAIL'?'var(--amber)':'var(--b)'};border-radius:var(--r);padding:9px 11px">
+      ${mocBk.map((b,i)=>`<div style="background:${b.status==='AVAIL'?'var(--ybg)':'var(--surf)'};border:1px solid ${b.status==='AVAIL'?'var(--amber)':'var(--b)'};border-radius:var(--r);padding:9px 11px">
         <div style="font-family:var(--cond);font-size:14px;font-weight:700;color:${b.status==='AVAIL'?'var(--amber2)':'var(--txt2)'};margin-bottom:4px">
-          ${b.name} <span style="font-size:8px;padding:1px 4px;background:#1C1500;color:var(--amber);border:1px solid #3A2A00;border-radius:2px">BK</span>
+          ${b.name} <span style="font-size:8px;padding:1px 4px;background:var(--ybg);color:var(--amber);border:1px solid var(--amber);border-radius:2px">BK</span>
         </div>
         <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
-          <span onclick="toggleMocBk(${i})" style="display:inline-block;font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 6px;border-radius:3px;border:1px solid;cursor:pointer;background:${b.status==='AVAIL'?'#1A1200':'var(--bg)'};color:${b.status==='AVAIL'?'var(--amber)':'var(--gray)'};border-color:${b.status==='AVAIL'?'#92400e':'var(--b)'}">
+          <span onclick="toggleMocBk(${i})" style="display:inline-block;font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 6px;border-radius:3px;border:1px solid;cursor:pointer;background:${b.status==='AVAIL'?'var(--ybg)':'var(--bg)'};color:${b.status==='AVAIL'?'var(--amber)':'var(--gray)'};border-color:${b.status==='AVAIL'?'var(--amber)':'var(--b)'}">
             ${b.status==='AVAIL'?'AVAIL':'OFF'}
           </span>
           <button onclick="removeMocBk(${i})" class="np" style="background:transparent;border:none;color:var(--txt3);font-size:12px;cursor:pointer;padding:0 2px">✕</button>
