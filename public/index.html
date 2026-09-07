@@ -214,8 +214,23 @@ select option{background:var(--surf2)}
   #access-ov,#actlog-panel,#snap-ov,#toast-wrap,
   #presence-chip{ display:none!important }
 
-  #panel-summary{ display:block!important }
+  #panel-summary{ display:block!important; opacity:1!important; animation:none!important; }
+  #content{ display:block!important; }
 
+  /* Force light-mode variables so dark-mode users print correctly */
+  html,body,*{
+    --bg:#F0F4F8;--surf:#FFFFFF;--surf2:#F8FAFC;--surf3:#EEF2F6;
+    --b:#D1DCE8;--b2:#B8C8D8;
+    --txt:#1A2332;--txt2:#4A5568;--txt3:#718096;
+    --amber:#D97706;--amber2:#F59E0B;
+    --green:#16A34A;--gbg:#F0FDF4;
+    --blue:#1D6EE8;--bbg:#EFF6FF;
+    --red:#DC2626;--rbg:#FEF2F2;
+    --orange:#EA580C;--obg:#FFF7ED;
+    --teal:#0D9488;--tbg:#F0FDFA;
+    --yellow:#CA8A04;--ybg:#FEFCE8;
+    --purple:#7C3AED;--pbg:#F5F3FF;
+  }
   html,body{
     background:#fff!important;
     color:#000!important;
