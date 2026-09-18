@@ -561,6 +561,8 @@ let _sessionToken = sessionStorage.getItem('ops_token') || null;
 let fbAuth = null;
 let fbDb   = null;
 let fbReady = false;
+const _myClientId = Math.random().toString(36).slice(2,10); // unique per browser tab — used to ignore own save echoes
+let _fbLiveRef = null; // holds active Firebase .on('value') listener for real-time sync
 
 /**
  * Authenticate against the backend.
@@ -677,7 +679,7 @@ function fbSave(){
   if(!fbReady||!S.loaded){ return; }
   const key=S._fbKey||fbKey(); // use stored key so mid-switch saves don't write to wrong date
   if(!key){ return; }
-  const payload={_savedAt:Date.now(),_key:key};
+  const payload={_savedAt:Date.now(),_key:key,_clientId:_myClientId};
   SAVE_FIELDS.forEach(f=>{
     try{ payload[f]=JSON.parse(JSON.stringify(S[f])); }catch(e){}
   });
@@ -711,9 +713,28 @@ async function fbLoad(){
     console.error('fbLoad:',e);
   } finally {
     _restoringFromFb=false;
+    setupFbLiveSync(); // start live listener after initial snapshot load
   }
 }
 
+function setupFbLiveSync(){
+  // Detach previous listener if any
+  if(_fbLiveRef){ _fbLiveRef.off('value'); _fbLiveRef=null; }
+  const key=S._fbKey||fbKey();
+  if(!key||!fbReady||!S.loaded) return;
+  _fbLiveRef=fbDb.ref(key);
+  _fbLiveRef.on('value', snap=>{
+    if(_restoringFromFb||!S.loaded) return; // mid-load — skip
+    if(!snap.exists()) return;
+    const raw=snap.val();
+    if(raw._clientId===_myClientId) return; // our own save echoed back — ignore
+    // Someone else changed data — apply it live
+    const d=sanitizeState(raw);
+    SAVE_FIELDS.forEach(f=>{ if(d[f]!=null) try{ S[f]=JSON.parse(JSON.stringify(d[f])); }catch(e){} });
+    renderAll();
+    showToast('🔄 Live update from another user','ok',2500);
+  }, err=>console.error('FB live sync error:',err));
+}
 
 async function clearDateData(){
   if(!S.loaded){ alert('Load a roster first before resetting.'); return; }
@@ -1414,8 +1435,9 @@ async function loadRoster(){
     staff.forEach(s => { if(engIds.includes(s.id)) s.team = 'IRR'; });
     S.staff = staff;
     // Reset shift-specific state before loading saved data
-    // Cancel any pending save from the PREVIOUS roster — prevents writing old state to new date key
+    // Cancel any pending save + detach live listener from the PREVIOUS roster
     clearTimeout(saveTimer); saveTimer=null; pendingSave=false;
+    if(_fbLiveRef){ _fbLiveRef.off('value'); _fbLiveRef=null; } // detach live listener before switching date
     S._fbKey = fbKey(); // lock in the key for this roster now (before any async ops change the DOM)
     S.overrides={}; S.swaps=[]; S.transfers=[];
     S.backups={lo:[],irreg:[],wo:[],cim:[],moc:[]};
