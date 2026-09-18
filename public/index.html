@@ -675,7 +675,7 @@ function saveLastDate(){
 
 function fbSave(){
   if(!fbReady||!S.loaded){ return; }
-  const key=fbKey();
+  const key=S._fbKey||fbKey(); // use stored key so mid-switch saves don't write to wrong date
   if(!key){ return; }
   const payload={_savedAt:Date.now(),_key:key};
   SAVE_FIELDS.forEach(f=>{
@@ -1414,6 +1414,9 @@ async function loadRoster(){
     staff.forEach(s => { if(engIds.includes(s.id)) s.team = 'IRR'; });
     S.staff = staff;
     // Reset shift-specific state before loading saved data
+    // Cancel any pending save from the PREVIOUS roster — prevents writing old state to new date key
+    clearTimeout(saveTimer); saveTimer=null; pendingSave=false;
+    S._fbKey = fbKey(); // lock in the key for this roster now (before any async ops change the DOM)
     S.overrides={}; S.swaps=[]; S.transfers=[];
     S.backups={lo:[],irreg:[],wo:[],cim:[],moc:[]};
     S.ssTechs=[]; S.soc=[{flight:'',name:'',time:'',remark:''}];
