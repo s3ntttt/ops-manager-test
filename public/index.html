@@ -2560,7 +2560,7 @@ function _renderSummaryInner(el){
       const nmOwn = fOwn.filter(s=>!ssSet.has(s.id));
       let h='';
       h+=`<div style="font-size:8px;color:var(--amber);letter-spacing:1px;margin-bottom:2px;font-weight:700">SS</div>`;
-      ssOwn.forEach((s,i)=>{ const tp=s.acType||s.fleet||''; const dn=displayName(s); const tt=timingTag(s); h+=`<div onclick="toggleSS('${s.id}')" title="Click to unmark SS" style="display:flex;gap:3px;cursor:pointer;padding:1px 0"><span style="font-size:9px;color:var(--blue);width:13px;flex-shrink:0;text-align:right">${i+1}</span><span style="font-size:10px;color:var(--blue);font-weight:700;line-height:1.6">${dn}${tp?` <span style="font-size:8px;color:#3B82F6">(${tp})</span>`:''}${tt}${roleBadge(dn)}</span></div>`; });
+      ssOwn.forEach((s,i)=>{ const tp=s.acType||s.fleet||''; const dn=displayName(s); const tt=timingTag(s); h+=`<div onclick="toggleSS('${s.id}')" title="Click to unmark SS" style="display:flex;gap:3px;cursor:pointer;padding:1px 0"><span style="font-size:9px;color:var(--blue);width:13px;flex-shrink:0;text-align:right">${i+1}</span><span style="font-size:10px;color:var(--blue);font-weight:700;line-height:1.6">${dn}${tp?` <span style="font-size:8px;color:var(--blue)">(${tp})</span>`:''}${tt}${roleBadge(dn)}</span></div>`; });
       for(let i=ssOwn.length;i<3;i++) h+=`<div style="display:flex;gap:3px;padding:1px 0"><span style="font-size:9px;color:var(--txt3);width:13px;text-align:right">${i+1}</span><span style="font-size:9px;color:var(--txt3);font-style:italic">click ↓ to assign</span></div>`;
       if(nmOwn.length||fBk.length){
         h+=`<div style="font-size:8px;color:var(--txt3);font-weight:700;letter-spacing:1px;margin:5px 0 2px">NORMAL</div>`;
@@ -2760,9 +2760,9 @@ function _renderSummaryInner(el){
       const ss=i===0||wc.ss;
       const col=ss?'var(--blue)':'var(--txt)';
       return `<div style="display:grid;grid-template-columns:1fr 12px 1fr;gap:2px;padding:2px 0;border-bottom:1px solid var(--b);align-items:center">
-        <span style="font-size:9px;font-weight:600;color:${wc.primary?col:'#999'};min-width:0">${wc.primary||'NIL'}</span>
+        <span style="font-size:9px;font-weight:600;color:${wc.primary?col:'var(--txt3)'};min-width:0">${wc.primary||'NIL'}</span>
         <span style="font-size:9px;font-weight:700;color:var(--txt3);text-align:center">${wc.asst?'+':''}</span>
-        <span style="font-size:9px;font-weight:600;color:${wc.asst?col:'#999'};text-align:right">${wc.asst||'—'}</span>
+        <span style="font-size:9px;font-weight:600;color:${wc.asst?col:'var(--txt3)'};text-align:right">${wc.asst||'—'}</span>
       </div>`;
     }).join('')}
     ${shdr('RUNNER')}
@@ -2770,18 +2770,18 @@ function _renderSummaryInner(el){
       const parts=(rn.timing||'').split('/').map(s=>s.trim());
       const dispTiming=isDay?(parts[0]||rn.timing):(parts[1]||parts[0]||rn.timing);
       return `<div style="display:grid;grid-template-columns:1fr auto;gap:6px;padding:2px 0;border-bottom:1px solid var(--b);align-items:center">
-        <span style="font-size:9px;font-weight:600;color:${rn.name?'#000':'#999'};min-width:0">${rn.name||'NIL'}</span>
+        <span style="font-size:9px;font-weight:600;color:${rn.name?'var(--txt)':'var(--txt3)'};min-width:0">${rn.name||'NIL'}</span>
         <span style="font-size:9px;font-weight:600;color:var(--txt2);white-space:nowrap;text-align:right">${dispTiming}</span>
       </div>`;
     }).join('')}
     ${shdr('TOWER')}
     ${(r.towerSlots||[]).map((ts,i)=>{
-      const col='#000';
+      const col='var(--txt)';
       const primary=ts.a&&ts.b?ts.a+' / '+ts.b:ts.a||ts.b||'NIL';
       return `<div style="display:grid;grid-template-columns:1fr 12px 1fr;gap:2px;padding:2px 0;border-bottom:1px solid var(--b);align-items:center">
-        <span style="font-size:9px;font-weight:600;color:${(ts.a||ts.b)?col:'#999'};min-width:0">${primary}</span>
+        <span style="font-size:9px;font-weight:600;color:${(ts.a||ts.b)?col:'var(--txt3)'};min-width:0">${primary}</span>
         <span style="font-size:9px;font-weight:700;color:var(--txt3);text-align:center">${ts.backup?'+':''}</span>
-        <span style="font-size:9px;font-weight:600;color:${ts.backup?col:'#999'};text-align:right">${ts.backup||'—'}</span>
+        <span style="font-size:9px;font-weight:600;color:${ts.backup?col:'var(--txt3)'};text-align:right">${ts.backup||'—'}</span>
       </div>`;
     }).join('')}
   </div>`;
