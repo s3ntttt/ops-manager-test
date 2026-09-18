@@ -290,7 +290,7 @@ select option{background:var(--surf2)}
 .alog-t{color:var(--txt3);font-family:var(--mono);font-size:10px;white-space:nowrap;flex-shrink:0}
 .alog-nm{color:var(--txt);font-weight:700}
 .alog-ac{color:var(--txt2)}
-.alog-ac.mc{color:var(--red)} .alog-ac.al{color:var(--orange)} .alog-ac.wk{color:var(--green)} .alog-ac.fly{color:var(--purple)} .alog-ac.rst{color:var(--txt3)}
+.alog-ac.mc{color:var(--red)} .alog-ac.al{color:var(--orange)} .alog-ac.wk{color:var(--green)} .alog-ac.fly{color:var(--purple)} .alog-ac.rst{color:var(--txt3)} .alog-ac.sw{color:var(--blue)} .alog-ac.tr{color:var(--teal)} .alog-ac.bk{color:var(--amber)} .alog-ac.gl{color:var(--purple)} .alog-ac.ss{color:var(--green)} .alog-ac.rl{color:var(--txt2);font-style:italic}
 
 /* ── SNAPSHOT MODAL ── */
 #snap-ov .modal{max-width:480px;width:96vw}
@@ -2393,8 +2393,10 @@ function getAssignedNames(){
 
 function toggleSS(id){
   const idx=S.ssTechs.indexOf(id);
-  if(idx>=0) S.ssTechs.splice(idx,1);
-  else if(S.ssTechs.length<3) S.ssTechs.push(id);
+  const _ssS=S.staff.find(x=>x.id===id);
+  const _ssN=_ssS?displayName(_ssS):id;
+  if(idx>=0){ S.ssTechs.splice(idx,1); logEvent('SS TECH',_ssN+' removed'); }
+  else if(S.ssTechs.length<3){ S.ssTechs.push(id); logEvent('SS TECH',_ssN+' assigned'); }
   renderSummary();
   scheduleSave();
 }
@@ -3011,24 +3013,30 @@ function updSumRoles(){ /* debounced re-render */ }
 function addBk(dk){
   const name=(document.getElementById(`bn-${dk}`).value||'').trim().toUpperCase();
   if(!name) return;
+  const _bkPos=document.getElementById(`bp-${dk}`).value;
   S.backups[dk].push({
     name,
-    pos: document.getElementById(`bp-${dk}`).value,
+    pos: _bkPos,
     type:(document.getElementById(`bt-${dk}`).value||'').trim().toUpperCase(),
     mcEl: false
   });
+  logEvent('BACKUP', name+' added → '+dk.toUpperCase()+' ('+_bkPos+')');
   document.getElementById(`bn-${dk}`).value='';
   document.getElementById(`bt-${dk}`).value='';
   renderAll(); scheduleSave();
 }
 
 function removeBk(dk,i){
+  const _bk=S.backups[dk]&&S.backups[dk][i];
+  if(_bk) logEvent('BACKUP', _bk.name+' removed from '+dk.toUpperCase());
   S.backups[dk].splice(i,1);
   renderAll(); scheduleSave();
 }
 function toggleBkMcEl(dk,i){
   if(!S.backups[dk]||!S.backups[dk][i]) return;
   S.backups[dk][i].mcEl = !S.backups[dk][i].mcEl;
+  const _bk=S.backups[dk][i];
+  logEvent('BACKUP', _bk.name+' ('+dk.toUpperCase()+') '+(S.backups[dk][i].mcEl?'→ MC/EL':'→ restored'));
   renderAll(); scheduleSave();
 }
 
@@ -3161,10 +3169,13 @@ function closeActingGLModal(){ document.getElementById('actgl-ov').classList.rem
 function setActingGL(key,name){
   if(!S.actingGL) S.actingGL={lo:'',irreg:'',wo:'',cim:''};
   S.actingGL[key]=name;
+  logEvent('ACTING GL', name+' set as '+key.toUpperCase()+' GL');
   closeActingGLModal(); renderAll(); scheduleSave();
 }
 function clearActingGL(key){
+  const _prevGL=S.actingGL&&S.actingGL[key];
   if(S.actingGL) S.actingGL[key]='';
+  if(_prevGL) logEvent('ACTING GL', _prevGL+' cleared from '+key.toUpperCase()+' GL');
   closeActingGLModal(); renderAll(); scheduleSave();
 }
 
@@ -3562,6 +3573,7 @@ function _doSwap(key){
   // Remove existing swaps for either person
   S.swaps=S.swaps.filter(sw=>sw.id1!==id1&&sw.id2!==id1&&sw.id1!==id2&&sw.id2!==id2);
   S.swaps.push({id1, id2});
+  logEvent('SWAP', displayName(s1)+' ↔ '+displayName(s2));
   renderAll(); scheduleSave();
   if(document.getElementById('alloc-input').value.trim()) parseAllocText();
   setTimeout(()=>{_swapInProgress=false;},500);
@@ -3577,6 +3589,7 @@ function _doTransfer(key){
   const id=s.id, toDept='IRR';
   S.transfers=S.transfers.filter(t=>t.id!==id);
   S.transfers.push({id, toDept});
+  logEvent('TRANSFER', displayName(s)+' → '+toDept);
   renderAll(); scheduleSave();
   if(document.getElementById('alloc-input').value.trim()) parseAllocText();
   setTimeout(()=>{_swapInProgress=false;},500);
@@ -3602,7 +3615,7 @@ function applyAllocation(parsed){ _allocStore._parsed=parsed; _doApplyAllocation
 // ROLES MODAL
 // ═══════════════════════════════════
 function openRolesModal(){ renderRolesModal(); document.getElementById('roles-ov').classList.add('show'); }
-function closeRolesModal(){ document.getElementById('roles-ov').classList.remove('show'); renderSummary(); scheduleSave(); }
+function closeRolesModal(){ document.getElementById('roles-ov').classList.remove('show'); logEvent('ROLES','Roles updated'); renderSummary(); scheduleSave(); }
 
 function renderRolesModal(){
   const el=document.getElementById('roles-body');
@@ -4168,6 +4181,8 @@ function confirmSwap(id2){
   S.swaps     = S.swaps.filter(sw=>sw.id1!==id1&&sw.id2!==id1&&sw.id1!==id2&&sw.id2!==id2);
   S.transfers = S.transfers.filter(t=>t.id!==id1&&t.id!==id2);
   S.swaps.push({ id1, id2 });
+  const _s2=S.staff.find(s=>s.id===id2);
+  logEvent('SWAP', displayName(swapState.person1)+' ↔ '+(_s2?displayName(_s2):id2));
   closeSwapModal();
   renderAll();
 }
@@ -4176,11 +4191,20 @@ function confirmTransfer(toDept){
   S.swaps     = S.swaps.filter(sw=>sw.id1!==id&&sw.id2!==id);
   S.transfers = S.transfers.filter(t=>t.id!==id);
   S.transfers.push({ id, toDept });
+  logEvent('TRANSFER', displayName(swapState.person1)+' → '+toDept);
   closeSwapModal();
   renderAll();
 }
-function removeSwap(i){ S.swaps.splice(i,1); renderSwapModal(); renderAll(); }
-function removeTransfer(i){ S.transfers.splice(i,1); renderSwapModal(); renderAll(); }
+function removeSwap(i){
+  const sw=S.swaps[i];
+  if(sw){ const _a=S.staff.find(s=>s.id===sw.id1),_b=S.staff.find(s=>s.id===sw.id2); logEvent('SWAP','Removed '+(_a?displayName(_a):sw.id1)+' ↔ '+(_b?displayName(_b):sw.id2)); }
+  S.swaps.splice(i,1); renderSwapModal(); renderAll();
+}
+function removeTransfer(i){
+  const tr=S.transfers[i];
+  if(tr){ const _s=S.staff.find(s=>s.id===tr.id); logEvent('TRANSFER','Removed '+(_s?displayName(_s):tr.id)+' → '+tr.toDept); }
+  S.transfers.splice(i,1); renderSwapModal(); renderAll();
+}
 
 // ═══════════════════════════════════
 function showDebug(){
@@ -4402,6 +4426,14 @@ function logActivity(staffId, action){
   _renderActLog();
 }
 
+function logEvent(category, detail){
+  const entry={ts:Date.now(), name:'['+category+']', action:detail, _evt:true};
+  _actLog.unshift(entry);
+  if(_actLog.length>200) _actLog.length=200;
+  if(fbReady){ const key=S._fbKey||fbKey(); if(key) fbDb.ref(`activityLog/${key}`).push(entry).catch(()=>{}); }
+  _renderActLog();
+}
+
 function _actCls(action){
   const a=(action||'').toUpperCase();
   if(a.includes('MC')) return 'mc';
@@ -4409,6 +4441,18 @@ function _actCls(action){
   if(a.includes('WORKING')) return 'wk';
   if(a.includes('FLYING')) return 'fly';
   if(a.includes('RESTORED')) return 'rst';
+  if(a.includes('↔')) return 'sw';
+  if(a.includes('TRANSFER')||a.includes('→')) return 'tr';
+  return '';
+}
+function _evtCls(cat){
+  const c=(cat||'').toUpperCase();
+  if(c.includes('SWAP')) return 'sw';
+  if(c.includes('TRANSFER')) return 'tr';
+  if(c.includes('BACKUP')) return 'bk';
+  if(c.includes('SS')) return 'ss';
+  if(c.includes('GL')) return 'gl';
+  if(c.includes('ROLE')) return 'rl';
   return '';
 }
 
@@ -4417,7 +4461,8 @@ function _renderActLog(){
   if(!_actLog.length){ el.innerHTML='<div style="padding:20px;color:var(--txt3);font-size:12px;text-align:center">No activity yet this session.</div>'; return; }
   el.innerHTML=_actLog.map(e=>{
     const t=new Date(e.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-    return `<div class="alog-row"><span class="alog-t">${t}</span><span><span class="alog-nm">${e.name}</span> <span class="alog-ac ${_actCls(e.action)}">→ ${e.action}</span></span></div>`;
+    const cls=e._evt?_evtCls(e.name):_actCls(e.action);
+    return `<div class="alog-row"><span class="alog-t">${t}</span><span><span class="alog-nm">${e.name}</span> <span class="alog-ac ${cls}">→ ${e.action}</span></span></div>`;
   }).join('');
 }
 
