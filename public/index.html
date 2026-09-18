@@ -1435,7 +1435,8 @@ async function loadRoster(){
     staff.forEach(s => { if(engIds.includes(s.id)) s.team = 'IRR'; });
     S.staff = staff;
     // Reset shift-specific state before loading saved data
-    // Cancel any pending save + detach live listener from the PREVIOUS roster
+    // Flush any unsaved changes from the PREVIOUS roster before switching date
+    if(S.loaded && pendingSave && fbReady){ clearTimeout(saveTimer); fbSave(); }
     clearTimeout(saveTimer); saveTimer=null; pendingSave=false;
     if(_fbLiveRef){ _fbLiveRef.off('value'); _fbLiveRef=null; } // detach live listener before switching date
     S._fbKey = fbKey(); // lock in the key for this roster now (before any async ops change the DOM)
