@@ -1193,7 +1193,7 @@ function openExclusionsModal(){
       const knownName=S.nicknames[id]||id;
       return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:var(--surf2);border-radius:4px;margin-bottom:4px">
         <span style="font-size:11px;font-weight:600;color:var(--txt)">${knownName}</span>
-        <button class="btn btn-sm" style="font-size:9px;background:#EFF6FF;border:1px solid #2563EB;color:#2563EB;padding:2px 8px"
+        <button class="btn btn-sm" style="font-size:9px;background:var(--bbg);border:1px solid var(--blue);color:var(--blue);padding:2px 8px"
           onclick="restoreStaff('${id}',${i})">↩ RESTORE</button>
       </div>`;
     }).join('');
@@ -2551,7 +2551,7 @@ function _renderSummaryInner(el){
       const flyM=raw.match(/\(F(\d)\)/);
       if(flyM) return `<span style="font-size:7px;color:#fff;font-weight:700;margin-left:4px;background:#7C3AED;border-radius:3px;padding:0 4px;vertical-align:middle">F${flyM[1]}</span>`;
       const tmM=raw.match(/\((\d{4})(?:-(\d{4}))?\)/);
-      if(tmM) return `<span style="font-size:7px;color:#0369A1;font-weight:700;margin-left:4px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:3px;padding:0 4px;vertical-align:middle">${tmM[1]}${tmM[2]?'-'+tmM[2]:''}</span>`;
+      if(tmM) return `<span style="font-size:7px;color:var(--blue);font-weight:700;margin-left:4px;background:var(--bbg);border:1px solid var(--b2);border-radius:3px;padding:0 4px;vertical-align:middle">${tmM[1]}${tmM[2]?'-'+tmM[2]:''}</span>`;
       return '';
     };
 
@@ -2561,11 +2561,11 @@ function _renderSummaryInner(el){
       let h='';
       h+=`<div style="font-size:8px;color:var(--amber);letter-spacing:1px;margin-bottom:2px;font-weight:700">SS</div>`;
       ssOwn.forEach((s,i)=>{ const tp=s.acType||s.fleet||''; const dn=displayName(s); const tt=timingTag(s); h+=`<div onclick="toggleSS('${s.id}')" title="Click to unmark SS" style="display:flex;gap:3px;cursor:pointer;padding:1px 0"><span style="font-size:9px;color:var(--blue);width:13px;flex-shrink:0;text-align:right">${i+1}</span><span style="font-size:10px;color:var(--blue);font-weight:700;line-height:1.6">${dn}${tp?` <span style="font-size:8px;color:#3B82F6">(${tp})</span>`:''}${tt}${roleBadge(dn)}</span></div>`; });
-      for(let i=ssOwn.length;i<3;i++) h+=`<div style="display:flex;gap:3px;padding:1px 0"><span style="font-size:9px;color:#999;width:13px;text-align:right">${i+1}</span><span style="font-size:9px;color:#999;font-style:italic">click ↓ to assign</span></div>`;
+      for(let i=ssOwn.length;i<3;i++) h+=`<div style="display:flex;gap:3px;padding:1px 0"><span style="font-size:9px;color:var(--txt3);width:13px;text-align:right">${i+1}</span><span style="font-size:9px;color:var(--txt3);font-style:italic">click ↓ to assign</span></div>`;
       if(nmOwn.length||fBk.length){
-        h+=`<div style="font-size:8px;color:#555;font-weight:700;letter-spacing:1px;margin:5px 0 2px">NORMAL</div>`;
-        nmOwn.forEach((s,i)=>{ const tp=s.acType||s.fleet||''; const dn=displayName(s); const tt=timingTag(s); h+=`<div onclick="toggleSS('${s.id}')" title="Click to mark as SS" style="display:flex;gap:3px;cursor:pointer;padding:1px 0"><span style="font-size:9px;color:#555;width:13px;text-align:right">${ssOwn.length+i+1}</span><span style="font-size:10px;color:#000;font-weight:600;line-height:1.6">${dn}${tp?` <span style="font-size:8px;color:#555">(${tp})</span>`:''}${tt}${roleBadge(dn)}</span></div>`; });
-        fBk.forEach((b,i)=>{ h+=`<div style="display:flex;gap:3px;padding:1px 0"><span style="font-size:9px;color:#555;width:13px;text-align:right">${ssOwn.length+nmOwn.length+i+1}</span><span style="font-size:10px;color:#000;font-weight:600">${b.name}${b.type?` <span style="font-size:8px;color:#555">(${b.type})</span>`:''} <span style="font-size:8px;color:#555">(BK)</span></span></div>`; });
+        h+=`<div style="font-size:8px;color:var(--txt3);font-weight:700;letter-spacing:1px;margin:5px 0 2px">NORMAL</div>`;
+        nmOwn.forEach((s,i)=>{ const tp=s.acType||s.fleet||''; const dn=displayName(s); const tt=timingTag(s); h+=`<div onclick="toggleSS('${s.id}')" title="Click to mark as SS" style="display:flex;gap:3px;cursor:pointer;padding:1px 0"><span style="font-size:9px;color:var(--txt3);width:13px;text-align:right">${ssOwn.length+i+1}</span><span style="font-size:10px;color:var(--txt);font-weight:600;line-height:1.6">${dn}${tp?` <span style="font-size:8px;color:var(--txt3)">(${tp})</span>`:''}${tt}${roleBadge(dn)}</span></div>`; });
+        fBk.forEach((b,i)=>{ h+=`<div style="display:flex;gap:3px;padding:1px 0"><span style="font-size:9px;color:var(--txt3);width:13px;text-align:right">${ssOwn.length+nmOwn.length+i+1}</span><span style="font-size:10px;color:var(--txt);font-weight:600">${b.name}${b.type?` <span style="font-size:8px;color:var(--txt3)">(${b.type})</span>`:''} <span style="font-size:8px;color:var(--txt3)">(BK)</span></span></div>`; });
       }
       return h||'<div style="font-size:9px;color:var(--txt3)">—</div>';
     }
@@ -2583,20 +2583,20 @@ function _renderSummaryInner(el){
       const flyMatch  = schedRaw.match(/\(F(\d)\)/);
       const timeMatch = !flyMatch ? schedRaw.match(/\((\d{4})(?:-(\d{4}))?\)/) : null;
       const tags = [];
-      if(isXsBk)        tags.push(`<span style="font-size:8px;color:#555;font-weight:700;margin-left:2px">BK-${s.fromShift}</span>`);
-      else if(isMoved)  tags.push(`<span style="font-size:8px;color:#555;margin-left:2px">↔</span>`);
-      if(isHalf)        tags.push(`<span style="font-size:8px;color:#C2410C;font-weight:700;margin-left:4px;background:#FFF7ED;border:1px solid #C2410C;border-radius:3px;padding:0 3px">½ ${(document.getElementById('shift-sel')?.value||'SHIFT')}</span>`);
+      if(isXsBk)        tags.push(`<span style="font-size:8px;color:var(--txt3);font-weight:700;margin-left:2px">BK-${s.fromShift}</span>`);
+      else if(isMoved)  tags.push(`<span style="font-size:8px;color:var(--txt3);margin-left:2px">↔</span>`);
+      if(isHalf)        tags.push(`<span style="font-size:8px;color:var(--orange);font-weight:700;margin-left:4px;background:var(--obg);border:1px solid var(--orange);border-radius:3px;padding:0 3px">½ ${(document.getElementById('shift-sel')?.value||'SHIFT')}</span>`);
       if(flyMatch)      tags.push(`<span style="font-size:7px;color:#fff;font-weight:700;margin-left:4px;background:#7C3AED;border-radius:3px;padding:0 4px;vertical-align:middle">F${flyMatch[1]}</span>`);
-      if(timeMatch)     tags.push(`<span style="font-size:7px;color:#0369A1;font-weight:700;margin-left:4px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:3px;padding:0 4px;vertical-align:middle">${timeMatch[1]}${timeMatch[2]?'-'+timeMatch[2]:''}</span>`);
+      if(timeMatch)     tags.push(`<span style="font-size:7px;color:var(--blue);font-weight:700;margin-left:4px;background:var(--bbg);border:1px solid var(--b2);border-radius:3px;padding:0 4px;vertical-align:middle">${timeMatch[1]}${timeMatch[2]?'-'+timeMatch[2]:''}</span>`);
       const tag = tags.join('');
       const rb = isBk ? '' : roleBadge(base);
-      const nm = tp ? `${base} <span style="font-size:8px;color:#555">(${tp})</span>${tag}${rb}` : `${base}${tag}${rb}`;
-      return `<div style="display:flex;gap:3px;padding:1px 0"><span style="font-size:9px;color:#555;width:13px;flex-shrink:0;text-align:right">${i+1}</span><span style="font-size:10px;font-weight:600;color:#000;line-height:1.6">${nm}</span></div>`;
+      const nm = tp ? `${base} <span style="font-size:8px;color:var(--txt3)">(${tp})</span>${tag}${rb}` : `${base}${tag}${rb}`;
+      return `<div style="display:flex;gap:3px;padding:1px 0"><span style="font-size:9px;color:var(--txt3);width:13px;flex-shrink:0;text-align:right">${i+1}</span><span style="font-size:10px;font-weight:600;color:var(--txt);line-height:1.6">${nm}</span></div>`;
     }).join('');
   };
 
   const col  = `background:var(--surf);border:1px solid var(--b);border-radius:var(--r);padding:8px 10px`;
-  const chdr = (t,n,c='#000') => `<div style="font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:2px;color:${c};margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--b)">${t} <span style="color:#555;font-size:9px">${n}</span></div>`;
+  const chdr = (t,n,c='#000') => `<div style="font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:2px;color:${c};margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--b)">${t} <span style="color:var(--txt3);font-size:9px">${n}</span></div>`;
 
   const loTechAvail = loTech.filter(s=>!assigned.has(displayName(s))).length;
   const irTechAvail = irTech.filter(s=>!assigned.has(displayName(s))).length;
@@ -2604,27 +2604,27 @@ function _renderSummaryInner(el){
 
   // ── MIDDLE PANEL: TECH side | CERTIFIER side ──
   const midPanel = `<div>
-    <div style="font-size:9px;color:#000;letter-spacing:2px;font-weight:700;margin-bottom:6px;padding-bottom:4px;border-bottom:2px solid #000">TECHNICIANS</div>
+    <div style="font-size:9px;color:var(--txt);letter-spacing:2px;font-weight:700;margin-bottom:6px;padding-bottom:4px;border-bottom:2px solid var(--b)">TECHNICIANS</div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
       <div style="${col}">
-        <div style="font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:2px;color:#000;margin-bottom:4px;padding-bottom:4px;border-bottom:1px solid var(--b)">TECH (L/O) <span style="color:#555;font-size:9px">${loTechAvail}</span></div>
-        <div style="font-size:8px;color:#555;margin-bottom:4px">Click name to toggle SS (3 max)</div>
+        <div style="font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:2px;color:var(--txt);margin-bottom:4px;padding-bottom:4px;border-bottom:1px solid var(--b)">TECH (L/O) <span style="color:var(--txt3);font-size:9px">${loTechAvail}</span></div>
+        <div style="font-size:8px;color:var(--txt3);margin-bottom:4px">Click name to toggle SS (3 max)</div>
         ${numList(loTech, [], {ss:true})}
       </div>
       <div style="${col}">
-        <div style="font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:2px;color:#000;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--b)">IRR <span style="color:#555;font-size:9px">${irTechAvail}</span></div>
+        <div style="font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:2px;color:var(--txt);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--b)">IRR <span style="color:var(--txt3);font-size:9px">${irTechAvail}</span></div>
         ${numList(irTech)}
       </div>
       <div style="${col}">
-        <div style="font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:2px;color:#000;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--b)">WO <span style="color:#555;font-size:9px">${woTechAvail}</span></div>
+        <div style="font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:2px;color:var(--txt);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--b)">WO <span style="color:var(--txt3);font-size:9px">${woTechAvail}</span></div>
         ${numList(woTech)}
       </div>
       <div style="${col}">
-        <div style="font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:2px;color:#000;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--b)">CIM <span style="color:#555;font-size:9px">${cimTech.filter(s=>!assigned.has(displayName(s))).length}</span></div>
+        <div style="font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:2px;color:var(--txt);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--b)">CIM <span style="color:var(--txt3);font-size:9px">${cimTech.filter(s=>!assigned.has(displayName(s))).length}</span></div>
         ${numList(cimTech)}
       </div>
     </div>
-    <div style="font-size:9px;color:#000;letter-spacing:2px;font-weight:700;margin-bottom:6px;padding-bottom:4px;border-bottom:2px solid #000">CERTIFIERS</div>
+    <div style="font-size:9px;color:var(--txt);letter-spacing:2px;font-weight:700;margin-bottom:6px;padding-bottom:4px;border-bottom:2px solid var(--b)">CERTIFIERS</div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
       <div style="${col}">
         ${chdr('LAT',[...loLat,...cimLat].filter(s=>!assigned.has(displayName(s))).length)}
@@ -2730,7 +2730,7 @@ function _renderSummaryInner(el){
             ${suggestions.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">
               <span style="font-size:8px;color:#991B1B;font-weight:700">SWAP WITH:</span>
               ${suggestions.map((s,i)=>`<button class="btn btn-ghost btn-sm" style="font-size:8px;padding:1px 6px;border-color:#DC2626;color:#DC2626" onclick="window._doSwap('${key}_${i}')">⇄ ${displayName(s)}</button>`).join('')}
-            </div>`:'<span style="font-size:8px;color:#999">No IRREG staff available</span>'}
+            </div>`:'<span style="font-size:8px;color:var(--txt3)">No IRREG staff available</span>'}
           </div>`;
         }).join('')}`:''}
       <div style="font-size:8px;color:#991B1B;margin-top:6px;font-style:italic">Review assignments and swaps before shift briefing.</div>
@@ -2738,7 +2738,7 @@ function _renderSummaryInner(el){
   })();
 
   const shdr = (t,c='var(--amber)') => `<div style="font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:2px;color:${c};margin:8px 0 4px;padding-top:6px;border-top:1px solid var(--b)">${t}</div>`;
-  const lrow = (lbl,val) => `<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid var(--b)"><span style="font-size:9px;color:var(--amber);font-weight:700">${lbl}</span><span style="font-size:10px;color:#000;font-weight:700">${val||'—'}</span></div>`;
+  const lrow = (lbl,val) => `<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid var(--b)"><span style="font-size:9px;color:var(--amber);font-weight:700">${lbl}</span><span style="font-size:10px;color:var(--txt);font-weight:700">${val||'—'}</span></div>`;
   const leftPanel = `<div style="${col}">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <div style="font-size:9px;color:#0D9488;font-weight:700;letter-spacing:2px">ALLOCATION</div>
@@ -2746,7 +2746,7 @@ function _renderSummaryInner(el){
     </div>
     <div style="border-bottom:1px solid var(--b);padding-bottom:5px;margin-bottom:5px">
       <div style="font-size:11px;color:var(--amber);font-weight:700;letter-spacing:2px;margin-bottom:1px">DE</div>
-      <div style="font-size:14px;font-weight:700;color:#000">${mocNames}</div>
+      <div style="font-size:14px;font-weight:700;color:var(--txt)">${mocNames}</div>
     </div>
     ${lrow('GL LO', glNames('LO')+glBtn('LO'))}
     ${lrow('GL IRREG', glNames('IRR')+glBtn('IRR'))}
@@ -2761,7 +2761,7 @@ function _renderSummaryInner(el){
       const col=ss?'var(--blue)':'var(--txt)';
       return `<div style="display:grid;grid-template-columns:1fr 12px 1fr;gap:2px;padding:2px 0;border-bottom:1px solid var(--b);align-items:center">
         <span style="font-size:9px;font-weight:600;color:${wc.primary?col:'#999'};min-width:0">${wc.primary||'NIL'}</span>
-        <span style="font-size:9px;font-weight:700;color:#999;text-align:center">${wc.asst?'+':''}</span>
+        <span style="font-size:9px;font-weight:700;color:var(--txt3);text-align:center">${wc.asst?'+':''}</span>
         <span style="font-size:9px;font-weight:600;color:${wc.asst?col:'#999'};text-align:right">${wc.asst||'—'}</span>
       </div>`;
     }).join('')}
@@ -2771,7 +2771,7 @@ function _renderSummaryInner(el){
       const dispTiming=isDay?(parts[0]||rn.timing):(parts[1]||parts[0]||rn.timing);
       return `<div style="display:grid;grid-template-columns:1fr auto;gap:6px;padding:2px 0;border-bottom:1px solid var(--b);align-items:center">
         <span style="font-size:9px;font-weight:600;color:${rn.name?'#000':'#999'};min-width:0">${rn.name||'NIL'}</span>
-        <span style="font-size:9px;font-weight:600;color:#333;white-space:nowrap;text-align:right">${dispTiming}</span>
+        <span style="font-size:9px;font-weight:600;color:var(--txt2);white-space:nowrap;text-align:right">${dispTiming}</span>
       </div>`;
     }).join('')}
     ${shdr('TOWER')}
@@ -2780,7 +2780,7 @@ function _renderSummaryInner(el){
       const primary=ts.a&&ts.b?ts.a+' / '+ts.b:ts.a||ts.b||'NIL';
       return `<div style="display:grid;grid-template-columns:1fr 12px 1fr;gap:2px;padding:2px 0;border-bottom:1px solid var(--b);align-items:center">
         <span style="font-size:9px;font-weight:600;color:${(ts.a||ts.b)?col:'#999'};min-width:0">${primary}</span>
-        <span style="font-size:9px;font-weight:700;color:#999;text-align:center">${ts.backup?'+':''}</span>
+        <span style="font-size:9px;font-weight:700;color:var(--txt3);text-align:center">${ts.backup?'+':''}</span>
         <span style="font-size:9px;font-weight:600;color:${ts.backup?col:'#999'};text-align:right">${ts.backup||'—'}</span>
       </div>`;
     }).join('')}
@@ -2817,7 +2817,7 @@ function _renderSummaryInner(el){
           const rowBg=done?'#D1FAE5':isExt?'#CFFAFE':isHo?'#FEF3C7':'transparent';
           const rowTxt=done?'#065F46':isExt?'#0E7490':isHo?'var(--yellow)':'var(--txt)';
           return `<tr style="background:${rowBg};color:${rowTxt}">
-          <td style="padding:1px 3px;border:1px solid var(--b);font-size:8px;color:#555">${i+1}</td>
+          <td style="padding:1px 3px;border:1px solid var(--b);font-size:8px;color:var(--txt3)">${i+1}</td>
           <td style="padding:1px 3px;border:1px solid var(--b)"><input value="${sr.flight}" oninput="S.soc[${i}].flight=this.value;scheduleSave()" placeholder="LDG" style="background:transparent;border:none;color:${rowTxt};font-family:var(--mono);font-size:8px;width:32px;outline:none"></td>
           <td style="padding:1px 3px;border:1px solid var(--b)"><input value="${sr.name}" oninput="S.soc[${i}].name=this.value;scheduleSave()" placeholder="Name" style="background:transparent;border:none;color:${rowTxt};font-family:var(--mono);font-size:8px;width:48px;outline:none"></td>
           <td style="padding:1px 3px;border:1px solid var(--b)"><input value="${sr.time}" oninput="S.soc[${i}].time=this.value;scheduleSave()" placeholder="0715-1030" style="background:transparent;border:none;color:${rowTxt};font-family:var(--mono);font-size:8px;width:68px;outline:none"></td>
@@ -3542,7 +3542,7 @@ function renderAllocPreview(parsed){
             return `<button class="btn btn-ghost btn-sm" style="font-size:9px;padding:2px 8px" onclick="window._doSwap('${key}')">⇄ ${displayName(irS)}</button>`;
           }).join('')}
           ${!irrPool.length?`<span style="color:var(--txt3);font-size:9px">No IRREG staff available to swap</span>`:''}
-          <button class="btn btn-sm" style="font-size:9px;padding:2px 8px;background:#EFF6FF;border:1px solid #2563EB;color:#2563EB" onclick="window._doTransfer('w${wi}')">→ TRANSFER TO IRREG</button>
+          <button class="btn btn-sm" style="font-size:9px;padding:2px 8px;background:var(--bbg);border:1px solid var(--blue);color:var(--blue)" onclick="window._doTransfer('w${wi}')">→ TRANSFER TO IRREG</button>
         </div>
       </div>`;
     });
