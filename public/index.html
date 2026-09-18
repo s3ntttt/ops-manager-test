@@ -4468,14 +4468,15 @@ function _renderActLog(){
 
 async function loadActLogFromFb(){
   if(!fbReady) return;
-  const key=fbKey(); if(!key) return;
+  const key=S._fbKey||fbKey(); if(!key) return;
+  _actLog.length=0; // clear previous date's entries before loading new date
+  _renderActLog();
   try{
     const snap=await fbDb.ref(`activityLog/${key}`).limitToLast(80).get();
     if(snap.exists()){
       const entries=Object.values(snap.val()).sort((a,b)=>b.ts-a.ts);
-      entries.forEach(e=>{ if(!_actLog.find(x=>x.ts===e.ts&&x.name===e.name)) _actLog.push(e); });
+      entries.forEach(e=>{ _actLog.push(e); });
       _actLog.sort((a,b)=>b.ts-a.ts);
-      if(_actLog.length>200) _actLog.length=200;
       _renderActLog();
     }
   }catch(e){ console.warn('actlog:',e); }
