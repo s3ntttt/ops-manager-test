@@ -2536,7 +2536,7 @@ function _renderSummaryInner(el){
   const roleBadge=name=>{
     const label=roleMap[name];
     if(!label) return '';
-    const colors={'CHASER':'var(--amber)','MOJO':'#0369A1','WC1':'var(--blue)','WC2':'var(--blue)','RNR1':'#555','RNR2':'#555','RNR3':'#555','RNR4':'#555','TWR1':'var(--amber)','TWR2':'var(--amber)','TWR3':'var(--amber)','TWR4':'var(--amber)','GL':'var(--amber)'};
+    const colors={'CHASER':'var(--amber)','MOJO':'var(--blue)','WC1':'var(--blue)','WC2':'var(--blue)','RNR1':'var(--txt3)','RNR2':'var(--txt3)','RNR3':'var(--txt3)','RNR4':'var(--txt3)','TWR1':'var(--amber)','TWR2':'var(--amber)','TWR3':'var(--amber)','TWR4':'var(--amber)','GL':'var(--amber)'};
     const c=colors[label]||'#555';
     return `<span style="font-size:7px;font-weight:800;color:#fff;background:${c};border-radius:3px;padding:0 4px;margin-left:4px;letter-spacing:0.5px;vertical-align:middle">${label}</span>`;
   };
@@ -2754,7 +2754,7 @@ function _renderSummaryInner(el){
     ${lrow('GL CIM', glNames('CIM')+glBtn('CIM'))}
     ${lrow('CHASER', r.mocChaser||'NIL')}
     ${shdr('MOJO')}
-    ${(r.mojo||[]).map((n,i)=>`<div style="font-size:10px;font-weight:600;color:${n?'#000':'#999'};padding:2px 4px">${n||'NIL'}</div>`).join('')}
+    ${(r.mojo||[]).map((n,i)=>`<div style="font-size:10px;font-weight:600;color:${n?'var(--txt)':'var(--txt3)'};padding:2px 4px">${n||'NIL'}</div>`).join('')}
     ${shdr('WC / GSE')}
     ${(r.wc||[]).map((wc,i)=>{
       const ss=i===0||wc.ss;
