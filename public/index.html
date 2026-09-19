@@ -563,6 +563,7 @@ let fbDb   = null;
 let fbReady = false;
 const _myClientId = Math.random().toString(36).slice(2,10); // unique per browser tab — used to ignore own save echoes
 let _fbLiveRef = null; // holds active Firebase .on('value') listener for real-time sync
+let _rolesSnapshot = null; // snapshot of S.roles taken when roles modal opens (for diff logging)
 
 /**
  * Authenticate against the backend.
@@ -3614,8 +3615,54 @@ function applyAllocation(parsed){ _allocStore._parsed=parsed; _doApplyAllocation
 // ═══════════════════════════════════
 // ROLES MODAL
 // ═══════════════════════════════════
-function openRolesModal(){ renderRolesModal(); document.getElementById('roles-ov').classList.add('show'); }
-function closeRolesModal(){ document.getElementById('roles-ov').classList.remove('show'); logEvent('ROLES','Roles updated'); renderSummary(); scheduleSave(); }
+function openRolesModal(){ _rolesSnapshot=JSON.parse(JSON.stringify(S.roles||{})); renderRolesModal(); document.getElementById('roles-ov').classList.add('show'); }
+function closeRolesModal(){
+  document.getElementById('roles-ov').classList.remove('show');
+  // Build detailed change log by diffing current S.roles vs snapshot
+  const snap = _rolesSnapshot || {};
+  const r = S.roles || {};
+  const changes = [];
+  // CHASER
+  const prev_chaser = (snap.mocChaser||'NIL'), cur_chaser = (r.mocChaser||'NIL');
+  if(prev_chaser !== cur_chaser) changes.push('CHASER: '+cur_chaser+(prev_chaser==='NIL'?'':' (was '+prev_chaser+')'));
+  // MOJO
+  const mojoLabels = ['MOJO','ASST MOJO','MOJO3'];
+  (r.mojo||[]).forEach((v,i)=>{
+    const pv = ((snap.mojo||[])[i]||'NIL'), cv = (v||'NIL');
+    if(pv !== cv) changes.push(mojoLabels[i]+': '+cv+(pv==='NIL'?'':' (was '+pv+')'));
+  });
+  // WC Teams
+  ['WC1','WC2'].forEach((lbl,i)=>{
+    const pw = (snap.wc||[])[i]||{}, cw = (r.wc||[])[i]||{};
+    const pp = (pw.primary||'NIL'), cp = (cw.primary||'NIL');
+    if(pp !== cp) changes.push(lbl+' PRIMARY: '+cp+(pp==='NIL'?'':' (was '+pp+')'));
+    const pa = (pw.asst||'NIL'), ca = (cw.asst||'NIL');
+    if(pa !== ca) changes.push(lbl+' ASST: '+ca+(pa==='NIL'?'':' (was '+pa+')'));
+  });
+  // Runners
+  (r.runners||[]).forEach((rn,i)=>{
+    const pn = ((snap.runners||[])[i]||{}).name||'NIL', cn = (rn.name||'NIL');
+    if(pn !== cn) changes.push('RNR'+(i+1)+': '+cn+(pn==='NIL'?'':' (was '+pn+')'));
+  });
+  // Tower slots
+  const tLbls = ['TWR1','TWR2','TWR3','TWR4'];
+  (r.towerSlots||[]).forEach((ts,i)=>{
+    const pt = (snap.towerSlots||[])[i]||{};
+    const pa2 = (pt.a||'NIL'), ca2 = (ts.a||'NIL');
+    if(pa2 !== ca2) changes.push(tLbls[i]+' A: '+ca2+(pa2==='NIL'?'':' (was '+pa2+')'));
+    const pb = (pt.b||'NIL'), cb = (ts.b||'NIL');
+    if(pb !== cb) changes.push(tLbls[i]+' B: '+cb+(pb==='NIL'?'':' (was '+pb+')'));
+    const pbk = (pt.backup||'NIL'), cbk = (ts.backup||'NIL');
+    if(pbk !== cbk) changes.push(tLbls[i]+' BACKUP: '+cbk+(pbk==='NIL'?'':' (was '+pbk+')'));
+  });
+  if(changes.length > 0){
+    logEvent('ROLES', changes.join(' | '));
+  } else {
+    logEvent('ROLES','No changes');
+  }
+  _rolesSnapshot = null;
+  renderSummary(); scheduleSave();
+}
 
 function renderRolesModal(){
   const el=document.getElementById('roles-body');
