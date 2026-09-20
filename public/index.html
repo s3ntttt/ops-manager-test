@@ -2521,6 +2521,17 @@ function cardHTML(s, viewingDept){
   const engTag = isEng
     ? `<span style="display:inline-block;padding:1px 6px;background:var(--ybg);color:var(--yellow);border:1px solid var(--yellow);border-radius:2px;font-size:8px;font-weight:700;letter-spacing:.5px">⚙ ENG</span>`
     : '';
+  // ADP tag — only for TECH staff; uses staffId directly to avoid name-lookup ambiguity
+  const adpTag = (()=>{
+    if(s.category!=='TECH'||s.isBackup) return '';
+    const exp=_adpExpiry[s.id];
+    if(!exp||exp==='N/A') return '';
+    const expD=new Date(exp), tod=new Date(); tod.setHours(0,0,0,0); expD.setHours(0,0,0,0);
+    const days=Math.floor((expD-tod)/86400000);
+    if(days<0) return `<span style="display:inline-block;padding:1px 4px;background:#DC2626;color:#fff;border-radius:2px;font-size:7px;font-weight:700;letter-spacing:.3px" title="ADP expired ${Math.abs(days)}d ago">ADP EXP</span>`;
+    if(days<=30) return `<span style="display:inline-block;padding:1px 4px;background:#F59E0B;color:#000;border-radius:2px;font-size:7px;font-weight:700;letter-spacing:.3px" title="ADP expiring in ${days} days">ADP ${days}d</span>`;
+    return '';
+  })();
   return `<div class="card ${a.cls}${mv?' card-moved':''}${isEng?' card-eng':''}" onclick="cycleOvr('${s.id}')" title="${s.fullName}\n${s.desig}\n${s.acType}\nScheduled: ${s.schedVal||'—'}\nClick to cycle status">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2px">
       <div class="cname">${nm}${hasCustomNick?`<span style="font-size:7px;color:var(--txt3);margin-left:3px" title="Custom nickname">✎</span>`:''}${ov?` <span class="ovr-star">✱</span>`:''}</div>
@@ -2532,7 +2543,7 @@ function cardHTML(s, viewingDept){
     </div>
     <div class="cmeta">${s.desigCode||s.desig} · ${s.acType||s.fleet||'—'}</div>
     <div style="display:flex;align-items:center;flex-wrap:wrap;gap:3px;margin-top:5px">
-      <span class="badge ${a.badge}">${a.lbl}</span>${raw}${fromTag}${engTag}
+      <span class="badge ${a.badge}">${a.lbl}</span>${raw}${fromTag}${engTag}${adpTag}
     </div>
   </div>`;
 }
