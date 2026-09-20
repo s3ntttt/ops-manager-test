@@ -487,9 +487,13 @@ select option{background:var(--surf2)}
     <div style="font-size:10px;color:var(--txt3);margin-bottom:12px">ADP = Authority to Discharge Passengers. Track expiry per tech. System alerts when MOJO or WC Primary has expired or soon-to-expire ADP.</div>
     <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:10px;align-items:center">
       <input type="text" id="adp-search" placeholder="Search tech name…" oninput="renderAdpModal()" style="font-size:11px;padding:6px 8px;background:var(--bg);border:1px solid var(--b);border-radius:4px;color:var(--txt);width:100%;box-sizing:border-box">
-      <div style="display:flex;gap:6px">
-        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('adp-filter').value='all';renderAdpModal()">ALL</button>
-        <button class="btn btn-ghost btn-sm" style="color:#F59E0B" onclick="document.getElementById('adp-filter').value='warn';renderAdpModal()">⚠ WARN</button>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="_adpDept='';document.getElementById('adp-filter').value='all';renderAdpModal()">ALL</button>
+        <button class="btn btn-ghost btn-sm" onclick="_adpDept='IRR';document.getElementById('adp-filter').value='all';renderAdpModal()">IRR</button>
+        <button class="btn btn-ghost btn-sm" onclick="_adpDept='LO';document.getElementById('adp-filter').value='all';renderAdpModal()">LO</button>
+        <button class="btn btn-ghost btn-sm" onclick="_adpDept='WO';document.getElementById('adp-filter').value='all';renderAdpModal()">WO</button>
+        <button class="btn btn-ghost btn-sm" onclick="_adpDept='CIM';document.getElementById('adp-filter').value='all';renderAdpModal()">CIM</button>
+        <button class="btn btn-ghost btn-sm" style="color:#F59E0B" onclick="_adpDept='';document.getElementById('adp-filter').value='warn';renderAdpModal()">⚠ WARN</button>
       </div>
     </div>
     <select id="adp-filter" style="display:none"></select>
@@ -584,6 +588,7 @@ const _myClientId = Math.random().toString(36).slice(2,10); // unique per browse
 let _fbLiveRef = null; // holds active Firebase .on('value') listener for real-time sync
 let _rolesSnapshot = null; // snapshot of S.roles taken when roles modal opens (for diff logging)
 let _adpExpiry = {}; // { staffId: "YYYY-MM-DD" } — ADP expiry dates, loaded globally from Firebase
+let _adpDept = ''; // dept filter for ADP modal ('' = all)
 
 /**
  * Authenticate against the backend.
@@ -2328,6 +2333,7 @@ function adpWarningsForRoles(){
 
 // ── ADP MODAL ──
 function openAdpModal(){
+  _adpDept='';
   if(document.getElementById('adp-filter')) document.getElementById('adp-filter').value='all';
   renderAdpModal();
   document.getElementById('adp-ov').classList.add('show');
@@ -2338,23 +2344,28 @@ function renderAdpModal(){
   const el=document.getElementById('adp-body'); if(!el) return;
   const search=(document.getElementById('adp-search')?.value||'').toLowerCase();
   const filter=document.getElementById('adp-filter')?.value||'all';
+  const deptFilter=(_adpDept||'').toUpperCase();
 
-  // Collect all unique IRR TECH staff (permanent only, not backups)
+  // All TECH staff across all depts (IRR, LO, WO, CIM) — permanent only
   const techs=S.staff.filter(s=>s.category==='TECH'&&!s.isBackup);
-  // Also include backup IRR techs from backups list
-  const bkTechs=(S.backups.irreg||[]).filter(b=>normCat(b.pos)==='TECH');
 
-  const today=new Date(); today.setHours(0,0,0,0);
+  const deptColor={'IRR':'#3B82F6','LO':'#10B981','WO':'#F59E0B','CIM':'#A855F7'};
 
   const rows=[];
   techs.forEach(s=>{
     const dn=S.nicknames[s.id]||s.shortName;
-    if(search && !dn.toLowerCase().includes(search) && !s.id.toLowerCase().includes(search)) return;
+    const dept=s.team||'?';
+    if(deptFilter && dept!==deptFilter) return;
+    if(search && !dn.toLowerCase().includes(search) && !s.id.toLowerCase().includes(search) && !dept.toLowerCase().includes(search)) return;
     const expDate=_adpExpiry[s.id]||'';
     const {days,status}=adpStatusFor(dn);
     if(filter==='warn' && status!=='expired' && status!=='soon') return;
-    rows.push({id:s.id,name:dn,expDate,days,status});
+    rows.push({id:s.id,name:dn,dept,expDate,days,status});
   });
+
+  // Sort: expired first, then soon, then by dept then name
+  const sortOrder={expired:0,soon:1,ok:2,none:3};
+  rows.sort((a,b)=>(sortOrder[a.status]||3)-(sortOrder[b.status]||3)||a.dept.localeCompare(b.dept)||a.name.localeCompare(b.name));
 
   if(!rows.length){
     el.innerHTML='<div style="font-size:11px;color:var(--txt3);text-align:center;padding:20px">'+
@@ -2371,26 +2382,36 @@ function renderAdpModal(){
   const badge=st=>st==='expired'?'<span style="background:#DC2626;color:#fff;font-size:8px;font-weight:700;border-radius:3px;padding:1px 5px">EXPIRED</span>':
     st==='soon'?`<span style="background:#F59E0B;color:#000;font-size:8px;font-weight:700;border-radius:3px;padding:1px 5px">EXP SOON</span>`:
     st==='ok'?'<span style="background:#10B981;color:#fff;font-size:8px;font-weight:600;border-radius:3px;padding:1px 5px">VALID</span>':
-    '<span style="font-size:8px;color:var(--txt3)">NO DATE SET</span>';
+    '<span style="font-size:8px;color:var(--txt3)">NO DATE</span>';
 
-  el.innerHTML=`
-    <div style="font-size:9px;color:var(--txt3);letter-spacing:1px;margin-bottom:6px">${rows.length} TECH${rows.length!==1?'S':''}</div>
-    ${rows.map(r=>`
-      <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:6px 8px;border-radius:4px;margin-bottom:4px;border:1px solid var(--b);${statusStyle(r.status)}">
-        <div>
-          <div style="font-size:11px;font-weight:700;color:var(--txt)">${r.name}</div>
-          <div style="font-size:9px;color:var(--txt3)">${r.id}</div>
+  // Count summary
+  const exp=rows.filter(r=>r.status==='expired').length;
+  const sn=rows.filter(r=>r.status==='soon').length;
+  const sumHtml=`<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+    <span style="font-size:9px;color:var(--txt3);letter-spacing:1px">${rows.length} TECH${rows.length!==1?'S':''}</span>
+    ${exp?`<span style="background:#DC2626;color:#fff;font-size:8px;font-weight:700;border-radius:3px;padding:1px 6px">${exp} EXPIRED</span>`:''}
+    ${sn?`<span style="background:#F59E0B;color:#000;font-size:8px;font-weight:700;border-radius:3px;padding:1px 6px">${sn} EXP SOON</span>`:''}
+  </div>`;
+
+  el.innerHTML=sumHtml+rows.map(r=>`
+    <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:6px 8px;border-radius:4px;margin-bottom:4px;border:1px solid var(--b);${statusStyle(r.status)}">
+      <div>
+        <div style="display:flex;align-items:center;gap:5px">
+          <span style="background:${deptColor[r.dept]||'var(--txt3)'};color:#fff;font-size:7px;font-weight:800;border-radius:2px;padding:1px 4px;letter-spacing:0.5px">${r.dept}</span>
+          <span style="font-size:11px;font-weight:700;color:var(--txt)">${r.name}</span>
         </div>
-        <div style="text-align:right">
-          ${badge(r.status)}
-          ${r.days!=null?`<div style="font-size:9px;color:var(--txt3);margin-top:2px">${r.days<0?Math.abs(r.days)+' days ago':r.days+' days left'}</div>`:''}
-        </div>
-        <div style="min-width:130px">
-          <input type="date" value="${r.expDate}" data-staffid="${r.id}"
-            onchange="setAdpExpiry(this.dataset.staffid,this.value)"
-            style="font-size:11px;padding:4px 6px;background:var(--bg);border:1px solid var(--b);border-radius:4px;color:var(--txt);width:100%;box-sizing:border-box">
-        </div>
-      </div>`).join('')}`;
+        <div style="font-size:9px;color:var(--txt3);margin-top:1px">${r.id}</div>
+      </div>
+      <div style="text-align:right">
+        ${badge(r.status)}
+        ${r.days!=null?`<div style="font-size:9px;color:var(--txt3);margin-top:2px">${r.days<0?Math.abs(r.days)+'d ago':r.days+'d left'}</div>`:''}
+      </div>
+      <div style="min-width:120px">
+        <input type="date" value="${r.expDate}" data-staffid="${r.id}"
+          onchange="setAdpExpiry(this.dataset.staffid,this.value)"
+          style="font-size:11px;padding:4px 6px;background:var(--bg);border:1px solid var(--b);border-radius:4px;color:var(--txt);width:100%;box-sizing:border-box">
+      </div>
+    </div>`).join('');
 }
 
 function setAdpExpiry(staffId, dateVal){
