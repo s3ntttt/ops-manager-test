@@ -1461,6 +1461,7 @@ async function loadRoster(){
     const engIds = ENG_SPECIALISTS[group.toUpperCase()] || [];
     staff.forEach(s => { if(engIds.includes(s.id)) s.team = 'IRR'; });
     S.staff = staff;
+    _dnCollisionSet = null; // reset display-name collision cache
     // Reset shift-specific state before loading saved data
     // Flush any unsaved changes from the PREVIOUS roster before switching date
     if(S.loaded && pendingSave && fbReady){ clearTimeout(saveTimer); fbSave(); }
@@ -2300,7 +2301,13 @@ function saveAdpExpiry(){
 function adpStatusFor(name){
   if(!name) return {days:null,status:'none'};
   const cleanName = name.replace(/\s*\(BK\)|\s*\(TR\)/g,'').trim();
-  const s = S.staff.find(x=>(S.nicknames[x.id]||x.shortName)===cleanName);
+  // Try exact displayName match first (handles "[TEAM]" disambiguation tags)
+  let s = S.staff.find(x=>displayName(x)===cleanName);
+  // Fallback: strip team tag and match by base nickname/shortName
+  if(!s){
+    const baseName = cleanName.replace(/\s*\[[^\]]+\]$/,'').trim();
+    s = S.staff.find(x=>(S.nicknames[x.id]||x.shortName)===baseName);
+  }
   const sid = s ? s.id : null;
   if(!sid || !_adpExpiry[sid]) return {days:null,status:'none'};
   if(_adpExpiry[sid]==='N/A') return {days:null,status:'na'}; // ADP not applicable for this tech
@@ -2354,7 +2361,7 @@ function renderAdpModal(){
 
   const rows=[];
   techs.forEach(s=>{
-    const dn=S.nicknames[s.id]||s.shortName;
+    const dn=displayName(s); // uses collision-aware name (e.g. "MEON [IRR]")
     const dept=s.team||'?';
     if(deptFilter && dept!==deptFilter) return;
     if(search && !dn.toLowerCase().includes(search) && !s.id.toLowerCase().includes(search) && !dept.toLowerCase().includes(search)) return;
@@ -2456,12 +2463,28 @@ async function loadNicknames(){
     if(snap.exists()){
       const cloud=snap.val()||{};
       S.nicknames=Object.assign({}, S.nicknames, cloud);
+      _dnCollisionSet = null; // reset display-name collision cache
       localStorage.setItem('ops_nicknames', JSON.stringify(S.nicknames));
       if(S.loaded) renderAll(); // only re-render if roster is already loaded
     }
   } catch(e){ console.warn('Nickname load error:',e); }
 }
-function displayName(s){ return S.nicknames[s.id] || s.shortName; }
+let _dnCollisionSet = null;
+function _buildDnCollisionSet(){
+  _dnCollisionSet = new Set();
+  const seen = {};
+  (S.staff||[]).forEach(s => {
+    const base = S.nicknames[s.id] || s.shortName;
+    if(seen[base]) _dnCollisionSet.add(base);
+    else seen[base] = true;
+  });
+}
+function displayName(s){
+  if(!_dnCollisionSet) _buildDnCollisionSet();
+  const base = S.nicknames[s.id] || s.shortName;
+  if(_dnCollisionSet.has(base)) return base + ' [' + (s.team || '?') + ']';
+  return base;
+}
 
 function editNickname(id, currentName, event){
   event.stopPropagation();
@@ -2873,7 +2896,14 @@ function _renderSummaryInner(el){
       'COURSE':'COURSE','TASK':'TASK','FLYING':'FLYING'}[st]||st||'UNAVAILABLE');
 
     const isUnavail=s=>{ const a=effAvail(s); return a.st!=='WORKING'&&a.st!=='BACKUP_SHIFT'; };
-    const findStaff=name=>S.staff.find(s=>displayName(s)===name||s.shortName===name);
+    const findStaff=name=>{
+      // Exact displayName match (includes "[TEAM]" disambiguation tags)
+      let found = S.staff.find(s=>displayName(s)===name);
+      if(found) return found;
+      // Fallback: strip team tag, then try displayName or shortName
+      const base = name.replace(/\s*\[[^\]]+\]$/,'').trim();
+      return S.staff.find(s=>displayName(s)===base||s.shortName===base);
+    };
 
     // 1. Direct role assignment conflicts
     const roleEntries=[
