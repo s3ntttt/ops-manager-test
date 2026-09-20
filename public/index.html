@@ -2295,7 +2295,7 @@ function saveAdpExpiry(){
   fbDb.ref('settings/adpExpiry').set(_adpExpiry).catch(e=>console.warn('adpExpiry save:',e));
 }
 
-// Returns { days: <number>, status: 'ok'|'soon'|'expired'|'none' }
+// Returns { days: <number>, status: 'ok'|'soon'|'expired'|'none'|'na' }
 // name = display name string (as stored in S.roles)
 function adpStatusFor(name){
   if(!name) return {days:null,status:'none'};
@@ -2303,6 +2303,7 @@ function adpStatusFor(name){
   const s = S.staff.find(x=>(S.nicknames[x.id]||x.shortName)===cleanName);
   const sid = s ? s.id : null;
   if(!sid || !_adpExpiry[sid]) return {days:null,status:'none'};
+  if(_adpExpiry[sid]==='N/A') return {days:null,status:'na'}; // ADP not applicable for this tech
   const exp = new Date(_adpExpiry[sid]);
   const today = new Date(); today.setHours(0,0,0,0); exp.setHours(0,0,0,0);
   const days = Math.floor((exp-today)/(1000*86400));
@@ -2312,7 +2313,7 @@ function adpStatusFor(name){
 }
 function adpBadge(name){
   const {days,status}=adpStatusFor(name);
-  if(status==='none') return '';
+  if(status==='none'||status==='na') return ''; // no badge for N/A or unknown
   if(status==='expired') return `<span style="background:#DC2626;color:#fff;font-size:8px;font-weight:700;border-radius:3px;padding:0 5px;margin-left:4px" title="ADP EXPIRED">ADP EXP</span>`;
   if(status==='soon') return `<span style="background:#F59E0B;color:#000;font-size:8px;font-weight:700;border-radius:3px;padding:0 5px;margin-left:4px" title="ADP expiring in ${days} days">ADP ${days}d</span>`;
   return `<span style="background:#10B981;color:#fff;font-size:8px;font-weight:600;border-radius:3px;padding:0 5px;margin-left:4px" title="ADP valid ${days} days left">ADP ✓</span>`;
@@ -2360,12 +2361,13 @@ function renderAdpModal(){
     const expDate=_adpExpiry[s.id]||'';
     const {days,status}=adpStatusFor(dn);
     if(filter==='warn' && status!=='expired' && status!=='soon') return;
+    if(filter==='warn' && status==='na') return;
     rows.push({id:s.id,name:dn,dept,expDate,days,status});
   });
 
-  // Sort: expired first, then soon, then by dept then name
-  const sortOrder={expired:0,soon:1,ok:2,none:3};
-  rows.sort((a,b)=>(sortOrder[a.status]||3)-(sortOrder[b.status]||3)||a.dept.localeCompare(b.dept)||a.name.localeCompare(b.name));
+  // Sort: expired first, soon, ok, none, na (N/A at the very bottom)
+  const sortOrder={expired:0,soon:1,ok:2,none:3,na:4};
+  rows.sort((a,b)=>(sortOrder[a.status]??3)-(sortOrder[b.status]??3)||a.dept.localeCompare(b.dept)||a.name.localeCompare(b.name));
 
   if(!rows.length){
     el.innerHTML='<div style="font-size:11px;color:var(--txt3);text-align:center;padding:20px">'+
@@ -2377,23 +2379,29 @@ function renderAdpModal(){
     'expired':'background:#FEE2E2;border-color:#DC2626',
     'soon':'background:#FEF3C7;border-color:#F59E0B',
     'ok':'background:var(--bg);border-color:var(--b)',
-    'none':'background:var(--bg);border-color:var(--b)'
+    'none':'background:var(--bg);border-color:var(--b)',
+    'na':'background:var(--bg);border-color:var(--b);opacity:0.5'
   }[st]||'');
   const badge=st=>st==='expired'?'<span style="background:#DC2626;color:#fff;font-size:8px;font-weight:700;border-radius:3px;padding:1px 5px">EXPIRED</span>':
     st==='soon'?`<span style="background:#F59E0B;color:#000;font-size:8px;font-weight:700;border-radius:3px;padding:1px 5px">EXP SOON</span>`:
     st==='ok'?'<span style="background:#10B981;color:#fff;font-size:8px;font-weight:600;border-radius:3px;padding:1px 5px">VALID</span>':
+    st==='na'?'<span style="background:var(--bg2,#6B7280);color:var(--txt2);border:1px solid var(--b);font-size:8px;font-weight:600;border-radius:3px;padding:1px 5px">N/A</span>':
     '<span style="font-size:8px;color:var(--txt3)">NO DATE</span>';
 
   // Count summary
   const exp=rows.filter(r=>r.status==='expired').length;
   const sn=rows.filter(r=>r.status==='soon').length;
-  const sumHtml=`<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+  const na=rows.filter(r=>r.status==='na').length;
+  const sumHtml=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
     <span style="font-size:9px;color:var(--txt3);letter-spacing:1px">${rows.length} TECH${rows.length!==1?'S':''}</span>
     ${exp?`<span style="background:#DC2626;color:#fff;font-size:8px;font-weight:700;border-radius:3px;padding:1px 6px">${exp} EXPIRED</span>`:''}
     ${sn?`<span style="background:#F59E0B;color:#000;font-size:8px;font-weight:700;border-radius:3px;padding:1px 6px">${sn} EXP SOON</span>`:''}
+    ${na?`<span style="font-size:8px;color:var(--txt3)">${na} N/A</span>`:''}
   </div>`;
 
-  el.innerHTML=sumHtml+rows.map(r=>`
+  el.innerHTML=sumHtml+rows.map(r=>{
+    const isNA=r.status==='na';
+    return `
     <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:6px 8px;border-radius:4px;margin-bottom:4px;border:1px solid var(--b);${statusStyle(r.status)}">
       <div>
         <div style="display:flex;align-items:center;gap:5px">
@@ -2406,14 +2414,29 @@ function renderAdpModal(){
         ${badge(r.status)}
         ${r.days!=null?`<div style="font-size:9px;color:var(--txt3);margin-top:2px">${r.days<0?Math.abs(r.days)+'d ago':r.days+'d left'}</div>`:''}
       </div>
-      <div style="min-width:120px">
-        <input type="date" value="${r.expDate}" data-staffid="${r.id}"
-          onchange="setAdpExpiry(this.dataset.staffid,this.value)"
-          style="font-size:11px;padding:4px 6px;background:var(--bg);border:1px solid var(--b);border-radius:4px;color:var(--txt);width:100%;box-sizing:border-box">
+      <div style="min-width:130px;display:flex;flex-direction:column;gap:4px">
+        ${isNA
+          ? `<div style="font-size:9px;color:var(--txt3);text-align:center;padding:4px 0">ADP not required</div>`
+          : `<input type="date" value="${r.expDate}" data-staffid="${r.id}"
+              onchange="setAdpExpiry(this.dataset.staffid,this.value)"
+              style="font-size:11px;padding:4px 6px;background:var(--bg);border:1px solid var(--b);border-radius:4px;color:var(--txt);width:100%;box-sizing:border-box">`
+        }
+        <button class="btn btn-ghost btn-sm" style="font-size:8px;padding:2px 6px;${isNA?'color:var(--amber)':''}"
+          onclick="toggleAdpNA('${r.id}',${isNA})">${isNA?'↩ UNDO N/A':'✕ MARK N/A'}</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
+function toggleAdpNA(staffId, currentlyNA){
+  if(!staffId) return;
+  if(currentlyNA){ delete _adpExpiry[staffId]; } // remove N/A → back to "no date"
+  else { _adpExpiry[staffId]='N/A'; }             // mark as N/A
+  saveAdpExpiry();
+  renderAdpModal();
+  if(document.getElementById('roles-ov').classList.contains('show')) renderRolesModal();
+  if(typeof renderSummary==='function') renderSummary();
+}
 function setAdpExpiry(staffId, dateVal){
   if(!staffId) return;
   if(dateVal){ _adpExpiry[staffId]=dateVal; }
