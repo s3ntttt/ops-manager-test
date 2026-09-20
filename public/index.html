@@ -2313,7 +2313,7 @@ function adpStatusFor(name, preferDept){
   for(const s of ordered){
     const sid = s.id;
     if(!_adpExpiry[sid]){ continue; }
-    if(_adpExpiry[sid]==='N/A'){ if(statOrder['na']>statOrder[worst.status||'none']) continue; worst={days:null,status:'na'}; continue; }
+    if(_adpExpiry[sid]==='N/A'){ if(worst.status==='none') worst={days:null,status:'na'}; continue; }
     const exp = new Date(_adpExpiry[sid]);
     const today = new Date(); today.setHours(0,0,0,0); exp.setHours(0,0,0,0);
     const days = Math.floor((exp-today)/(1000*86400));
