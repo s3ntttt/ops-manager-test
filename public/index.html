@@ -1461,7 +1461,6 @@ async function loadRoster(){
     const engIds = ENG_SPECIALISTS[group.toUpperCase()] || [];
     staff.forEach(s => { if(engIds.includes(s.id)) s.team = 'IRR'; });
     S.staff = staff;
-    _dnCollisionSet = null; // reset display-name collision cache
     // Reset shift-specific state before loading saved data
     // Flush any unsaved changes from the PREVIOUS roster before switching date
     if(S.loaded && pendingSave && fbReady){ clearTimeout(saveTimer); fbSave(); }
@@ -2298,25 +2297,30 @@ function saveAdpExpiry(){
 
 // Returns { days: <number>, status: 'ok'|'soon'|'expired'|'none'|'na' }
 // name = display name string (as stored in S.roles)
-function adpStatusFor(name){
+function adpStatusFor(name, preferDept){
   if(!name) return {days:null,status:'none'};
   const cleanName = name.replace(/\s*\(BK\)|\s*\(TR\)/g,'').trim();
-  // Try exact displayName match first (handles "[TEAM]" disambiguation tags)
-  let s = S.staff.find(x=>displayName(x)===cleanName);
-  // Fallback: strip team tag and match by base nickname/shortName
-  if(!s){
-    const baseName = cleanName.replace(/\s*\[[^\]]+\]$/,'').trim();
-    s = S.staff.find(x=>(S.nicknames[x.id]||x.shortName)===baseName);
+  // Find all staff matching this display name
+  const matches = S.staff.filter(x=>(S.nicknames[x.id]||x.shortName)===cleanName);
+  if(!matches.length) return {days:null,status:'none'};
+  // If dept hint given (e.g. from role pool context), prefer that dept's staff
+  const ordered = preferDept
+    ? [...matches.filter(x=>x.team===preferDept), ...matches.filter(x=>x.team!==preferDept)]
+    : matches;
+  // Compute status for each match; return worst-case (most urgent)
+  const statOrder={expired:0,soon:1,ok:2,none:3,na:4};
+  let worst = {days:null,status:'none'};
+  for(const s of ordered){
+    const sid = s.id;
+    if(!_adpExpiry[sid]){ continue; }
+    if(_adpExpiry[sid]==='N/A'){ if(statOrder['na']>statOrder[worst.status||'none']) continue; worst={days:null,status:'na'}; continue; }
+    const exp = new Date(_adpExpiry[sid]);
+    const today = new Date(); today.setHours(0,0,0,0); exp.setHours(0,0,0,0);
+    const days = Math.floor((exp-today)/(1000*86400));
+    const st = days<0?'expired':days<=30?'soon':'ok';
+    if((statOrder[st]??3) < (statOrder[worst.status]??3)) worst={days,status:st};
   }
-  const sid = s ? s.id : null;
-  if(!sid || !_adpExpiry[sid]) return {days:null,status:'none'};
-  if(_adpExpiry[sid]==='N/A') return {days:null,status:'na'}; // ADP not applicable for this tech
-  const exp = new Date(_adpExpiry[sid]);
-  const today = new Date(); today.setHours(0,0,0,0); exp.setHours(0,0,0,0);
-  const days = Math.floor((exp-today)/(1000*86400));
-  if(days<0) return {days,status:'expired'};
-  if(days<=30) return {days,status:'soon'};
-  return {days,status:'ok'};
+  return worst;
 }
 function adpBadge(name){
   const {days,status}=adpStatusFor(name);
@@ -2361,7 +2365,7 @@ function renderAdpModal(){
 
   const rows=[];
   techs.forEach(s=>{
-    const dn=displayName(s); // uses collision-aware name (e.g. "MEON [IRR]")
+    const dn=S.nicknames[s.id]||s.shortName;
     const dept=s.team||'?';
     if(deptFilter && dept!==deptFilter) return;
     if(search && !dn.toLowerCase().includes(search) && !s.id.toLowerCase().includes(search) && !dept.toLowerCase().includes(search)) return;
@@ -2463,28 +2467,12 @@ async function loadNicknames(){
     if(snap.exists()){
       const cloud=snap.val()||{};
       S.nicknames=Object.assign({}, S.nicknames, cloud);
-      _dnCollisionSet = null; // reset display-name collision cache
       localStorage.setItem('ops_nicknames', JSON.stringify(S.nicknames));
       if(S.loaded) renderAll(); // only re-render if roster is already loaded
     }
   } catch(e){ console.warn('Nickname load error:',e); }
 }
-let _dnCollisionSet = null;
-function _buildDnCollisionSet(){
-  _dnCollisionSet = new Set();
-  const seen = {};
-  (S.staff||[]).forEach(s => {
-    const base = S.nicknames[s.id] || s.shortName;
-    if(seen[base]) _dnCollisionSet.add(base);
-    else seen[base] = true;
-  });
-}
-function displayName(s){
-  if(!_dnCollisionSet) _buildDnCollisionSet();
-  const base = S.nicknames[s.id] || s.shortName;
-  if(_dnCollisionSet.has(base)) return base + ' [' + (s.team || '?') + ']';
-  return base;
-}
+function displayName(s){ return S.nicknames[s.id] || s.shortName; }
 
 function editNickname(id, currentName, event){
   event.stopPropagation();
@@ -2896,13 +2884,13 @@ function _renderSummaryInner(el){
       'COURSE':'COURSE','TASK':'TASK','FLYING':'FLYING'}[st]||st||'UNAVAILABLE');
 
     const isUnavail=s=>{ const a=effAvail(s); return a.st!=='WORKING'&&a.st!=='BACKUP_SHIFT'; };
+    // findStaff: when multiple staff share the same name, prefer the unavailable one
+    // so conflicts are never silently missed (conservative / safe-side).
     const findStaff=name=>{
-      // Exact displayName match (includes "[TEAM]" disambiguation tags)
-      let found = S.staff.find(s=>displayName(s)===name);
-      if(found) return found;
-      // Fallback: strip team tag, then try displayName or shortName
-      const base = name.replace(/\s*\[[^\]]+\]$/,'').trim();
-      return S.staff.find(s=>displayName(s)===base||s.shortName===base);
+      const dn=n=>S.nicknames[n.id]||n.shortName;
+      const all=S.staff.filter(s=>dn(s)===name||s.shortName===name);
+      if(!all.length) return undefined;
+      return all.find(s=>isUnavail(s)) || all[0];
     };
 
     // 1. Direct role assignment conflicts
