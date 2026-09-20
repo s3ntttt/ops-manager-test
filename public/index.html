@@ -588,6 +588,7 @@ const _myClientId = Math.random().toString(36).slice(2,10); // unique per browse
 let _fbLiveRef = null; // holds active Firebase .on('value') listener for real-time sync
 let _rolesSnapshot = null; // snapshot of S.roles taken when roles modal opens (for diff logging)
 let _adpExpiry = {}; // { staffId: "YYYY-MM-DD" } — ADP expiry dates, loaded globally from Firebase
+let _wcAuth   = {}; // { staffId: true } — techs authorized as WC Primary
 let _adpDept = ''; // dept filter for ADP modal ('' = all)
 
 /**
@@ -647,6 +648,7 @@ function fbSignIn(){
         loadEngSpecialists();
         await loadExclusions();
         await loadAdpExpiry();
+        await loadWcAuth();
         await loadSheetConfigs();
         const oldDate=document.getElementById('dp')?.value;
         const oldShift=document.getElementById('shift-sel')?.value;
@@ -2294,6 +2296,49 @@ function saveAdpExpiry(){
   if(!fbReady) return;
   fbDb.ref('settings/adpExpiry').set(_adpExpiry).catch(e=>console.warn('adpExpiry save:',e));
 }
+async function loadWcAuth(){
+  if(!fbReady) return;
+  try{
+    const snap=await fbDb.ref('settings/wcAuth').get();
+    _wcAuth=snap.exists()?snap.val()||{}:{};
+  }catch(e){ console.warn('wcAuth load:',e); }
+}
+function saveWcAuth(){
+  if(!fbReady) return;
+  fbDb.ref('settings/wcAuth').set(_wcAuth).catch(e=>console.warn('wcAuth save:',e));
+}
+function toggleWcAuth(staffId){
+  if(!staffId) return;
+  if(_wcAuth[staffId]) delete _wcAuth[staffId];
+  else _wcAuth[staffId]=true;
+  saveWcAuth();
+  renderAdpModal();
+  if(document.getElementById('roles-ov').classList.contains('show')) renderRolesModal();
+  if(typeof renderSummary==='function') renderSummary();
+}
+// Returns true if staffId (or any staff matching name) is WC-authorized
+function isWcAuthorized(staffId){ return !!_wcAuth[staffId]; }
+function isWcAuthorizedByName(name){
+  if(!name) return true; // empty slot — not a violation
+  const clean=name.replace(/\s*\(BK\)|\s*\(TR\)/g,'').trim();
+  return S.staff.some(x=>(S.nicknames[x.id]||x.shortName)===clean && _wcAuth[x.id]);
+}
+// Badge shown in roles modal when WC primary is not authorized
+function wcAuthBadge(name){
+  if(!name) return '';
+  if(isWcAuthorizedByName(name)) return '';
+  return `<span style="background:#7C3AED;color:#fff;font-size:8px;font-weight:700;border-radius:3px;padding:0 5px;margin-left:4px" title="Not authorized as WC Primary">NOT AUTH</span>`;
+}
+// Returns warnings for summary banner
+function wcAuthWarningsForRoles(){
+  const r=S.roles; if(!r) return [];
+  const warns=[];
+  (r.wc||[]).forEach((wc,i)=>{
+    if(wc.primary && !isWcAuthorizedByName(wc.primary))
+      warns.push({name:wc.primary, role:'WC'+(i+1)+' PRIMARY'});
+  });
+  return warns;
+}
 
 // Returns { days: <number>, status: 'ok'|'soon'|'expired'|'none'|'na' }
 // name = display name string (as stored in S.roles)
@@ -2434,6 +2479,8 @@ function renderAdpModal(){
         }
         <button class="btn btn-ghost btn-sm" style="font-size:8px;padding:2px 6px;${isNA?'color:var(--amber)':''}"
           onclick="toggleAdpNA('${r.id}',${isNA})">${isNA?'↩ UNDO N/A':'✕ MARK N/A'}</button>
+        <button class="btn btn-ghost btn-sm" style="font-size:8px;padding:2px 6px;${_wcAuth[r.id]?'color:#10B981;border-color:#10B981':''}"
+          onclick="toggleWcAuth('${r.id}')" title="${_wcAuth[r.id]?'Remove WC Primary authorization':'Mark as authorized WC Primary'}">${_wcAuth[r.id]?'✓ WC AUTH':'+ WC AUTH'}</button>
       </div>
     </div>`;
   }).join('');
@@ -2532,6 +2579,10 @@ function cardHTML(s, viewingDept){
     if(days<=30) return `<span style="display:inline-block;padding:1px 4px;background:#F59E0B;color:#000;border-radius:2px;font-size:7px;font-weight:700;letter-spacing:.3px" title="ADP expiring in ${days} days">ADP ${days}d</span>`;
     return '';
   })();
+  // WC auth tag — show green WC badge on authorized techs so you can spot eligible WC Primary at a glance
+  const wcTag = (s.category==='TECH'&&!s.isBackup&&_wcAuth[s.id])
+    ? `<span style="display:inline-block;padding:1px 4px;background:#059669;color:#fff;border-radius:2px;font-size:7px;font-weight:700;letter-spacing:.3px" title="Authorized WC Primary">WC✓</span>`
+    : '';
   return `<div class="card ${a.cls}${mv?' card-moved':''}${isEng?' card-eng':''}" onclick="cycleOvr('${s.id}')" title="${s.fullName}\n${s.desig}\n${s.acType}\nScheduled: ${s.schedVal||'—'}\nClick to cycle status">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2px">
       <div class="cname">${nm}${hasCustomNick?`<span style="font-size:7px;color:var(--txt3);margin-left:3px" title="Custom nickname">✎</span>`:''}${ov?` <span class="ovr-star">✱</span>`:''}</div>
@@ -2543,7 +2594,7 @@ function cardHTML(s, viewingDept){
     </div>
     <div class="cmeta">${s.desigCode||s.desig} · ${s.acType||s.fleet||'—'}</div>
     <div style="display:flex;align-items:center;flex-wrap:wrap;gap:3px;margin-top:5px">
-      <span class="badge ${a.badge}">${a.lbl}</span>${raw}${fromTag}${engTag}${adpTag}
+      <span class="badge ${a.badge}">${a.lbl}</span>${raw}${fromTag}${engTag}${wcTag}${adpTag}
     </div>
   </div>`;
 }
@@ -2861,6 +2912,17 @@ function _renderSummaryInner(el){
     </div>
   </div>`;
   // ── ADP EXPIRY WARNING BANNER ──
+  const wcAuthBannerHtml = (()=>{
+    const warns=wcAuthWarningsForRoles();
+    if(!warns.length) return '';
+    return `<div style="background:#F5F3FF;border:2px solid #7C3AED;border-radius:6px;padding:10px 14px;margin-bottom:10px">
+      <div style="font-size:10px;font-weight:700;color:#7C3AED;letter-spacing:1px;margin-bottom:6px">⛔ WC PRIMARY AUTHORIZATION VIOLATION</div>
+      ${warns.map(w=>`<div style="font-size:9px;color:#4C1D95;padding:2px 0">
+        <b>${w.name}</b> is <b>not authorized</b> as WC Primary — assigned as <b>${w.role}</b>
+        <span style="display:inline-block;margin-left:6px;background:#7C3AED;color:#fff;font-size:7px;font-weight:800;border-radius:3px;padding:0 4px">UNAUTHORIZED</span>
+      </div>`).join('')}
+    </div>`;
+  })();
   const adpBannerHtml = (()=>{
     const warns = adpWarningsForRoles();
     if(!warns.length) return '';
@@ -3223,7 +3285,7 @@ function _renderSummaryInner(el){
       <button class="btn btn-ghost np" onclick="openExclusionsModal()" style="font-size:11px;color:var(--red)">🚫 HIDDEN STAFF${(S.exclusions||[]).length?` (${S.exclusions.length})`:''}</button>
     </div>
     ${xsBanner}
-    ${adpBannerHtml}
+    ${adpBannerHtml}${wcAuthBannerHtml}
     ${conflictBanner}
     <div style="display:grid;grid-template-columns:200px 1fr 300px;gap:10px;align-items:start">
       <div>${leftPanel}</div>
@@ -3919,6 +3981,8 @@ function closeRolesModal(){
     if(w.status==='expired') logEvent('ADP','⛔ '+w.name+' ADP EXPIRED ('+Math.abs(w.days)+'d ago) — assigned '+w.role);
     else if(w.status==='soon') logEvent('ADP','⚠ '+w.name+' ADP expiring in '+w.days+'d — assigned '+w.role);
   });
+  // Log WC auth violations
+  wcAuthWarningsForRoles().forEach(w=>logEvent('WC-AUTH','⛔ '+w.name+' NOT AUTHORIZED as WC Primary — assigned '+w.role));
   renderSummary(); scheduleSave();
 }
 
@@ -3964,7 +4028,7 @@ function renderRolesModal(){
     ${r.wc.map((wc,i)=>`<div style="margin-bottom:8px">
       <div style="font-size:8px;color:var(--txt3);margin-bottom:4px">PAIR ${i+1}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        ${fld('WC',sel(wc.primary,irPool,`S.roles.wc[${i}].primary=this.value;renderRolesModal();scheduleSave()`)+adpBadge(wc.primary))}
+        ${fld('WC',sel(wc.primary,irPool,`S.roles.wc[${i}].primary=this.value;renderRolesModal();scheduleSave()`)+adpBadge(wc.primary)+wcAuthBadge(wc.primary))}
         ${fld('ASST / TRAINEE',sel(wc.asst,[...irPool,...trPool],`S.roles.wc[${i}].asst=this.value;scheduleSave()`))}
       </div>
     </div>`).join('')}
