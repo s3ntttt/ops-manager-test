@@ -916,7 +916,7 @@ function sanitizeState(data){
 
   // backups object
   if(!data.backups||typeof data.backups!=='object') data.backups={};
-  ['lo','irreg','wo','cim','moc'].forEach(k=>{ if(!Array.isArray(data.backups[k])) data.backups[k]=[]; });
+  ['lo','irreg','wo','cim','moc'].forEach(k=>{ if(!Array.isArray(data.backups[k])) data.backups[k]=[]; else data.backups[k].forEach(b=>{ if(b.time===undefined) b.time=null; }); });
 
   // towers
   if(!data.towers||typeof data.towers!=='object') data.towers={permanent:[],backups:[]};
@@ -2262,6 +2262,7 @@ function renderDept(elId, teamKey, dk){
         <option>LAE B2</option><option>TECH</option><option>TECH B1</option><option>TECH B2</option>
       </select>
       <input type="text" id="bt-${dk}" placeholder="A/C Type" style="width:90px" onkeydown="if(event.key==='Enter')addBk('${dk}')">
+      <input type="text" id="btime-${dk}" placeholder="RPT e.g. 0800" style="width:100px" onkeydown="if(event.key==='Enter')addBk('${dk}')" title="Report time (optional)">
       <button class="btn btn-amber btn-sm" onclick="addBk('${dk}')">+ ADD</button>
     </div>
   </div>`;
@@ -2638,9 +2639,18 @@ function cardHTML(s, viewingDept){
 
 function bkCardHTML(b, dk, i){
   const mcEl = b.mcEl===true;
+  const timeVal = b.time||'';
   return `<div class="card bkcard" style="position:relative;${mcEl?'opacity:.45;filter:grayscale(.5)':''}">
     <div class="cname">${b.name} <span class="bktag">BK</span></div>
     <div class="cmeta">${b.pos}${b.type?' · '+b.type:''}</div>
+    <div style="display:flex;align-items:center;gap:4px;margin-top:4px;flex-wrap:wrap">
+      <span style="font-size:9px;color:var(--txt3);white-space:nowrap">RPT:</span>
+      <input type="text" value="${timeVal}" placeholder="—"
+        style="font-size:9px;font-family:var(--mono);width:48px;background:transparent;border:none;border-bottom:1px solid var(--b);color:${timeVal?'var(--amber)':'var(--txt3)'};outline:none;padding:0 2px;text-align:center"
+        title="Report time"
+        oninput="S.backups['${dk}'][${i}].time=this.value.trim().toUpperCase()||null;this.style.color=this.value?'var(--amber)':'var(--txt3)';scheduleSave()"
+        onclick="event.stopPropagation()">
+    </div>
     <div style="display:flex;align-items:center;gap:5px;margin-top:5px;flex-wrap:wrap">
       ${mcEl
         ? `<span class="badge bab">MC/EL</span>`
@@ -3366,15 +3376,18 @@ function addBk(dk){
   const name=(document.getElementById(`bn-${dk}`).value||'').trim().toUpperCase();
   if(!name) return;
   const _bkPos=document.getElementById(`bp-${dk}`).value;
+  const _bkTime=(document.getElementById(`btime-${dk}`)?.value||'').trim().toUpperCase();
   S.backups[dk].push({
     name,
     pos: _bkPos,
     type:(document.getElementById(`bt-${dk}`).value||'').trim().toUpperCase(),
+    time: _bkTime||null,
     mcEl: false
   });
-  logEvent('BACKUP', name+' added → '+dk.toUpperCase()+' ('+_bkPos+')');
+  logEvent('BACKUP', name+' added → '+dk.toUpperCase()+' ('+_bkPos+')'+(_bkTime?' RPT '+_bkTime:''));
   document.getElementById(`bn-${dk}`).value='';
   document.getElementById(`bt-${dk}`).value='';
+  if(document.getElementById(`btime-${dk}`)) document.getElementById(`btime-${dk}`).value='';
   renderAll(); scheduleSave();
 }
 
@@ -4117,7 +4130,7 @@ function buildTxt(){
     const av=own.filter(s=>isActive(effAvail(s)));
     t+=`${lb} — ${av.length}/${own.length} AVAIL\n`;
     av.forEach(s=>t+=`  · ${displayName(s).padEnd(14)} ${s.desigCode}\n`);
-    if(S.backups[dk].length){ t+=`  BACKUP:\n`; S.backups[dk].forEach(b=>t+=`  · ${b.name.padEnd(14)} ${b.pos}\n`); }
+    if(S.backups[dk].length){ t+=`  BACKUP:\n`; S.backups[dk].forEach(b=>t+=`  · ${b.name.padEnd(14)} ${b.pos}${b.time?' (RPT '+b.time+')':''}\n`); }
     t+='\n';
   });
   t+=`IRREG ROLES\n${'─'.repeat(30)}\n`;
