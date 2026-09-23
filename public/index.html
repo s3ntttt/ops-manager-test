@@ -2641,11 +2641,13 @@ function bkCardHTML(b, dk, i){
   const mcEl = b.mcEl===true;
   const timeVal = b.time||'';
   const frac = bkFraction(b);
-  const fracTag = (timeVal && frac < 1)
-    ? `<span style="font-size:8px;color:var(--amber);font-weight:700;margin-left:4px;background:var(--obg);border:1px solid var(--amber);border-radius:3px;padding:0 4px" title="${Math.round(frac*100)}% of shift">×${frac}</span>`
+  const shType2 = (document.getElementById('shift-sel')?.value||'DAY').toUpperCase();
+  const shiftEnd = shType2==='NIGHT'?'0600':'1800';
+  const rangeTag = (timeVal && frac < 1)
+    ? `<span style="font-size:8px;color:var(--amber);font-weight:600;margin-left:4px;opacity:.9">${timeVal}–${shiftEnd}</span>`
     : '';
   return `<div class="card bkcard" style="position:relative;${mcEl?'opacity:.45;filter:grayscale(.5)':''}">
-    <div class="cname">${b.name} <span class="bktag">BK</span>${fracTag}</div>
+    <div class="cname">${b.name} <span class="bktag">BK</span></div>
     <div class="cmeta">${b.pos}${b.type?' · '+b.type:''}</div>
     <div style="display:flex;align-items:center;gap:4px;margin-top:4px;flex-wrap:wrap">
       <span style="font-size:9px;color:var(--txt3);white-space:nowrap">RPT:</span>
@@ -2653,7 +2655,7 @@ function bkCardHTML(b, dk, i){
         style="font-size:9px;font-family:var(--mono);width:48px;background:transparent;border:none;border-bottom:1px solid var(--b);color:${timeVal?'var(--amber)':'var(--txt3)'};outline:none;padding:0 2px;text-align:center"
         title="Report time"
         oninput="S.backups['${dk}'][${i}].time=this.value.trim().toUpperCase()||null;this.style.color=this.value?'var(--amber)':'var(--txt3)';scheduleSave();renderAll()"
-        onclick="event.stopPropagation()">
+        onclick="event.stopPropagation()">${rangeTag}
     </div>
     <div style="display:flex;align-items:center;gap:5px;margin-top:5px;flex-wrap:wrap">
       ${mcEl
