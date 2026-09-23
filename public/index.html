@@ -2640,15 +2640,19 @@ function cardHTML(s, viewingDept){
 function bkCardHTML(b, dk, i){
   const mcEl = b.mcEl===true;
   const timeVal = b.time||'';
+  const frac = bkFraction(b);
+  const fracTag = (timeVal && frac < 1)
+    ? `<span style="font-size:8px;color:var(--amber);font-weight:700;margin-left:4px;background:var(--obg);border:1px solid var(--amber);border-radius:3px;padding:0 4px" title="${Math.round(frac*100)}% of shift">×${frac}</span>`
+    : '';
   return `<div class="card bkcard" style="position:relative;${mcEl?'opacity:.45;filter:grayscale(.5)':''}">
-    <div class="cname">${b.name} <span class="bktag">BK</span></div>
+    <div class="cname">${b.name} <span class="bktag">BK</span>${fracTag}</div>
     <div class="cmeta">${b.pos}${b.type?' · '+b.type:''}</div>
     <div style="display:flex;align-items:center;gap:4px;margin-top:4px;flex-wrap:wrap">
       <span style="font-size:9px;color:var(--txt3);white-space:nowrap">RPT:</span>
       <input type="text" value="${timeVal}" placeholder="—"
         style="font-size:9px;font-family:var(--mono);width:48px;background:transparent;border:none;border-bottom:1px solid var(--b);color:${timeVal?'var(--amber)':'var(--txt3)'};outline:none;padding:0 2px;text-align:center"
         title="Report time"
-        oninput="S.backups['${dk}'][${i}].time=this.value.trim().toUpperCase()||null;this.style.color=this.value?'var(--amber)':'var(--txt3)';scheduleSave()"
+        oninput="S.backups['${dk}'][${i}].time=this.value.trim().toUpperCase()||null;this.style.color=this.value?'var(--amber)':'var(--txt3)';scheduleSave();renderAll()"
         onclick="event.stopPropagation()">
     </div>
     <div style="display:flex;align-items:center;gap:5px;margin-top:5px;flex-wrap:wrap">
@@ -2794,7 +2798,7 @@ function _renderSummaryInner(el){
     const own = S.staff.filter(s=>!s.isBackup&&effectiveDept(s)===teamKey&&s.category===cat&&isOnShift(s));
     const xs  = xsBk.filter(s=>effectiveDept(s)===teamKey&&s.category===cat);
     const mb  = manualBk.filter(b=>normCat(b.pos)===cat&&!b.mcEl);
-    return [...own, ...xs, ...mb.map(b=>({id:'mb_'+b.name, shortName:b.name, fullName:b.name, desigCode:b.pos, acType:b.type||'', fleet:'', isManualBk:true}))];
+    return [...own, ...xs, ...mb.map(b=>({id:'mb_'+b.name, shortName:b.name, fullName:b.name, desigCode:b.pos, acType:b.type||'', fleet:'', isManualBk:true, _bkTime:b.time||null, _fraction:bkFraction(b)}))];
   };
 
   const loTech=bycat('LO','TECH', lo.bk), loLat=bycat('LO','LAT', lo.bk);
@@ -2903,6 +2907,7 @@ function _renderSummaryInner(el){
       const tags = [];
       if(isXsBk)        tags.push(`<span style="font-size:8px;color:var(--txt3);font-weight:700;margin-left:2px">BK-${s.fromShift}</span>`);
       else if(isMoved)  tags.push(`<span style="font-size:8px;color:var(--txt3);margin-left:2px">↔</span>`);
+      if(s.isManualBk&&s._fraction!==undefined&&s._fraction<1) tags.push(`<span style="font-size:8px;color:var(--amber);font-weight:700;margin-left:4px;background:var(--obg);border:1px solid var(--amber);border-radius:3px;padding:0 4px" title="Reports at ${s._bkTime||'?'} — ${Math.round(s._fraction*100)}% of shift">×${s._fraction}</span>`);
       if(isHalf)        tags.push(`<span style="font-size:8px;color:var(--orange);font-weight:700;margin-left:4px;background:var(--obg);border:1px solid var(--orange);border-radius:3px;padding:0 3px">½ ${(document.getElementById('shift-sel')?.value||'SHIFT')}</span>`);
       if(flyMatch)      tags.push(`<span style="font-size:7px;color:#fff;font-weight:700;margin-left:4px;background:#7C3AED;border-radius:3px;padding:0 4px;vertical-align:middle">F${flyMatch[1]}</span>`);
       if(timeMatch)     tags.push(`<span style="font-size:7px;color:var(--blue);font-weight:700;margin-left:4px;background:var(--bbg);border:1px solid var(--b2);border-radius:3px;padding:0 4px;vertical-align:middle">${timeMatch[1]}${timeMatch[2]?'-'+timeMatch[2]:''}</span>`);
@@ -2916,9 +2921,16 @@ function _renderSummaryInner(el){
   const col  = `background:var(--surf);border:1px solid var(--b);border-radius:var(--r);padding:8px 10px`;
   const chdr = (t,n,c='#000') => `<div style="font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:2px;color:${c};margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--b)">${t} <span style="color:var(--txt3);font-size:9px">${n}</span></div>`;
 
-  const loTechAvail = loTech.filter(s=>!assigned.has(displayName(s))).length;
-  const irTechAvail = irTech.filter(s=>!assigned.has(displayName(s))).length;
-  const woTechAvail = woTech.filter(s=>!assigned.has(displayName(s))).length;
+  // sumAvail: sums fractional headcount (manual backups with RPT time count as fraction of shift)
+  const sumAvail = list => {
+    let t=0;
+    list.filter(s=>!assigned.has(displayName(s))).forEach(s=>{ t+=(s._fraction!==undefined)?s._fraction:1; });
+    const r=Math.round(t*100)/100;
+    return Number.isInteger(r)?String(r):r.toFixed(2).replace(/\.?0+$/,'');
+  };
+  const loTechAvail = sumAvail(loTech);
+  const irTechAvail = sumAvail(irTech);
+  const woTechAvail = sumAvail(woTech);
 
   // ── MIDDLE PANEL: TECH side | CERTIFIER side ──
   const midPanel = `<div>
@@ -2938,22 +2950,22 @@ function _renderSummaryInner(el){
         ${numList(woTech)}
       </div>
       <div style="${col}">
-        <div style="font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:2px;color:var(--txt);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--b)">CIM <span style="color:var(--txt3);font-size:9px">${cimTech.filter(s=>!assigned.has(displayName(s))).length}</span></div>
+        <div style="font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:2px;color:var(--txt);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--b)">CIM <span style="color:var(--txt3);font-size:9px">${sumAvail(cimTech)}</span></div>
         ${numList(cimTech)}
       </div>
     </div>
     <div style="font-size:9px;color:var(--txt);letter-spacing:2px;font-weight:700;margin-bottom:6px;padding-bottom:4px;border-bottom:2px solid var(--b)">CERTIFIERS</div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
       <div style="${col}">
-        ${chdr('LAT',[...loLat,...cimLat].filter(s=>!assigned.has(displayName(s))).length)}
+        ${chdr('LAT',sumAvail([...loLat,...cimLat]))}
         ${numList([...loLat,...cimLat])}
       </div>
       <div style="${col}">
-        ${chdr('LAE B1',[...irB1,...woB1,...cimB1].filter(s=>!assigned.has(displayName(s))).length)}
+        ${chdr('LAE B1',sumAvail([...irB1,...woB1,...cimB1]))}
         ${numList([...irB1,...woB1,...cimB1])}
       </div>
       <div style="${col}">
-        ${chdr('LAE B2',[...irB2,...woB2,...cimB2].filter(s=>!assigned.has(displayName(s))).length)}
+        ${chdr('LAE B2',sumAvail([...irB2,...woB2,...cimB2]))}
         ${numList([...irB2,...woB2,...cimB2])}
       </div>
     </div>
@@ -3356,6 +3368,23 @@ function normCat(pos){
   if(p==='LAT') return 'LAT';
   if(p==='GL') return 'GL';
   return 'TECH';
+}
+// Returns the fraction of the 12-hour shift a manual backup covers based on their RPT time.
+// DAY shift = 0600-1800, NIGHT shift = 1800-0600. Returns 1 if no time set or time is invalid.
+function bkFraction(b){
+  if(!b.time||b.mcEl) return 1;
+  const tStr=(b.time||'').replace(/[^0-9]/g,'').padStart(4,'0');
+  const rptH=parseInt(tStr.slice(0,2),10), rptM=parseInt(tStr.slice(2,4),10);
+  if(isNaN(rptH)||isNaN(rptM)||rptH>23||rptM>59) return 1;
+  const shType=(document.getElementById('shift-sel')?.value||'DAY').toUpperCase();
+  const startMin=shType==='NIGHT'?18*60:6*60;
+  const endMin=startMin+720; // 12h
+  let rptMin=rptH*60+rptM;
+  if(shType==='NIGHT'&&rptMin<12*60) rptMin+=24*60; // after-midnight RPT on night shift
+  const remaining=endMin-rptMin;
+  if(remaining<=0) return 0;
+  if(remaining>=720) return 1;
+  return Math.round(remaining/720*100)/100;
 }
 
 function updateCounts(){
