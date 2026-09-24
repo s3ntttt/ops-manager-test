@@ -2013,11 +2013,15 @@ function shortify(name){
   const pre=new Set(['MOHD','MUHAMMAD','MUHAMAD','MOHAMAD','NUR','WAN','TENGKU','SITI','NURUL','MOHD.']);
   const con=new Set(['BIN','BINTI','A/L','A/P','@']);
   const words=name.split(/\s+/);
+  // Collect all given-name words (after prefixes, before connectors)
+  const given=[];
   for(let i=0;i<words.length;i++){
     if(con.has(words[i])) break;
-    if(!pre.has(words[i])) return words[i];
+    if(!pre.has(words[i])) given.push(words[i]);
   }
-  return words[0]||name;
+  if(!given.length) return words[0]||name;
+  // "AMIR SYAMIM" → use both words; single word → use as-is
+  return given.join(' ');
 }
 
 function catOf(dc, desig){
