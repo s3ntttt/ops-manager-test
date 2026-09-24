@@ -2352,7 +2352,7 @@ function isWcAuthorized(staffId){ return !!_wcAuth[staffId]; }
 function isWcAuthorizedByName(name){
   if(!name) return true; // empty slot — not a violation
   const clean=name.replace(/\s*\(BK\)|\s*\(TR\)/g,'').trim();
-  return S.staff.some(x=>(S.nicknames[x.id]||x.shortName)===clean && _wcAuth[x.id]);
+  return S.staff.some(x=>staffMatchInput(x,clean) && _wcAuth[x.id]);
 }
 // Badge shown in roles modal when WC primary is not authorized
 function wcAuthBadge(name){
@@ -2377,7 +2377,7 @@ function adpStatusFor(name, preferDept){
   if(!name) return {days:null,status:'none'};
   const cleanName = name.replace(/\s*\(BK\)|\s*\(TR\)/g,'').trim();
   // Find all staff matching this display name
-  const matches = S.staff.filter(x=>(S.nicknames[x.id]||x.shortName)===cleanName);
+  const matches = S.staff.filter(x=>staffMatchInput(x,cleanName));
   if(!matches.length) return {days:null,status:'none'};
   // If dept hint given (e.g. from role pool context), prefer that dept's staff
   const ordered = preferDept
@@ -2562,6 +2562,14 @@ async function loadNicknames(){
   } catch(e){ console.warn('Nickname load error:',e); }
 }
 function displayName(s){ return S.nicknames[s.id] || s.shortName; }
+// Match staff by typed name: nickname > full shortName > last word of compound shortName
+function staffMatchInput(s, inp){
+  const nick=S.nicknames[s.id];
+  if(nick) return nick===inp;
+  if(s.shortName===inp) return true;
+  const parts=s.shortName.split(' ');
+  return parts.length>1 && parts[parts.length-1]===inp;
+}
 
 function editNickname(id, currentName, event){
   event.stopPropagation();
