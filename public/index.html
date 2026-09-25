@@ -1772,6 +1772,11 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
     const deptMatch = v.match(/\((LO|IRR|IRREG|WO)\)/);
     const dept = deptMatch ? (deptMatch[1]==='LO'?'LO':deptMatch[1]==='WO'?'WO':'IRR') : null;
 
+    // ── Pattern 0: (1/2) DAY / (1/2) NIGHT — half-shift backup from another shift ──
+    // e.g. "(1/2) NIGHT", "(1/2) NIGHT (IRR)" — staff covers only half the shift
+    if(/^\(1\/2\)\s*DAY/.test(v))   return { matchesShift: selectedShift==='DAY',   dept, half:true };
+    if(/^\(1\/2\)\s*NIGHT/.test(v)) return { matchesShift: selectedShift==='NIGHT', dept, half:true };
+
     // ── Pattern 1: DAY (MD) / NIGHT (MD) — mandatory duty ──
     // e.g. "DAY (MD)", "NIGHT (MD)"
     if(/^DAY\s*\(MD\)/.test(v))   return { matchesShift: selectedShift==='DAY',   dept };
@@ -1944,7 +1949,7 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
         desig, acType, desigCode, fleet,
         team: targetTeam, schedVal,
         category: bkCat,
-        avail: { st:'WORKING', lbl:`BK-${curOtherShift||'?'}`, cls:'standby', badge:'bst', raw:schedVal },
+        avail: { st:'WORKING', lbl:`BK-${curOtherShift||'?'}${bk&&bk.half?' ½':''}`, cls:'standby', badge:'bst', raw:schedVal, half:!!(bk&&bk.half) },
         fromShift: curOtherShift||'?',
         isBackup: true });
     }
@@ -1990,7 +1995,7 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
           desig, acType, desigCode, fleet,
           team: targetTeam, schedVal,
           category: transCat,
-          avail: { st:'WORKING', lbl:'BK-T', cls:'standby', badge:'bst', raw:schedVal },
+          avail: { st:'WORKING', lbl:`BK-T${bk&&bk.half?' ½':''}`, cls:'standby', badge:'bst', raw:schedVal, half:!!(bk&&bk.half) },
           fromShift: 'T',
           isBackup: true });
       }
@@ -3505,6 +3510,7 @@ function bkFraction(b){
 // same synthetic {time:"HHMM-HHMM"} shape it already knows how to weigh.
 function schedValFraction(schedVal){
   const raw=(schedVal||'').toUpperCase();
+  if(/\(1\/2\)/.test(raw)) return 0.5;
   const m=raw.match(/\((\d{4})-(\d{4})\)/);
   if(!m) return 1;
   return bkFraction({time:`${m[1]}-${m[2]}`, mcEl:false});
