@@ -2878,6 +2878,10 @@ function _renderSummaryInner(el){
     const isOnShift = s => { const a=effAvail(s); if(a.st==='WORKING'||a.st==='BACKUP_SHIFT') return true; if(S.overrides[s.id]) return false; const raw=(s.schedVal||'').toUpperCase().trim(); return raw.startsWith(shift.toUpperCase()); };
     const own = S.staff.filter(s=>!s.isBackup&&effectiveDept(s)===teamKey&&s.category===cat&&isOnShift(s));
     const xs  = xsBk.filter(s=>effectiveDept(s)===teamKey&&s.category===cat);
+    // A bounded window in the schedule cell (e.g. "(0000-0700)") counts as partial
+    // headcount too, same as a manual backup's RPT range — not a full 1.
+    own.forEach(s=>{ s._fraction=schedValFraction(s.schedVal); });
+    xs.forEach(s=>{ s._fraction=schedValFraction(s.schedVal); });
     const mb  = manualBk.filter(b=>normCat(b.pos)===cat&&!b.mcEl);
     return [...own, ...xs, ...mb.map(b=>({id:'mb_'+b.name, shortName:b.name, fullName:b.name, desigCode:b.pos, acType:b.type||'', fleet:'', isManualBk:true, _bkTime:b.time||null, _fraction:bkFraction(b)}))];
   };
@@ -2988,7 +2992,11 @@ function _renderSummaryInner(el){
       const tags = [];
       if(isXsBk)        tags.push(`<span style="font-size:8px;color:var(--txt3);font-weight:700;margin-left:2px">BK-${s.fromShift}</span>`);
       else if(isMoved)  tags.push(`<span style="font-size:8px;color:var(--txt3);margin-left:2px">↔</span>`);
-      if(s.isManualBk&&s._fraction!==undefined&&s._fraction<1) tags.push(`<span style="font-size:8px;color:var(--amber);font-weight:700;margin-left:4px;background:var(--obg);border:1px solid var(--amber);border-radius:3px;padding:0 4px" title="Reports at ${s._bkTime||'?'} — ${Math.round(s._fraction*100)}% of shift">×${s._fraction}</span>`);
+      if(s._fraction!==undefined&&s._fraction<1){
+        const _pct=Math.round(s._fraction*100);
+        const _ttl=s.isManualBk?`Reports at ${s._bkTime||'?'} — ${_pct}% of shift`:`Partial shift ${(s.schedVal||'').match(/\(([^)]+)\)/)?.[1]||''} — ${_pct}% of shift`;
+        tags.push(`<span style="font-size:8px;color:var(--amber);font-weight:700;margin-left:4px;background:var(--obg);border:1px solid var(--amber);border-radius:3px;padding:0 4px" title="${_ttl}">×${s._fraction}</span>`);
+      }
       if(isHalf)        tags.push(`<span style="font-size:8px;color:var(--orange);font-weight:700;margin-left:4px;background:var(--obg);border:1px solid var(--orange);border-radius:3px;padding:0 3px">½ ${(document.getElementById('shift-sel')?.value||'SHIFT')}</span>`);
       if(flyMatch)      tags.push(`<span style="font-size:7px;color:#fff;font-weight:700;margin-left:4px;background:#7C3AED;border-radius:3px;padding:0 4px;vertical-align:middle">F${flyMatch[1]}</span>`);
       if(timeMatch)     tags.push(`<span style="font-size:7px;color:var(--blue);font-weight:700;margin-left:4px;background:var(--bbg);border:1px solid var(--b2);border-radius:3px;padding:0 4px;vertical-align:middle">${timeMatch[1]}${timeMatch[2]?'-'+timeMatch[2]:''}</span>`);
@@ -3489,6 +3497,17 @@ function bkFraction(b){
   if(remaining<=0) return 0;
   if(remaining>=720) return 1;
   return Math.round(remaining/720*100)/100;
+}
+
+// Own/cross-shift roster staff can also carry a bounded working window right in their
+// schedule cell, e.g. "NIGHT (0000-0700)" — meaning they're only actually present for
+// that window, not the full 12h shift. Reuse bkFraction's range math by building the
+// same synthetic {time:"HHMM-HHMM"} shape it already knows how to weigh.
+function schedValFraction(schedVal){
+  const raw=(schedVal||'').toUpperCase();
+  const m=raw.match(/\((\d{4})-(\d{4})\)/);
+  if(!m) return 1;
+  return bkFraction({time:`${m[1]}-${m[2]}`, mcEl:false});
 }
 
 function updateCounts(){
