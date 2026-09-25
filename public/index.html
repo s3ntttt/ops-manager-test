@@ -2332,7 +2332,7 @@ function renderDept(elId, teamKey, dk){
         <option>LAE B2</option><option>TECH</option><option>TECH B1</option><option>TECH B2</option>
       </select>
       <input type="text" id="bt-${dk}" placeholder="A/C Type" style="width:90px" onkeydown="if(event.key==='Enter')addBk('${dk}')">
-      <input type="text" id="btime-${dk}" placeholder="RPT e.g. 0800" style="width:100px" onkeydown="if(event.key==='Enter')addBk('${dk}')" title="Report time (optional)">
+      <input type="text" id="btime-${dk}" placeholder="0800 or 1900-0100" style="width:100px" onkeydown="if(event.key==='Enter')addBk('${dk}')" title="Optional. Single time (e.g. 0800) = reports late, stays till shift end.\nRange (e.g. 1900-0100) = only present for that exact window.">
       <button class="btn btn-amber btn-sm" onclick="addBk('${dk}')">+ ADD</button>
     </div>
   </div>`;
@@ -2721,8 +2721,9 @@ function bkCardHTML(b, dk, i){
   const frac = bkFraction(b);
   const shType2 = (document.getElementById('shift-sel')?.value||'DAY').toUpperCase();
   const shiftEnd = shType2==='NIGHT'?'0600':'1800';
+  const isRange = isBkRange(timeVal);
   const rangeTag = (timeVal && frac < 1)
-    ? `<span style="font-size:8px;color:var(--amber);font-weight:600;margin-left:4px;opacity:.9">${timeVal}–${shiftEnd}</span>`
+    ? `<span style="font-size:8px;color:var(--amber);font-weight:600;margin-left:4px;opacity:.9">${isRange?timeVal:timeVal+'–'+shiftEnd}</span>`
     : '';
   return `<div class="card bkcard" style="position:relative;${mcEl?'opacity:.45;filter:grayscale(.5)':''}">
     <div class="cname">${b.name} <span class="bktag">BK</span></div>
@@ -2730,8 +2731,8 @@ function bkCardHTML(b, dk, i){
     <div style="display:flex;align-items:center;gap:4px;margin-top:4px;flex-wrap:wrap">
       <span style="font-size:9px;color:var(--txt3);white-space:nowrap">RPT:</span>
       <input type="text" value="${timeVal}" placeholder="—"
-        style="font-size:9px;font-family:var(--mono);width:48px;background:transparent;border:none;border-bottom:1px solid var(--b);color:${timeVal?'var(--amber)':'var(--txt3)'};outline:none;padding:0 2px;text-align:center"
-        title="Report time"
+        style="font-size:9px;font-family:var(--mono);width:76px;background:transparent;border:none;border-bottom:1px solid var(--b);color:${timeVal?'var(--amber)':'var(--txt3)'};outline:none;padding:0 2px;text-align:center"
+        title="Single time (e.g. 0800) = reports late, stays till shift end.\nRange (e.g. 1900-0100) = only present for that exact window."
         oninput="S.backups['${dk}'][${i}].time=this.value.trim().toUpperCase()||null;this.style.color=this.value?'var(--amber)':'var(--txt3)';scheduleSave();renderAll()"
         onclick="event.stopPropagation()">${rangeTag}
     </div>
@@ -3451,14 +3452,37 @@ function normCat(pos){
 }
 // Returns the fraction of the 12-hour shift a manual backup covers based on their RPT time.
 // DAY shift = 0600-1800, NIGHT shift = 1800-0600. Returns 1 if no time set or time is invalid.
+// A manual backup's time field can be either:
+//   "0800"        — single report time: reports late, stays till shift end
+//   "1900-0100"   — bounded window: only present for this exact span
+//                   (e.g. reports late AND leaves early), regardless of shift end
+function isBkRange(time){ return /^\d{3,4}\s*-\s*\d{3,4}$/.test((time||'').trim()); }
+
 function bkFraction(b){
   if(!b.time||b.mcEl) return 1;
-  const tStr=(b.time||'').replace(/[^0-9]/g,'').padStart(4,'0');
-  const rptH=parseInt(tStr.slice(0,2),10), rptM=parseInt(tStr.slice(2,4),10);
-  if(isNaN(rptH)||isNaN(rptM)||rptH>23||rptM>59) return 1;
   const shType=(document.getElementById('shift-sel')?.value||'DAY').toUpperCase();
   const startMin=shType==='NIGHT'?18*60:6*60;
-  const endMin=startMin+720; // 12h
+  const endMin=startMin+720; // 12h shift window, in minutes-of-day (extends past 1440 for NIGHT)
+
+  const rangeMatch=b.time.trim().match(/^(\d{3,4})\s*-\s*(\d{3,4})$/);
+  if(rangeMatch){
+    const toMin=t=>{ const s=t.padStart(4,'0'); return parseInt(s.slice(0,2),10)*60+parseInt(s.slice(2,4),10); };
+    let from=toMin(rangeMatch[1]), to=toMin(rangeMatch[2]);
+    if(shType==='NIGHT'){
+      if(from<12*60) from+=24*60;   // after-midnight side of a night shift
+      if(to<=12*60)  to+=24*60;
+    }
+    if(to<=from) to+=24*60; // window rolls past midnight (e.g. 1900-0100)
+    const dur=Math.min(to,endMin)-Math.max(from,startMin);
+    if(dur<=0) return 0;
+    if(dur>=720) return 1;
+    return Math.round(dur/720*100)/100;
+  }
+
+  // Single report time — reports late, stays till shift end
+  const tStr=b.time.replace(/[^0-9]/g,'').padStart(4,'0');
+  const rptH=parseInt(tStr.slice(0,2),10), rptM=parseInt(tStr.slice(2,4),10);
+  if(isNaN(rptH)||isNaN(rptM)||rptH>23||rptM>59) return 1;
   let rptMin=rptH*60+rptM;
   if(shType==='NIGHT'&&rptMin<12*60) rptMin+=24*60; // after-midnight RPT on night shift
   const remaining=endMin-rptMin;
@@ -4239,7 +4263,7 @@ function buildTxt(){
     const av=own.filter(s=>isActive(effAvail(s)));
     t+=`${lb} — ${av.length}/${own.length} AVAIL\n`;
     av.forEach(s=>t+=`  · ${displayName(s).padEnd(14)} ${s.desigCode}\n`);
-    if(S.backups[dk].length){ t+=`  BACKUP:\n`; S.backups[dk].forEach(b=>t+=`  · ${b.name.padEnd(14)} ${b.pos}${b.time?' (RPT '+b.time+')':''}\n`); }
+    if(S.backups[dk].length){ t+=`  BACKUP:\n`; S.backups[dk].forEach(b=>t+=`  · ${b.name.padEnd(14)} ${b.pos}${b.time?(isBkRange(b.time)?' ('+b.time+')':' (RPT '+b.time+')'):''}\n`); }
     t+='\n';
   });
   t+=`IRREG ROLES\n${'─'.repeat(30)}\n`;
