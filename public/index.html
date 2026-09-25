@@ -591,7 +591,6 @@ let fbDb   = null;
 let fbReady = false;
 const _myClientId = Math.random().toString(36).slice(2,10); // unique per browser tab — used to ignore own save echoes
 let _fbLiveRef = null; // holds active Firebase .on('value') listener for real-time sync
-let _pendingRemoteData = null; // remote update received while user is mid-edit — applied once they leave the field
 let _applyingRemote = false; // true while merging a remote update in — blocks scheduleSave() from echoing it back
 let _rolesSnapshot = null; // snapshot of S.roles taken when roles modal opens (for diff logging)
 let _adpExpiry = {}; // { staffId: "YYYY-MM-DD" } — ADP expiry dates, loaded globally from Firebase
@@ -755,35 +754,73 @@ async function fbLoad(){
   }
 }
 
-// True while focus is on a text field — used to avoid yanking the cursor away
-// mid-keystroke when a live update arrives from another user.
-function isEditingNow(){
-  const a=document.activeElement;
-  return !!(a && a.matches && a.matches('input,textarea,select'));
+// Identify the currently focused field by its oninput/onchange/onclick attribute
+// string — these are generated per-row with the row's own closure (dk, i, id, …
+// baked in), so each rendered input/select already has a naturally unique
+// signature we can use to re-find "the same logical field" after a re-render,
+// without having to add id/data attributes everywhere.
+function fieldSig(el){
+  return el.getAttribute('oninput')||el.getAttribute('onchange')||el.getAttribute('onclick')||(el.id?('#id:'+el.id):null);
 }
 
-// Merge a remote payload into local state and re-render. Guards scheduleSave()
-// so re-rendering someone else's change doesn't immediately write it straight back.
+// Snapshot the focused field (identity, live value/checked, cursor position,
+// scroll position) so a re-render triggered by someone else's change can put
+// it all back exactly as it was — the user never sees their field move,
+// blank out, or lose their place mid-keystroke.
+function captureFocusSnapshot(){
+  const a=document.activeElement;
+  const snap={ scrollX:window.scrollX, scrollY:window.scrollY };
+  if(a && a.matches && a.matches('input,textarea,select')){
+    const sig=fieldSig(a);
+    if(sig){
+      snap.sig=sig;
+      if(a.type==='checkbox'||a.type==='radio') snap.checked=a.checked;
+      else { snap.value=a.value; try{ snap.selStart=a.selectionStart; snap.selEnd=a.selectionEnd; }catch(e){} }
+    }
+  }
+  return snap;
+}
+
+function restoreFocusSnapshot(snap){
+  if(!snap) return;
+  window.scrollTo(snap.scrollX, snap.scrollY);
+  if(!snap.sig) return;
+  let el=null;
+  for(const c of document.querySelectorAll('input,textarea,select')){
+    if(fieldSig(c)===snap.sig){ el=c; break; }
+  }
+  if(!el) return; // the row/field no longer exists after the merge — nothing to restore
+  const hasOninput=!!el.getAttribute('oninput'), hasOnchange=!!el.getAttribute('onchange');
+  if(snap.checked!==undefined){
+    el.checked=snap.checked;
+    if(hasOnchange) el.dispatchEvent(new Event('change',{bubbles:true}));
+    else if(hasOninput) el.dispatchEvent(new Event('input',{bubbles:true}));
+  } else if(snap.value!==undefined){
+    el.value=snap.value;
+    // Re-fire the field's own handler so S (and the debounced save) picks up
+    // whatever the user had typed — not just the DOM text.
+    if(hasOninput) el.dispatchEvent(new Event('input',{bubbles:true}));
+    else if(hasOnchange) el.dispatchEvent(new Event('change',{bubbles:true}));
+  }
+  el.focus();
+  if(snap.selStart!=null && el.setSelectionRange){ try{ el.setSelectionRange(snap.selStart, snap.selEnd); }catch(e){} }
+}
+
+// Merge a remote payload into local state and re-render — live, immediately —
+// while preserving exactly what the user was doing (focus, cursor, in-progress
+// text, scroll position). _applyingRemote guards scheduleSave() so re-rendering
+// someone else's change doesn't immediately echo a save straight back; it's
+// cleared before restoreFocusSnapshot() so the user's own resumed edit still
+// saves normally afterward.
 function applyRemoteData(raw){
   const d=sanitizeState(raw);
+  const focusSnap=captureFocusSnapshot();
   _applyingRemote=true;
   SAVE_FIELDS.forEach(f=>{ if(d[f]!=null) try{ S[f]=JSON.parse(JSON.stringify(d[f])); }catch(e){} });
   renderAll();
   _applyingRemote=false;
+  restoreFocusSnapshot(focusSnap);
 }
-
-// Apply a queued remote update once the user is no longer actively typing —
-// on blur of the field they were in, or on the periodic idle check below.
-function applyPendingRemoteIfAny(){
-  if(!_pendingRemoteData || isEditingNow()) return;
-  const raw=_pendingRemoteData; _pendingRemoteData=null;
-  applyRemoteData(raw);
-  showToast('🔄 Synced update from another user','ok',2000);
-}
-document.addEventListener('blur', e=>{
-  if(e.target && e.target.matches && e.target.matches('input,textarea,select')) setTimeout(applyPendingRemoteIfAny,0);
-}, true);
-setInterval(applyPendingRemoteIfAny, 1500);
 
 function setupFbLiveSync(){
   // Detach previous listener if any
@@ -796,11 +833,8 @@ function setupFbLiveSync(){
     if(!snap.exists()) return;
     const raw=snap.val();
     if(raw._clientId===_myClientId) return; // our own save echoed back — ignore
-    // Someone else changed data. If the user is mid-edit (focus in a field),
-    // don't rip the DOM out from under them — queue it and apply once they're done.
-    if(isEditingNow()){ _pendingRemoteData=raw; return; }
     applyRemoteData(raw);
-    showToast('🔄 Live update from another user','ok',2500);
+    showToast('🔄 Live update from another user','ok',2000);
   }, err=>console.error('FB live sync error:',err));
 }
 
