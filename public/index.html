@@ -591,6 +591,8 @@ let fbDb   = null;
 let fbReady = false;
 const _myClientId = Math.random().toString(36).slice(2,10); // unique per browser tab — used to ignore own save echoes
 let _fbLiveRef = null; // holds active Firebase .on('value') listener for real-time sync
+let _pendingRemoteData = null; // remote update received while user is mid-edit — applied once they leave the field
+let _applyingRemote = false; // true while merging a remote update in — blocks scheduleSave() from echoing it back
 let _rolesSnapshot = null; // snapshot of S.roles taken when roles modal opens (for diff logging)
 let _adpExpiry = {}; // { staffId: "YYYY-MM-DD" } — ADP expiry dates, loaded globally from Firebase
 let _wcAuth   = {}; // { staffId: true } — techs authorized as WC Primary
@@ -753,6 +755,36 @@ async function fbLoad(){
   }
 }
 
+// True while focus is on a text field — used to avoid yanking the cursor away
+// mid-keystroke when a live update arrives from another user.
+function isEditingNow(){
+  const a=document.activeElement;
+  return !!(a && a.matches && a.matches('input,textarea,select'));
+}
+
+// Merge a remote payload into local state and re-render. Guards scheduleSave()
+// so re-rendering someone else's change doesn't immediately write it straight back.
+function applyRemoteData(raw){
+  const d=sanitizeState(raw);
+  _applyingRemote=true;
+  SAVE_FIELDS.forEach(f=>{ if(d[f]!=null) try{ S[f]=JSON.parse(JSON.stringify(d[f])); }catch(e){} });
+  renderAll();
+  _applyingRemote=false;
+}
+
+// Apply a queued remote update once the user is no longer actively typing —
+// on blur of the field they were in, or on the periodic idle check below.
+function applyPendingRemoteIfAny(){
+  if(!_pendingRemoteData || isEditingNow()) return;
+  const raw=_pendingRemoteData; _pendingRemoteData=null;
+  applyRemoteData(raw);
+  showToast('🔄 Synced update from another user','ok',2000);
+}
+document.addEventListener('blur', e=>{
+  if(e.target && e.target.matches && e.target.matches('input,textarea,select')) setTimeout(applyPendingRemoteIfAny,0);
+}, true);
+setInterval(applyPendingRemoteIfAny, 1500);
+
 function setupFbLiveSync(){
   // Detach previous listener if any
   if(_fbLiveRef){ _fbLiveRef.off('value'); _fbLiveRef=null; }
@@ -764,10 +796,10 @@ function setupFbLiveSync(){
     if(!snap.exists()) return;
     const raw=snap.val();
     if(raw._clientId===_myClientId) return; // our own save echoed back — ignore
-    // Someone else changed data — apply it live
-    const d=sanitizeState(raw);
-    SAVE_FIELDS.forEach(f=>{ if(d[f]!=null) try{ S[f]=JSON.parse(JSON.stringify(d[f])); }catch(e){} });
-    renderAll();
+    // Someone else changed data. If the user is mid-edit (focus in a field),
+    // don't rip the DOM out from under them — queue it and apply once they're done.
+    if(isEditingNow()){ _pendingRemoteData=raw; return; }
+    applyRemoteData(raw);
     showToast('🔄 Live update from another user','ok',2500);
   }, err=>console.error('FB live sync error:',err));
 }
@@ -896,7 +928,7 @@ let _restoringFromFb=false; // true while fbLoad() is running — blocks schedul
 
 
 function scheduleSave(){
-  if(!S.loaded || _restoringFromFb) return;
+  if(!S.loaded || _restoringFromFb || _applyingRemote) return;
   pendingSave=true;
   if(!fbReady) return; // will flush when fbReady
   clearTimeout(saveTimer);
