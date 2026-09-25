@@ -900,7 +900,6 @@ async function loadLastDate(){
   } catch(e){}
 }
 
-function saveSocNow(){ if(fbReady&&S.loaded) fbSave(); }
 
 let saveTimer=null, pendingSave=false;
 // ── DARK MODE ──
@@ -1340,13 +1339,6 @@ async function loadTrainees(){
   } catch(e){ console.warn('Trainees load error:',e); }
 }
 
-function open_setup(){
-  const keyEl = document.getElementById('su-key');
-  if(keyEl) keyEl.value = S.cfg.key||'';
-  document.getElementById('su-sid').value = S.cfg.sid;
-  document.getElementById('su-tab').value = S.cfg.tab;
-  document.getElementById('setup-ov').classList.add('show');
-}
 function close_setup(){ document.getElementById('setup-ov').classList.remove('show'); }
 
 // ── Dynamic header shift label ──
@@ -1756,12 +1748,6 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
     }
   }
 
-  // Also detect any other-shift header so we can stop collecting
-  function isOtherShiftHeader(row){
-    const txt = row.map(v=>String(v||'').toUpperCase()).join(' ');
-    return /SHIFT\s+[ABCD]/.test(txt) && !txt.includes('SHIFT '+shiftGroup);
-  }
-
   // ── Backup code parser ──
   // Matches exact patterns seen in sheet. Returns {matchesShift, dept} or null.
   // STBY and plain DAY/NIGHT are NOT backup — those are own-shift or standby.
@@ -2022,19 +2008,6 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
     if(sv) dbgOtherSamples.push({ shift:dbgOtherSec, id:idRaw, name:cols.name!==null?c(row[cols.name]):'', schedVal:sv });
   }
 
-  // Find raw row for M13028 to debug why it may be missing
-  const _dbgTargetId = 'M13028';
-  let _dbgTargetRow = null, _dbgTargetRowIdx = -1;
-  for(let _di=0;_di<rows.length;_di++){
-    const _dr=rows[_di];
-    if(!_dr) continue;
-    for(let _dj=0;_dj<_dr.length;_dj++){
-      if(String(_dr[_dj]||'').trim().toUpperCase()===_dbgTargetId){ _dbgTargetRow=_dr; _dbgTargetRowIdx=_di; break; }
-    }
-    if(_dbgTargetRow) break;
-  }
-  const _dbgTargetInStaff = staff.find(s=>s.id===_dbgTargetId||s.id.startsWith(_dbgTargetId));
-
   S.debug = { totalRows:rows.length, staffFound:staff.filter(s=>!s.isBackup).length,
     xsBkFound: xsBkFound.length, xsBkSamples: xsBkFound.slice(0,5).map(s=>({name:s.shortName,team:s.team,schedVal:s.schedVal,fromShift:s.fromShift})),
     otherShiftSamples: dbgOtherSamples,
@@ -2047,15 +2020,6 @@ function parseRoster(rows, targetDate, shiftType, shiftGroup){
     row5cols: (rows[5]||[]).slice(38,56).map((v,i)=>({col:i+38,val:String(v||'')})).filter(x=>x.val),
     headerFound:cols.id!==null, cols,
     sections:dbgSections,
-    targetDebug: {
-      id: _dbgTargetId,
-      foundInRows: _dbgTargetRowIdx,
-      foundInStaff: !!_dbgTargetInStaff,
-      rawRow: _dbgTargetRow ? _dbgTargetRow.slice(0,15).map((v,i)=>i+'='+JSON.stringify(String(v||''))) : 'ROW NOT FOUND IN SHEET',
-      colsId: cols.id, colsShift: cols.shift, colsDesig: cols.desig, colsDesigCode: cols.desigCode,
-      shiftVal: _dbgTargetRow && cols.shift!==null ? String(_dbgTargetRow[cols.shift]||'') : '(shift col not detected)',
-      idVal: _dbgTargetRow && cols.id!==null ? String(_dbgTargetRow[cols.id]||'') : '(id col not detected)',
-    },
     sample: staff.filter(s=>!s.isBackup).slice(0,20).map(s=>({
       team:s.team, id:s.id, name:s.shortName,
       shift:s.schedVal, colShift:dateCol, rawRow:[]
@@ -2419,7 +2383,6 @@ function toggleWcAuth(staffId){
   if(typeof renderSummary==='function') renderSummary();
 }
 // Returns true if staffId (or any staff matching name) is WC-authorized
-function isWcAuthorized(staffId){ return !!_wcAuth[staffId]; }
 function isWcAuthorizedByName(name){
   if(!name) return true; // empty slot — not a violation
   const clean=name.replace(/\s*\(BK\)|\s*\(TR\)/g,'').trim();
@@ -3525,7 +3488,6 @@ function updateCounts(){
   });
 }
 
-function updSumRoles(){ /* debounced re-render */ }
 
 // ═══════════════════════════════════
 // BACKUP
@@ -4132,7 +4094,6 @@ function _doApplyAllocation(){
   if(fbReady && S.loaded) fbSave(); else { pendingSave=true; }
 }
 
-function applyAllocation(parsed){ _allocStore._parsed=parsed; _doApplyAllocation(); }
 
 // ═══════════════════════════════════
 // ROLES MODAL
@@ -4348,7 +4309,9 @@ function renderTowersSection(){
       ${all.map(t=>{
         const isAvail = t.status==='AVAIL';
         const fn = t.isPerm ? `toggleTower('perm',${t.idx})` : `toggleTower('bk',${t.idx})`;
-        return `<div onclick="${fn}" style="background:${isAvail?'#1A0A2A':'var(--surf)'};border:1px solid ${isAvail?'#6B21A8':'var(--b)'};border-radius:var(--r);padding:9px 11px;cursor:pointer;transition:border-color .15s">
+        const removeBtn = t.isPerm ? '' : `<button onclick="event.stopPropagation();removeTowerBackup(${t.idx})" title="Remove backup tower" style="position:absolute;top:4px;right:4px;background:transparent;border:none;color:var(--txt3);cursor:pointer;font-size:11px;line-height:1;padding:2px">✕</button>`;
+        return `<div onclick="${fn}" style="position:relative;background:${isAvail?'#1A0A2A':'var(--surf)'};border:1px solid ${isAvail?'#6B21A8':'var(--b)'};border-radius:var(--r);padding:9px 11px;cursor:pointer;transition:border-color .15s">
+          ${removeBtn}
           <div style="font-family:var(--cond);font-size:14px;font-weight:700;color:${isAvail?'#C084FC':'var(--txt2)'};letter-spacing:.5px;margin-bottom:4px">
             ${t.name}${!t.isPerm?` <span style="font-size:8px;padding:1px 4px;background:var(--ybg);color:var(--amber);border:1px solid var(--amber);border-radius:2px">BK</span>`:''}
           </div>
@@ -4819,19 +4782,6 @@ function showDebug(){
           Cross-shift backups detected: <b style="color:${d.xsBkFound>0?'#10B981':'#FB923C'}">${d.xsBkFound||0}</b>
           ${d.xsBkSamples?.length?`<br><span style="font-size:9px;color:var(--txt3)">${d.xsBkSamples.map(s=>`${s.name} → ${s.team} (SHIFT ${s.fromShift}) val="${s.schedVal}"`).join(' · ')}</span>`:''}
         </div>
-      </div>
-
-      <div style="background:#0A0A1A;border:2px solid #F59E0B;border-radius:8px;padding:16px;margin-bottom:12px">
-        <div style="color:#F59E0B;font-size:10px;letter-spacing:2px;margin-bottom:8px">M13028 (HARITH IMRAN) — RAW ROW DEBUG</div>
-        <div style="font-size:10px;line-height:2">
-          Found in sheet rows: <b style="color:${d.targetDebug?.foundInRows>=0?'#10B981':'#F87171'}">${d.targetDebug?.foundInRows>=0?'YES @ row '+d.targetDebug.foundInRows:'NOT FOUND IN SHEET DATA'}</b><br>
-          Found in parsed staff: <b style="color:${d.targetDebug?.foundInStaff?'#10B981':'#F87171'}">${d.targetDebug?.foundInStaff?'YES':'NO — FILTERED OUT'}</b><br>
-          cols: id=<b style="color:#FBBF24">${d.targetDebug?.colsId}</b> shift=<b style="color:#FBBF24">${d.targetDebug?.colsShift??'null'}</b> desig=<b style="color:#FBBF24">${d.targetDebug?.colsDesig??'null'}</b> desigCode=<b style="color:#FBBF24">${d.targetDebug?.colsDesigCode??'null'}</b><br>
-          idVal: <b style="color:#FBBF24">"${d.targetDebug?.idVal}"</b> &nbsp; shiftVal: <b style="color:#FBBF24">"${d.targetDebug?.shiftVal}"</b><br>
-          Raw row (cols 0–14):<br>
-          <span style="font-size:9px;color:var(--txt3);word-break:break-all">${Array.isArray(d.targetDebug?.rawRow)?d.targetDebug.rawRow.join(' | '):(d.targetDebug?.rawRow||'—')}</span>
-        </div>
-      </div>
       </div>
 
       <div style="background:var(--surf);border:1px solid var(--b);border-radius:8px;padding:16px;margin-bottom:12px">
