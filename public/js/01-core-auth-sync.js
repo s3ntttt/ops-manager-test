@@ -51,7 +51,19 @@ function applyUser(u){
   document.body.classList.toggle('viewonly', isViewOnly());
   const chip=document.getElementById('user-chip');
   if(chip && _user.name){ chip.style.display='inline-block'; chip.textContent='👤 '+_user.name+(isViewOnly()?' · VIEW ONLY':''); chip.classList.toggle('vo',isViewOnly()); }
+  const lo=document.getElementById('logout-btn'); if(lo) lo.style.display=_user.name?'inline-block':'none';
   if(isViewOnly()) lockFirebaseWrites();
+}
+
+// Log out: save anything pending, leave the live session, forget the token, and return to the code screen.
+async function logout(){
+  if(!confirm('Log out'+(_user.name?' '+_user.name:'')+'?')) return;
+  try{ if(pendingSave && fbReady && !isViewOnly()){ clearTimeout(saveTimer); fbSave(); } }catch(e){}
+  try{ if(_fbLiveRef){ _fbLiveRef.off('value'); _fbLiveRef=null; } }catch(e){}
+  try{ if(typeof _presRef!=='undefined' && _presRef) await _presRef.remove(); }catch(e){}
+  try{ if(fbAuth) await fbAuth.signOut(); }catch(e){}
+  sessionStorage.removeItem('ops_token'); sessionStorage.removeItem('ops_access');
+  location.reload();   // fresh start: shows the access-code screen with no data left on screen
 }
 
 /**
