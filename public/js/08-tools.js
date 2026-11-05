@@ -213,6 +213,61 @@ function logEvent(category, detail){
   _renderActLog();
 }
 
+// ── SOC / PDSC / FGS change log ──
+// Keeps a plain-text copy of the three tables from the last time they were loaded/logged. After edits go quiet
+// (3 s) — or straight away for removals, cut, paste and drag — the differences are written to the activity log with
+// the old content, so an accidental delete can be traced and typed back in.
+const SEC_DEFS=[
+  { key:'soc',  label:'SOC',  cols:['flight','name','time','remark'], tick:true },
+  { key:'pdsc', label:'PDSC', cols:['reg','certifier'] },
+  { key:'fgs',  label:'FGS',  cols:['reg','remark'] },
+];
+let _secBase=null, _secTimer=null;
+
+function secRowText(d, r){
+  const cells=d.cols.map(k=>String((r&&r[k])||'').trim());
+  const tick=!!(d.tick && r && r.done);
+  if(!cells.some(Boolean) && !tick) return '';          // blank rows are not worth logging
+  return cells.map(c=>c||'–').join(' | ')+(tick?' ✓':'');
+}
+// before / after = arrays of row texts. Returns human-readable change lines.
+function diffSectionRows(before, after){
+  const out=[];
+  if(before.length===after.length){
+    if(before.join('\n')===after.join('\n')) return out;
+    if([...before].sort().join('\n')===[...after].sort().join('\n')) return ['rows re-ordered'];
+    after.forEach((a,i)=>{
+      const b=before[i]; if(a===b) return;
+      if(!b) out.push(`row ${i+1} added: ${a}`);
+      else if(!a) out.push(`row ${i+1} cleared: ${b}`);
+      else out.push(`row ${i+1}: ${b} → ${a}`);
+    });
+    return out;
+  }
+  // number of rows changed: match rows by content so one deleted row is not reported as many edits
+  const rest=after.slice(), removed=[];
+  before.forEach(b=>{ const k=rest.indexOf(b); if(k>=0) rest.splice(k,1); else removed.push(b); });
+  removed.filter(Boolean).forEach(b=>out.push(`row removed: ${b}`));
+  rest.filter(Boolean).forEach(a=>out.push(`row added: ${a}`));
+  return out;
+}
+function _secSnapshot(){ const o={}; SEC_DEFS.forEach(d=>{ o[d.key]=(S[d.key]||[]).map(r=>secRowText(d,r)); }); return o; }
+function secBaselineReset(){ _secBase=_secSnapshot(); }
+function scheduleSecLog(){ clearTimeout(_secTimer); _secTimer=setTimeout(logSectionChanges,3000); }
+function logSectionChanges(){
+  clearTimeout(_secTimer); _secTimer=null;
+  if(!S.loaded || !_secBase) return;
+  const now=_secSnapshot();
+  SEC_DEFS.forEach(d=>{
+    const lines=diffSectionRows(_secBase[d.key]||[], now[d.key]);
+    lines.slice(0,10).forEach(t=>logEvent(d.label,t));
+    if(lines.length>10) logEvent(d.label,`…and ${lines.length-10} more changes`);
+  });
+  _secBase=now;
+}
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') logSectionChanges(); });
+window.addEventListener('beforeunload',()=>{ logSectionChanges(); });
+
 function _actCls(action){
   const a=(action||'').toUpperCase();
   if(a.includes('MC')) return 'mc';
@@ -228,7 +283,7 @@ function _evtCls(cat){
   const c=(cat||'').toUpperCase();
   if(c.includes('SWAP')) return 'sw';
   if(c.includes('TRANSFER')) return 'tr';
-  if(c.includes('BACKUP')||c.includes('ROSTER')) return 'bk';
+  if(c.includes('BACKUP')||c.includes('ROSTER')||c.includes('SOC')||c.includes('PDSC')||c.includes('FGS')||c.includes('RESET')) return 'bk';
   if(c.includes('SS')) return 'ss';
   if(c.includes('GL')) return 'gl';
   if(c.includes('ROLE')) return 'rl';

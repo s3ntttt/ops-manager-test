@@ -48,7 +48,7 @@ function _gFocus(name,r,c){
   if(el){ el.focus(); try{ el.select(); }catch(e){} }
   return !!el;
 }
-function _gChanged(name, focusRC){ renderSummary(); scheduleSave(); if(focusRC) _gFocus(name,focusRC[0],focusRC[1]); }
+function _gChanged(name, focusRC){ renderSummary(); scheduleSave(); logSectionChanges(); if(focusRC) _gFocus(name,focusRC[0],focusRC[1]); }
 function _gPaint(){
   document.querySelectorAll('table[data-grid] tr[data-g-i]').forEach(tr=>{
     tr.classList.toggle('grid-sel', _gOf(tr)===_gName && _gSel.has(+tr.dataset.gI));

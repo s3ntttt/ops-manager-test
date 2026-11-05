@@ -41,12 +41,12 @@ function addSoc(){
   S.soc.push({flight:'',name:'',time:'',remark:''});
   renderSummary(); switchTab('summary'); scheduleSave();
 }
-function rmSoc(i){ S.soc.splice(i,1); renderSummary(); scheduleSave(); }
+function rmSoc(i){ S.soc.splice(i,1); renderSummary(); scheduleSave(); logSectionChanges(); }
 
 function addPdsc(){ S.pdsc.push({reg:'',certifier:''}); renderSummary(); scheduleSave(); }
-function rmPdsc(i){ S.pdsc.splice(i,1); renderSummary(); scheduleSave(); }
+function rmPdsc(i){ S.pdsc.splice(i,1); renderSummary(); scheduleSave(); logSectionChanges(); }
 function addFgs() { S.fgs.push({reg:'',remark:''}); renderSummary(); scheduleSave(); }
-function rmFgs(i) { S.fgs.splice(i,1); renderSummary(); scheduleSave(); }
+function rmFgs(i) { S.fgs.splice(i,1); renderSummary(); scheduleSave(); logSectionChanges(); }
 
 // ═══════════════════════════════════
 // TABS

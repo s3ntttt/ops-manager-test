@@ -54,6 +54,7 @@ async function loadRoster(){
     S.staff = staff;
     // Reset shift-specific state before loading saved data
     // Flush any unsaved changes from the PREVIOUS roster before switching date
+    if(S.loaded) logSectionChanges(); // (still the old date's key at this point)
     if(S.loaded && pendingSave && fbReady){ clearTimeout(saveTimer); fbSave(); }
     clearTimeout(saveTimer); saveTimer=null; pendingSave=false;
     if(_fbLiveRef){ _fbLiveRef.off('value'); _fbLiveRef=null; } // detach live listener before switching date
@@ -87,6 +88,7 @@ async function loadRoster(){
         }
       }catch(e){}
     }
+    secBaselineReset();
     _restoringFromFb = true; // block scheduleSave until fbLoad finishes (Firebase overrides localStorage)
     renderAll();
     staggerCards();

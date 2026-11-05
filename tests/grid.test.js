@@ -31,3 +31,17 @@ test('copy format: SOC carries the tick as a 5th column, PDSC / FGS have only th
   assert.equal(JSON.stringify(app.run("_gRowFromCells('soc',['LDG','A','0700','','✓'])")), JSON.stringify({ flight: 'LDG', name: 'A', time: '0700', remark: '', done: true }));
   assert.equal(JSON.stringify(app.run("_gRowFromCells('fgs',['9M-XYZ','R','✓'])")), JSON.stringify({ reg: '9M-XYZ', remark: 'R' }));
 });
+
+test('diffSectionRows describes edits, deletions, cut and re-ordering', () => {
+  const app = loadApp();
+  const d = (b, a) => { app.ctx.__b = b; app.ctx.__a = a; return JSON.parse(app.run('JSON.stringify(diffSectionRows(__b, __a))')); };
+  assert.deepEqual(d(['A | 1', 'B | 2', 'C | 3'], ['A | 1', 'C | 3']), ['row removed: B | 2']);
+  assert.deepEqual(d(['A | 1', 'B | 2'], ['A | 1', '']), ['row 2 cleared: B | 2']);
+  assert.deepEqual(d(['A | 1'], ['A | 9']), ['row 1: A | 1 → A | 9']);
+  assert.deepEqual(d(['A', 'B'], ['B', 'A']), ['rows re-ordered']);
+  assert.deepEqual(d(['A', 'B'], ['A', 'B', 'C']), ['row added: C']);
+  assert.deepEqual(d(['A', ''], ['A']), []);                                   // a blank row appearing/disappearing is ignored
+  assert.deepEqual(d(['A', 'B'], ['A', 'B']), []);
+  app.run("S.soc=[{flight:'LDG',name:'AMIR',time:'',remark:'',done:true},{flight:'',name:'',time:'',remark:''}]");
+  assert.deepEqual(JSON.parse(app.run('JSON.stringify(_secSnapshot().soc)')), ['LDG | AMIR | – | – ✓', '']);
+});

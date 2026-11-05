@@ -254,6 +254,7 @@ async function fbLoad(){
       if(el) el.textContent='☁ No saved data';
     }
     _loadedKey=key; _fbLoadRetries=0; // cloud state confirmed — saving is now safe
+    secBaselineReset(); // SOC/PDSC/FGS change-log compares against what was just loaded
     renderAll();
   }catch(e){
     failed=true;
@@ -333,8 +334,10 @@ function restoreFocusSnapshot(snap){
 function applyRemoteData(raw){
   const d=sanitizeState(raw);
   const focusSnap=captureFocusSnapshot();
+  logSectionChanges(); // log our own pending SOC/PDSC/FGS edits before the other user's version replaces them
   _applyingRemote=true;
   SAVE_FIELDS.forEach(f=>{ if(d[f]!=null) try{ S[f]=JSON.parse(JSON.stringify(d[f])); }catch(e){} });
+  secBaselineReset(); // their changes are logged by them, not by us
   renderAll();
   _applyingRemote=false;
   restoreFocusSnapshot(focusSnap);
@@ -362,6 +365,7 @@ async function clearDateData(){
   if(!key){ alert('No date/shift selected.'); return; }
   const label = key.replace('shifts/','');
   if(!confirm(`RESET all saved data for ${label}?\n\nThis clears:\n• SS techs\n• Roles (WC, MOJO, RUNNERS, TOWERS)\n• Swaps & transfers\n• Backups\n• SOC / PDSC / FGS / OPS\n\nThe roster staff list stays. This cannot be undone.`)) return;
+  logEvent('RESET','All saved data for this date/shift was reset (SOC / PDSC / FGS had '+S.soc.length+' / '+S.pdsc.length+' / '+S.fgs.length+' rows)');
   // 1. Wipe Firebase
   if(fbReady){
     try{ await fbDb.ref(key).remove(); }catch(e){ console.warn('FB delete error:',e); }
@@ -397,6 +401,7 @@ async function clearDateData(){
     ]
   };
   // 4. Re-render & update status bar
+  secBaselineReset();
   renderAll();
   const el = document.getElementById('save-ts');
   if(el) el.textContent = '🗑 Reset — ' + label;
@@ -481,6 +486,7 @@ let _restoringFromFb=false; // true while fbLoad() is running — blocks schedul
 function scheduleSave(){
   if(!S.loaded || _restoringFromFb || _applyingRemote || isViewOnly()) return;
   pendingSave=true;
+  scheduleSecLog(); // SOC/PDSC/FGS edits → activity log (after a short quiet period)
   if(!fbReady) return; // will flush when fbReady
   clearTimeout(saveTimer);
   saveTimer=setTimeout(fbSave, 500);
