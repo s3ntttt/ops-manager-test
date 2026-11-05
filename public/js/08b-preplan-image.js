@@ -65,7 +65,7 @@ async function openPrePlanSnapshot(){
 }
 
 function _showPrePlanModal(url){
-  closePrePlanModal();
+  closePrePlanModal(); _ppCopyStep=0;
   const ov=document.createElement('div');
   ov.id='pp-ov';
   ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
@@ -74,13 +74,13 @@ function _showPrePlanModal(url){
       <div style="font-family:var(--cond);font-weight:700;letter-spacing:2px;font-size:13px">📸 PRE-PLAN SNAPSHOT</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-amber" onclick="sharePrePlanImage()">📤 SHARE</button>
-        <button class="btn btn-ghost" onclick="copyPrePlanAll()">📋 COPY</button>
+        <button id="pp-copy" class="btn btn-ghost" onclick="copyPrePlanAll()">📋 COPY PICTURE</button>
         <button class="btn btn-ghost" onclick="downloadPrePlanImage()">⬇ DOWNLOAD</button>
         <button class="btn btn-ghost" onclick="closePrePlanModal()">✕ CLOSE</button>
       </div>
     </div>
     <pre id="pp-msg" style="margin:0;padding:8px 10px;background:var(--surf2);border:1px solid var(--b);border-radius:8px;font-family:var(--mono);font-size:11px;white-space:pre-wrap">${prePlanMessage()}</pre>
-    <div style="font-size:10px;color:var(--txt3)">📤 SHARE sends the picture with the message above — choose WhatsApp, then the group. 📋 COPY puts the picture and the message on the clipboard — paste (Ctrl+V) in the chat. Tip: WhatsApp shrinks photos; for full sharpness send the downloaded file as a Document.</div>
+    <div style="font-size:10px;color:var(--txt3)">📤 SHARE sends the picture with the message above — choose WhatsApp, then the group. 📋 COPY: click once to copy the picture and paste it in the chat, then click again (COPY MESSAGE) and paste the message in the caption box. Tip: WhatsApp shrinks photos; for full sharpness send the downloaded file as a Document.</div>
     <div style="overflow:auto;border:1px solid var(--b);border-radius:8px;background:#fff"><img src="${url}" alt="Pre-plan snapshot" style="display:block;max-width:100%;height:auto"></div>
   </div>`;
   ov.addEventListener('mousedown',e=>{ if(e.target===ov) closePrePlanModal(); });
@@ -117,17 +117,21 @@ async function sharePrePlanImage(){
   await whatsappPrePlan();
 }
 
-// COPY puts the picture AND the message on the clipboard together (WhatsApp Web / most apps take the picture,
-// text boxes take the message). Falls back to the picture alone if the browser refuses a two-part copy.
+// COPY works in two clicks, because chat apps keep only the picture when a picture and text are on the clipboard together:
+//   1st click → copies the PICTURE   (paste it in the chat; WhatsApp then shows a caption box)
+//   2nd click → copies the MESSAGE   (paste it into the caption box)
+let _ppCopyStep=0;
+function _ppSetCopyLabel(){ const b=document.getElementById('pp-copy'); if(b) b.textContent=_ppCopyStep===0?'📋 COPY PICTURE':'📝 COPY MESSAGE (step 2)'; }
 async function copyPrePlanAll(){
-  const text=prePlanMessage();
-  try{
-    await navigator.clipboard.write([new ClipboardItem({
-      'image/png':_ppBlob,
-      'text/plain':new Blob([text],{type:'text/plain'}),
-    })]);
-    showToast('Copied picture + message','ok',2500);
-  }catch(e){
-    await copyPrePlanImage();
+  if(_ppCopyStep===0){
+    try{
+      await navigator.clipboard.write([new ClipboardItem({'image/png':_ppBlob})]);
+      _ppCopyStep=1; _ppSetCopyLabel();
+      showToast('Picture copied — paste it in WhatsApp, then click COPY MESSAGE here','ok',4500);
+    }catch(e){ showToast('Copy not allowed by this browser — use SHARE or DOWNLOAD','err',3500); }
+  } else {
+    try{ await navigator.clipboard.writeText(prePlanMessage()); showToast('Message copied — paste it in the caption box','ok',3000); }
+    catch(e){ showToast('Copy not allowed by this browser','err',3000); }
+    _ppCopyStep=0; _ppSetCopyLabel();
   }
 }
