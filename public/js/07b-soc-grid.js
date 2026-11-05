@@ -1,7 +1,7 @@
 // ═══════════════════════════════════
 // SOC TABLE — spreadsheet-style editing
 //   Enter ↓ / Shift+Enter ↑ · Tab → / Shift+Tab ← · arrow ↑↓ move between rows
-//   click the row number to select a row (Shift = range, Ctrl/Cmd = add) · Ctrl+C / Ctrl+X / Ctrl+V on selected rows
+//   click the row number to select a row (Shift = range, Ctrl/Cmd = add) · Ctrl+C (copy) / Ctrl+X (cut = empties the cells, row stays) / Ctrl+V on selected rows
 //   drag the row number to re-order · paste Excel cells straight into a cell
 // ═══════════════════════════════════
 const SOC_COLS=['flight','name','time','remark'];
@@ -107,9 +107,9 @@ document.addEventListener('cut',e=>{
   const idx=[...(_socSel)].sort((a,b)=>a-b);
   e.clipboardData.setData('text/plain',_socRowsTsv(idx));
   if(isViewOnly()) return;
-  S.soc=S.soc.filter((_,i)=>!_socSel.has(i));
-  if(!S.soc.length) S.soc.push(_socBlank());
-  _socSel=new Set(); _socChanged();
+  // Excel behaviour: the contents go to the clipboard and the cells are emptied — the rows themselves stay in place
+  idx.forEach(i=>{ SOC_COLS.forEach(k=>{ S.soc[i][k]=''; }); delete S.soc[i].done; });
+  _socChanged();
   showToast(`Cut ${idx.length} row${idx.length>1?'s':''}`,'ok',1200);
 });
 document.addEventListener('paste',e=>{
