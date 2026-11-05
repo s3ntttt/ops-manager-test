@@ -1538,7 +1538,9 @@ async function loadRoster(){
     S.backups={lo:[],irreg:[],wo:[],cim:[],moc:[]};
     S.ssTechs=[]; S.soc=[{flight:'',name:'',time:'',remark:''}];
     S.pdsc=[{reg:'',certifier:''}]; S.fgs=[{reg:'',remark:''}];
-    S.ops={ARR:'',DEP:'',TOW:''}; S.roles={
+    S.ops={ARR:'',DEP:'',TOW:''};
+    S.actingGL={lo:'',irreg:'',wo:'',cim:''}; // acting GLs are per-day — must not carry over to the next date
+    S.roles={
       mocChaser:'',mojo:['','',''],
       wc:[{primary:'',asst:''},{primary:'',asst:''}],
       runners:shift==='NIGHT'
