@@ -14,6 +14,14 @@ function _loadHtml2Canvas(){
   });
 }
 
+// The message that goes with the picture in the WhatsApp group.
+function prePlanMessage(){
+  const night=(document.getElementById('shift-sel')?.value||'DAY').toUpperCase()==='NIGHT';
+  return night
+    ? 'PREPLAN FOR TONIGHT\n\nNAME IN BLUE TO REPORT IN 1800 - 0600. TQ'
+    : 'PREPLAN FOR TODAY\n\nNAME IN BLUE TO REPORT IN 0600 - 1800. TQ';
+}
+
 function _buildPrePlanNode(){
   const root=document.getElementById('cs'); if(!root) return null;
   const pick=k=>root.querySelector(`[data-pp="${k}"]`);
@@ -66,13 +74,16 @@ function _showPrePlanModal(url){
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
       <div style="font-family:var(--cond);font-weight:700;letter-spacing:2px;font-size:13px">📸 PRE-PLAN SNAPSHOT</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-amber" onclick="copyPrePlanImage()">📋 COPY IMAGE</button>
+        <button class="btn btn-amber" onclick="whatsappPrePlan()">💬 WHATSAPP</button>
         ${canShare?'<button class="btn btn-amber" onclick="sharePrePlanImage()">📤 SHARE</button>':''}
+        <button class="btn btn-ghost" onclick="copyPrePlanImage()">📋 COPY IMAGE</button>
+        <button class="btn btn-ghost" onclick="copyPrePlanText()">📝 COPY TEXT</button>
         <button class="btn btn-ghost" onclick="downloadPrePlanImage()">⬇ DOWNLOAD</button>
         <button class="btn btn-ghost" onclick="closePrePlanModal()">✕ CLOSE</button>
       </div>
     </div>
-    <div style="font-size:10px;color:var(--txt3)">Copy, then paste (Ctrl+V) into the WhatsApp group — or Download / Share. Tip: WhatsApp shrinks photos; to keep full sharpness send the downloaded file as a Document.</div>
+    <pre id="pp-msg" style="margin:0;padding:8px 10px;background:var(--surf2);border:1px solid var(--b);border-radius:8px;font-family:var(--mono);font-size:11px;white-space:pre-wrap">${prePlanMessage()}</pre>
+    <div style="font-size:10px;color:var(--txt3)">💬 WHATSAPP copies the picture and opens WhatsApp with the message above — pick the group, then paste (Ctrl+V) the picture. Tip: WhatsApp shrinks photos; for full sharpness send the downloaded file as a Document.</div>
     <div style="overflow:auto;border:1px solid var(--b);border-radius:8px;background:#fff"><img src="${url}" alt="Pre-plan snapshot" style="display:block;max-width:100%;height:auto"></div>
   </div>`;
   ov.addEventListener('mousedown',e=>{ if(e.target===ov) closePrePlanModal(); });
@@ -83,14 +94,22 @@ function closePrePlanModal(){ const ov=document.getElementById('pp-ov'); if(ov){
 async function copyPrePlanImage(){
   try{
     await navigator.clipboard.write([new ClipboardItem({'image/png':_ppBlob})]);
-    showToast('Image copied — paste it into WhatsApp','ok',2500);
+    showToast('Image copied — paste it into the WhatsApp chat','ok',3000);
   }catch(e){ showToast('Copy not allowed by this browser — use Download','err',3500); }
 }
 function downloadPrePlanImage(){
   const a=document.createElement('a'); a.href=URL.createObjectURL(_ppBlob); a.download=_ppName; document.body.appendChild(a); a.click();
   setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000);
 }
+async function whatsappPrePlan(){
+  await copyPrePlanImage();   // the picture can't be attached through a link, so it goes on the clipboard
+  window.open('https://wa.me/?text='+encodeURIComponent(prePlanMessage()),'_blank','noopener');
+}
+async function copyPrePlanText(){
+  try{ await navigator.clipboard.writeText(prePlanMessage()); showToast('Message copied','ok',1800); }
+  catch(e){ showToast('Copy not allowed by this browser','err',3000); }
+}
 async function sharePrePlanImage(){
-  try{ await navigator.share({files:[new File([_ppBlob],_ppName,{type:'image/png'})],title:'Pre-plan'}); }
+  try{ await navigator.share({files:[new File([_ppBlob],_ppName,{type:'image/png'})],text:prePlanMessage()}); }
   catch(e){ if(e.name!=='AbortError') showToast('Share failed — use Download','err',3000); }
 }
