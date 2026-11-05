@@ -35,3 +35,20 @@ test('garbage in the variable is reported, not fatal', () => {
   assert.equal(createFirebaseToken('u_X', {}), null);
   delete process.env.FIREBASE_SERVICE_ACCOUNT;
 });
+
+test('the key is read even if it was pasted with quotes, over-escaped, with junk around it, or as UTF-16 base64', () => {
+  const json = JSON.stringify(sa);
+  const variants = {
+    quoted: '"' + json.replace(/"/g, '\\"') + '"',
+    singleQuoted: "'" + json + "'",
+    junkAround: '\uFEFF  \n' + json + '\n  ',
+    utf16Base64: Buffer.concat([Buffer.from([0xFF, 0xFE]), Buffer.from(json, 'utf16le')]).toString('base64'),
+  };
+  for (const [name, v] of Object.entries(variants)) {
+    process.env.FIREBASE_SERVICE_ACCOUNT = v;
+    const tok = createFirebaseToken('u_X', { mode: 'edit' });
+    assert.ok(tok, name + ' should be readable');
+    assert.equal(jwt.verify(tok, keys.publicKey, { algorithms: ['RS256'] }).claims.mode, 'edit');
+  }
+  delete process.env.FIREBASE_SERVICE_ACCOUNT;
+});
