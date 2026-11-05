@@ -98,8 +98,13 @@ public/js/             Scripts, loaded in filename order
   02-state             app state, ENG specialist lists
   03-sheets-history    per-month sheet configs, roster history
   04-roster-parse      sheet fetch + roster parsing (parseRoster, parseBkCode, shortify …)
-  05-render            department cards, summary, headcount maths
-  06-actions-modals    backups, tabs, allocation paste, roles modal, print
+  05-render            department cards, staff cards, nicknames
+  05b-adp-wcauth       ADP expiry + WC-authorised techs
+  05c-summary          the SUMMARY tab
+  05d-headcount        headcount maths (fractions, category)
+  06-actions-modals    backups, SOC/PDSC/FGS, tabs, UI helpers, exclusions, acting GL
+  06b-briefing-alloc   briefing text, paste-allocation modal
+  06c-roles-export     roles modal, print / export
   07-sections          towers, trainees, MOC
   08-tools             debug panel, snapshots, activity log, presence
   99-main              start-up (must stay last)
