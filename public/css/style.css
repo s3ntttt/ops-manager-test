@@ -286,3 +286,9 @@ select option{background:var(--surf2)}
 .snap-row:hover{border-color:var(--amber)}
 .snap-ts{font-family:var(--mono);font-size:11px;color:var(--amber);font-weight:700}
 .snap-meta{font-size:10px;color:var(--txt2);margin-top:2px}
+
+/* ── Logged-in user chip / view-only ── */
+#user-chip{font-size:10px;font-weight:700;letter-spacing:.5px;padding:2px 8px;border-radius:10px;background:var(--surf3);border:1px solid var(--b2);color:var(--txt2);margin-right:6px}
+#user-chip.vo{background:#FEF3C7;border-color:var(--amber);color:#92400E}
+body.viewonly::before{content:'VIEW ONLY — you can look around, but changes are not saved';display:block;position:sticky;top:0;z-index:9000;text-align:center;font-size:11px;font-weight:700;letter-spacing:1px;padding:4px;background:var(--amber);color:#fff}
+.alog-by{font-size:9px;color:var(--txt3)}

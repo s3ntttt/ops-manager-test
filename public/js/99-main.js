@@ -29,6 +29,7 @@
             fbAuth = firebase.auth();
             fbDb   = firebase.database();
           }
+          applyUser(data.user);
           document.getElementById('access-ov').style.display='none';
           fbSignIn();
         } else {

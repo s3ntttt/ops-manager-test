@@ -21,6 +21,39 @@ let _wcAuth   = {}; // { staffId: true } — techs authorized as WC Primary
 let _adpDept = ''; // dept filter for ADP modal ('' = all)
 let _adpWarnDays = 30; // ADP warning threshold in days (30 or 45) — configurable, persisted to Firebase
 
+// Who is logged in (set from the server's login/renewal response). mode "view" = can look, not change.
+let _user = { name: '', mode: 'edit' };
+let _writesLocked = false;
+let _lastBlockedToast = 0;
+function isViewOnly(){ return _user.mode==='view'; }
+
+// View-only: every Firebase write (except the "who is viewing" presence marker) becomes a no-op,
+// so a view-only login can never change saved data from the app.
+function lockFirebaseWrites(){
+  if(_writesLocked || !fbDb) return;
+  _writesLocked = true;
+  const origRef = fbDb.ref.bind(fbDb);
+  fbDb.ref = (path) => {
+    const r = origRef(path);
+    if(/^presence\//.test(String(path||''))) return r;
+    ['set','update','remove','push','transaction'].forEach(m=>{
+      r[m] = () => {
+        if(Date.now()-_lastBlockedToast>4000){ _lastBlockedToast=Date.now(); if(typeof showToast==='function') showToast('View-only login — changes are not saved','err',3000); }
+        return Promise.resolve();
+      };
+    });
+    return r;
+  };
+}
+
+function applyUser(u){
+  if(u && u.name) _user = { name: String(u.name), mode: u.mode==='view' ? 'view' : 'edit' };
+  document.body.classList.toggle('viewonly', isViewOnly());
+  const chip=document.getElementById('user-chip');
+  if(chip && _user.name){ chip.style.display='inline-block'; chip.textContent='👤 '+_user.name+(isViewOnly()?' · VIEW ONLY':''); chip.classList.toggle('vo',isViewOnly()); }
+  if(isViewOnly()) lockFirebaseWrites();
+}
+
 /**
  * Authenticate against the backend.
  * On success: receives JWT + Firebase config, then initialises Firebase.
@@ -56,6 +89,7 @@ async function checkAccess(){
     }
     fbAuth = firebase.auth();
     fbDb   = firebase.database();
+    applyUser(data.user);
 
     document.getElementById('access-ov').style.display = 'none';
     fbSignIn();
@@ -83,13 +117,14 @@ async function refreshSession(){
       _sessionToken = data.token;
       sessionStorage.setItem('ops_token', _sessionToken);
       _lastTokenRefresh = Date.now();
+      if(data.user) applyUser(data.user);
     }
     return true;
   }catch(e){ console.warn('refreshSession:', e); return false; } // offline — try again later
 }
 function showSessionExpired(){
   sessionStorage.removeItem('ops_token'); sessionStorage.removeItem('ops_access');
-  _sessionToken = null;
+  _sessionToken = null; _user={name:'',mode:'edit'};
   const ov=document.getElementById('access-ov'); if(ov) ov.style.display='flex';
   const err=document.getElementById('access-err'); if(err) err.textContent='Session expired — enter the access code to continue. Your unsaved changes are kept.';
 }
@@ -169,7 +204,7 @@ function saveLastDate(){
 }
 
 function fbSave(){
-  if(!fbReady||!S.loaded){ return; }
+  if(!fbReady||!S.loaded||isViewOnly()){ return; }
   const key=S._fbKey||fbKey(); // use stored key so mid-switch saves don't write to wrong date
   if(!key){ return; }
   // Never write until we've actually read this date's cloud state — otherwise a failed/slow
@@ -364,7 +399,7 @@ let _restoringFromFb=false; // true while fbLoad() is running — blocks schedul
 
 
 function scheduleSave(){
-  if(!S.loaded || _restoringFromFb || _applyingRemote) return;
+  if(!S.loaded || _restoringFromFb || _applyingRemote || isViewOnly()) return;
   pendingSave=true;
   if(!fbReady) return; // will flush when fbReady
   clearTimeout(saveTimer);

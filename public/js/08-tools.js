@@ -198,7 +198,7 @@ let _actLogOpen=false;
 function logActivity(staffId, action){
   const s=S.staff.find(x=>x.id===staffId);
   const name=s?displayName(s):staffId;
-  const entry={ts:Date.now(), name, action};
+  const entry={ts:Date.now(), name, action, by:_user.name||''};
   _actLog.unshift(entry);
   if(_actLog.length>200) _actLog.length=200;
   if(fbReady){ const key=fbKey(); if(key) fbDb.ref(`activityLog/${key}`).push(entry).catch(()=>{}); }
@@ -206,7 +206,7 @@ function logActivity(staffId, action){
 }
 
 function logEvent(category, detail){
-  const entry={ts:Date.now(), name:'['+category+']', action:detail, _evt:true};
+  const entry={ts:Date.now(), name:'['+category+']', action:detail, _evt:true, by:_user.name||''};
   _actLog.unshift(entry);
   if(_actLog.length>200) _actLog.length=200;
   if(fbReady){ const key=S._fbKey||fbKey(); if(key) fbDb.ref(`activityLog/${key}`).push(entry).catch(()=>{}); }
@@ -241,7 +241,7 @@ function _renderActLog(){
   el.innerHTML=_actLog.map(e=>{
     const t=new Date(e.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
     const cls=e._evt?_evtCls(e.name):_actCls(e.action);
-    return `<div class="alog-row"><span class="alog-t">${t}</span><span><span class="alog-nm">${e.name}</span> <span class="alog-ac ${cls}">→ ${e.action}</span></span></div>`;
+    return `<div class="alog-row"><span class="alog-t">${t}</span><span><span class="alog-nm">${e.name}</span> <span class="alog-ac ${cls}">→ ${e.action}</span>${e.by?` <span class="alog-by">· ${String(e.by).replace(/[<>&]/g,'')}</span>`:''}</span></div>`;
   }).join('');
 }
 

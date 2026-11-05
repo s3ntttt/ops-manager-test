@@ -11,6 +11,7 @@ const express    = require('express');
 const rateLimit  = require('express-rate-limit');
 const jwt        = require('jsonwebtoken');
 const path       = require('path');
+const crypto     = require('crypto');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -56,6 +57,38 @@ function requireAuth(req, res, next) {
   }
 }
 
+// ─── Users / passcodes ────────────────────────────────────────────────────────
+// USER_CODES (Railway variable) lists one passcode per person:
+//     NAME:CODE:MODE ; NAME:CODE:MODE ; ...        (separate with ";" or new lines)
+//     e.g.  WILSENT:abc123:edit;AMIR:xyz789:view
+// MODE is "edit" (default) or "view" (can look but not change anything).
+// The old single ACCESS_CODE still works as a shared "Team" login (edit) if it is set.
+function loadUsers() {
+  const users = [];
+  const raw = process.env.USER_CODES || '';
+  raw.split(/[;\n]+/).map(s => s.trim()).filter(Boolean).forEach(entry => {
+    const [name, code, mode] = entry.split(':').map(s => (s || '').trim());
+    if (!name || !code) { console.warn(`USER_CODES: skipped malformed entry "${entry}" (expected NAME:CODE:MODE)`); return; }
+    users.push({ name: name.toUpperCase(), code: code.toUpperCase(), mode: (mode || 'edit').toLowerCase() === 'view' ? 'view' : 'edit' });
+  });
+  const legacy = (process.env.ACCESS_CODE || '').trim().toUpperCase();
+  if (legacy) users.push({ name: 'TEAM', code: legacy, mode: 'edit' });
+  const seen = new Set();
+  users.forEach(u => { if (seen.has(u.code)) console.warn(`USER_CODES: duplicate passcode for ${u.name} — the first user with that code wins`); seen.add(u.code); });
+  return users;
+}
+const USERS = loadUsers();
+const sha = s => crypto.createHash('sha256').update(String(s)).digest();
+function findUser(code) {
+  const given = sha((code || '').trim().toUpperCase());
+  let found = null;
+  for (const u of USERS) {            // check every user so timing does not reveal which code was close
+    if (crypto.timingSafeEqual(given, sha(u.code)) && !found) found = u;
+  }
+  return found;
+}
+const signFor = user => jwt.sign({ role: 'ops', name: user.name, mode: user.mode }, process.env.JWT_SECRET, { expiresIn: TOKEN_TTL });
+
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
 /**
@@ -73,33 +106,30 @@ app.post('/api/auth', authLimiter, (req, res) => {
     projectId:   process.env.FIREBASE_PROJECT_ID
   };
 
-  // Session renewal: a still-valid JWT is exchanged for a FRESH 12h token, so people who
-  // keep the app open (e.g. a full night shift) are never logged out mid-use.
+  // Session renewal: a still-valid JWT is exchanged for a FRESH 12h token (same person, same mode),
+  // so people who keep the app open (e.g. a full night shift) are never logged out mid-use.
   if (existingToken) {
     try {
-      jwt.verify(existingToken, process.env.JWT_SECRET);
-      const fresh = jwt.sign({ role: 'ops' }, process.env.JWT_SECRET, { expiresIn: TOKEN_TTL });
-      return res.json({ token: fresh, firebaseConfig });
+      const old = jwt.verify(existingToken, process.env.JWT_SECRET);
+      const user = { name: old.name || 'TEAM', mode: old.mode === 'view' ? 'view' : 'edit' };
+      return res.json({ token: signFor(user), firebaseConfig, user });
     } catch {
       return res.status(401).json({ error: 'Session expired. Please log in again.' });
     }
   }
 
-  // Fresh login — validate the access code
-  const expectedCode = (process.env.ACCESS_CODE || '').trim().toUpperCase();
-  if (!expectedCode) {
-    console.error('ACCESS_CODE is not set in environment variables!');
-    return res.status(500).json({ error: 'Server misconfiguration: ACCESS_CODE not set.' });
+  // Fresh login — validate the passcode
+  if (!USERS.length) {
+    console.error('No passcodes configured: set USER_CODES (or ACCESS_CODE) in the environment variables!');
+    return res.status(500).json({ error: 'Server misconfiguration: no passcodes set.' });
   }
-  if (!code || code.trim().toUpperCase() !== expectedCode) {
-    return res.status(401).json({ error: 'Incorrect access code.' });
-  }
-
-  const token = jwt.sign({ role: 'ops' }, process.env.JWT_SECRET, { expiresIn: TOKEN_TTL });
+  const user = findUser(code);
+  if (!user) return res.status(401).json({ error: 'Incorrect access code.' });
+  console.log(`Login: ${user.name} (${user.mode})`);
 
   // Return the Firebase config so the browser can initialise the SDK
   // Safe: config is only handed out after the correct access code is provided
-  res.json({ token, firebaseConfig });
+  res.json({ token: signFor(user), firebaseConfig, user: { name: user.name, mode: user.mode } });
 });
 
 /**

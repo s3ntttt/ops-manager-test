@@ -39,7 +39,7 @@ A real-time web application built for airline ground operations teams to manage 
 - Per-shift data isolation — each date/shift/group has its own saved state
 
 ### 🔒 Access Control
-- Team access code protected
+- One passcode per person (`USER_CODES` variable) — each can be `edit` or `view`-only, and the activity log shows who made each change
 - JWT session tokens (12-hour expiry, automatically renewed while the app is open)
 - All API keys server-side — never exposed to browser
 
