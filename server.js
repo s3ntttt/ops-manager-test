@@ -8,14 +8,13 @@
 
 require('dotenv').config();
 const express    = require('express');
-const cors       = require('cors');
 const rateLimit  = require('express-rate-limit');
 const jwt        = require('jsonwebtoken');
-const fetch      = require('node-fetch');
 const path       = require('path');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
+const TOKEN_TTL = '12h'; // each renewal restarts this clock
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
@@ -23,11 +22,7 @@ const PORT = process.env.PORT || 3000;
 // from X-Forwarded-For (required on all Railway/Heroku/Render deployments)
 app.set('trust proxy', 1);
 
-// CORS — open to all origins. Security is enforced by JWT on every API route.
-// The frontend and backend share the same Railway domain, so restricting CORS
-// by origin would block same-domain POST requests (browsers send Origin on POST).
-app.use(cors());
-
+// No CORS middleware needed: the frontend is served by this same server (same origin).
 app.use(express.json());
 
 // Serve the frontend from the "public" subfolder (index.html lives there)
@@ -36,7 +31,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Rate limiter – protects auth endpoint from brute-force
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20,                   // max 20 attempts per window
+  max: 20,                   // max 20 FAILED attempts per window
+  skipSuccessfulRequests: true, // successful logins / token renewals don't count against the limit
   message: { error: 'Too many attempts, please try again later.' }
 });
 
@@ -77,12 +73,13 @@ app.post('/api/auth', authLimiter, (req, res) => {
     projectId:   process.env.FIREBASE_PROJECT_ID
   };
 
-  // Allow session refresh via existing valid JWT (page reload)
+  // Session renewal: a still-valid JWT is exchanged for a FRESH 12h token, so people who
+  // keep the app open (e.g. a full night shift) are never logged out mid-use.
   if (existingToken) {
     try {
       jwt.verify(existingToken, process.env.JWT_SECRET);
-      // Token is still valid — return firebase config without a new token
-      return res.json({ token: existingToken, firebaseConfig });
+      const fresh = jwt.sign({ role: 'ops' }, process.env.JWT_SECRET, { expiresIn: TOKEN_TTL });
+      return res.json({ token: fresh, firebaseConfig });
     } catch {
       return res.status(401).json({ error: 'Session expired. Please log in again.' });
     }
@@ -98,7 +95,7 @@ app.post('/api/auth', authLimiter, (req, res) => {
     return res.status(401).json({ error: 'Incorrect access code.' });
   }
 
-  const token = jwt.sign({ role: 'ops' }, process.env.JWT_SECRET, { expiresIn: '12h' });
+  const token = jwt.sign({ role: 'ops' }, process.env.JWT_SECRET, { expiresIn: TOKEN_TTL });
 
   // Return the Firebase config so the browser can initialise the SDK
   // Safe: config is only handed out after the correct access code is provided
@@ -162,10 +159,12 @@ process.on('uncaughtException', (err) => {
 });
 
 // ─── Start ────────────────────────────────────────────────────────────────────
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'change_this_to_a_long_random_string_before_deploying') {
+  console.error('FATAL: JWT_SECRET is missing or still the default value. Set a long random JWT_SECRET and restart.');
+  process.exit(1);
+}
+
 app.listen(PORT, () => {
   console.log(`\n  OPS MANAGER server running`);
   console.log(`  → http://localhost:${PORT}\n`);
-  if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'change_this_to_a_long_random_string_before_deploying') {
-    console.warn('  ⚠  JWT_SECRET is using the default value. Change it in .env before sharing this server!\n');
-  }
 });

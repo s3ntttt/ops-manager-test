@@ -40,7 +40,7 @@ A real-time web application built for airline ground operations teams to manage 
 
 ### 🔒 Access Control
 - Team access code protected
-- JWT session tokens (12-hour expiry)
+- JWT session tokens (12-hour expiry, automatically renewed while the app is open)
 - All API keys server-side — never exposed to browser
 
 ---
@@ -49,7 +49,7 @@ A real-time web application built for airline ground operations teams to manage 
 
 | Layer | Technology |
 |---|---|
-| Frontend | Vanilla HTML/CSS/JS (single-page app) |
+| Frontend | Vanilla HTML/CSS/JS (single-page app, split into `public/js/*.js` + `public/css/style.css`) |
 | Backend | Node.js + Express |
 | Database | Firebase Realtime Database |
 | Auth | JWT + team access code |
@@ -84,3 +84,33 @@ This system was custom-built for airline ground operations shift management. If 
 
 Copyright (c) 2026 Wilsent. All rights reserved.  
 This software is proprietary. Unauthorised copying or distribution is prohibited.
+
+---
+
+## 🗂️ Code layout
+
+```
+server.js              Express backend (auth, token renewal, Google Sheets proxy)
+public/index.html      Page markup
+public/css/style.css   Styles
+public/js/             Scripts, loaded in filename order
+  01-core-auth-sync    login, token renewal, Firebase save/load/live sync
+  02-state             app state, ENG specialist lists
+  03-sheets-history    per-month sheet configs, roster history
+  04-roster-parse      sheet fetch + roster parsing (parseRoster, parseBkCode, shortify …)
+  05-render            department cards, summary, headcount maths
+  06-actions-modals    backups, tabs, allocation paste, roles modal, print
+  07-sections          towers, trainees, MOC
+  08-tools             debug panel, snapshots, activity log, presence
+  99-main              start-up (must stay last)
+tests/                 Automated tests for parsing + headcount maths
+```
+
+## ✅ Tests
+
+```
+npm test
+```
+
+Runs the roster-parsing and headcount tests (Node 18+, no extra packages). Add a test whenever a roster
+quirk causes a bug, so it can't come back. The 🔍 DEBUG panel is hidden by default — open the site with `?debug=1` to show it.
