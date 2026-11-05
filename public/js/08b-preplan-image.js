@@ -46,7 +46,7 @@ async function openPrePlanSnapshot(){
   document.body.appendChild(wrap);
   try{
     await _loadHtml2Canvas();
-    const canvas=await html2canvas(wrap,{backgroundColor:'#ffffff',scale:2,useCORS:true,logging:false});
+    const canvas=await html2canvas(wrap,{backgroundColor:'#ffffff',scale:Math.max(3,Math.ceil(window.devicePixelRatio||1)),useCORS:true,logging:false});
     _ppBlob=await new Promise(r=>canvas.toBlob(r,'image/png'));
     const d=(document.getElementById('dp')?.value||'').replace(/-/g,''), sh=document.getElementById('shift-sel')?.value||'', g=document.getElementById('shift-group-sel')?.value||'C';
     _ppName=`PREPLAN_${g}_${d}_${sh}.png`;
@@ -72,7 +72,7 @@ function _showPrePlanModal(url){
         <button class="btn btn-ghost" onclick="closePrePlanModal()">✕ CLOSE</button>
       </div>
     </div>
-    <div style="font-size:10px;color:var(--txt3)">Copy, then paste (Ctrl+V) into the WhatsApp group — or Download / Share to send the picture.</div>
+    <div style="font-size:10px;color:var(--txt3)">Copy, then paste (Ctrl+V) into the WhatsApp group — or Download / Share. Tip: WhatsApp shrinks photos; to keep full sharpness send the downloaded file as a Document.</div>
     <div style="overflow:auto;border:1px solid var(--b);border-radius:8px;background:#fff"><img src="${url}" alt="Pre-plan snapshot" style="display:block;max-width:100%;height:auto"></div>
   </div>`;
   ov.addEventListener('mousedown',e=>{ if(e.target===ov) closePrePlanModal(); });
