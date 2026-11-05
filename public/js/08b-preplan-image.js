@@ -66,7 +66,6 @@ async function openPrePlanSnapshot(){
 
 function _showPrePlanModal(url){
   closePrePlanModal();
-  const canShare=!!(navigator.canShare && navigator.canShare({files:[new File([_ppBlob],_ppName,{type:'image/png'})]}));
   const ov=document.createElement('div');
   ov.id='pp-ov';
   ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
@@ -74,16 +73,13 @@ function _showPrePlanModal(url){
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
       <div style="font-family:var(--cond);font-weight:700;letter-spacing:2px;font-size:13px">📸 PRE-PLAN SNAPSHOT</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-amber" onclick="whatsappPrePlan()">💬 WHATSAPP</button>
-        ${canShare?'<button class="btn btn-amber" onclick="sharePrePlanImage()">📤 SHARE</button>':''}
-        <button class="btn btn-ghost" onclick="copyPrePlanImage()">📋 COPY IMAGE</button>
-        <button class="btn btn-ghost" onclick="copyPrePlanText()">📝 COPY TEXT</button>
+        <button class="btn btn-amber" onclick="sharePrePlanImage()">📤 SHARE</button>
         <button class="btn btn-ghost" onclick="downloadPrePlanImage()">⬇ DOWNLOAD</button>
         <button class="btn btn-ghost" onclick="closePrePlanModal()">✕ CLOSE</button>
       </div>
     </div>
     <pre id="pp-msg" style="margin:0;padding:8px 10px;background:var(--surf2);border:1px solid var(--b);border-radius:8px;font-family:var(--mono);font-size:11px;white-space:pre-wrap">${prePlanMessage()}</pre>
-    <div style="font-size:10px;color:var(--txt3)">💬 WHATSAPP copies the picture and opens WhatsApp with the message above — pick the group, then paste (Ctrl+V) the picture. Tip: WhatsApp shrinks photos; for full sharpness send the downloaded file as a Document.</div>
+    <div style="font-size:10px;color:var(--txt3)">📤 SHARE sends the picture with the message above — choose WhatsApp, then the group. If your browser can't share pictures, SHARE copies the picture and opens WhatsApp with the message ready: pick the group and paste (Ctrl+V). Tip: WhatsApp shrinks photos; for full sharpness send the downloaded file as a Document.</div>
     <div style="overflow:auto;border:1px solid var(--b);border-radius:8px;background:#fff"><img src="${url}" alt="Pre-plan snapshot" style="display:block;max-width:100%;height:auto"></div>
   </div>`;
   ov.addEventListener('mousedown',e=>{ if(e.target===ov) closePrePlanModal(); });
@@ -109,7 +105,13 @@ async function copyPrePlanText(){
   try{ await navigator.clipboard.writeText(prePlanMessage()); showToast('Message copied','ok',1800); }
   catch(e){ showToast('Copy not allowed by this browser','err',3000); }
 }
+// One button does it all: native share sheet (picture + message) where the browser supports it,
+// otherwise copy the picture and open WhatsApp with the message pre-filled.
 async function sharePrePlanImage(){
-  try{ await navigator.share({files:[new File([_ppBlob],_ppName,{type:'image/png'})],text:prePlanMessage()}); }
-  catch(e){ if(e.name!=='AbortError') showToast('Share failed — use Download','err',3000); }
+  const file=new File([_ppBlob],_ppName,{type:'image/png'});
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file],text:prePlanMessage()}); return; }
+    catch(e){ if(e.name==='AbortError') return; /* otherwise fall through to the copy + WhatsApp route */ }
+  }
+  await whatsappPrePlan();
 }
