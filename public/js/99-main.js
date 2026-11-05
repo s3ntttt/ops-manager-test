@@ -31,7 +31,7 @@
           }
           applyUser(data.user);
           document.getElementById('access-ov').style.display='none';
-          fbSignIn();
+          fbSignIn(data.firebaseToken);
         } else {
           // Token expired — show login screen
           sessionStorage.removeItem('ops_token');

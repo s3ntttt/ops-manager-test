@@ -127,3 +127,8 @@ quirk causes a bug, so it can't come back. The 🔍 DEBUG panel is hidden by def
 yesterday/today/tomorrow (DAY + NIGHT) and compares it with the last copy it stored in Firebase
 (`settings/rosterSnap/…`). Changes to who is on duty are written to the activity log as `[ROSTER]` lines, so they
 show up even if nobody had the app open. Needs the Firebase database to allow the same anonymous access the app uses.
+
+## Database security
+`lib/firebase-token.js` signs a Firebase sign-in token for every login (claim `mode` = edit / view) when the Railway variable
+`FIREBASE_SERVICE_ACCOUNT` is set. With the rules in `FIREBASE_SECURITY.md`, only edit logins can write to the database.
+Without the variable the app falls back to anonymous sign-in, so nothing breaks while you set it up.

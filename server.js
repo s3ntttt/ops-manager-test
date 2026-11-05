@@ -12,6 +12,7 @@ const rateLimit  = require('express-rate-limit');
 const jwt        = require('jsonwebtoken');
 const path       = require('path');
 const crypto     = require('crypto');
+const { createFirebaseToken } = require('./lib/firebase-token');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -87,6 +88,8 @@ function findUser(code) {
   }
   return found;
 }
+// Firebase sign-in token carrying the person's mode, so the database rules can allow writes for "edit" logins only.
+const fbTokenFor = user => createFirebaseToken('u_' + user.name, { mode: user.mode, name: user.name });
 const signFor = user => jwt.sign({ role: 'ops', name: user.name, mode: user.mode }, process.env.JWT_SECRET, { expiresIn: TOKEN_TTL });
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
@@ -112,7 +115,7 @@ app.post('/api/auth', authLimiter, (req, res) => {
     try {
       const old = jwt.verify(existingToken, process.env.JWT_SECRET);
       const user = { name: old.name || 'TEAM', mode: old.mode === 'view' ? 'view' : 'edit' };
-      return res.json({ token: signFor(user), firebaseConfig, user });
+      return res.json({ token: signFor(user), firebaseConfig, firebaseToken: fbTokenFor(user), user });
     } catch {
       return res.status(401).json({ error: 'Session expired. Please log in again.' });
     }
@@ -129,7 +132,7 @@ app.post('/api/auth', authLimiter, (req, res) => {
 
   // Return the Firebase config so the browser can initialise the SDK
   // Safe: config is only handed out after the correct access code is provided
-  res.json({ token: signFor(user), firebaseConfig, user: { name: user.name, mode: user.mode } });
+  res.json({ token: signFor(user), firebaseConfig, firebaseToken: fbTokenFor(user), user: { name: user.name, mode: user.mode } });
 });
 
 /**

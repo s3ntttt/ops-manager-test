@@ -104,7 +104,7 @@ async function checkAccess(){
     applyUser(data.user);
 
     document.getElementById('access-ov').style.display = 'none';
-    fbSignIn();
+    fbSignIn(data.firebaseToken);
 
   } catch(e) {
     errEl.textContent = 'Could not reach server. Is it running?';
@@ -145,10 +145,14 @@ document.addEventListener('visibilitychange', ()=>{
   if(document.visibilityState==='visible' && Date.now()-_lastTokenRefresh > 10*60*1000) refreshSession();
 });
 
-function fbSignIn(){
+// customToken (from the server) lets the database know whether this is an "edit" or a "view" login.
+// Without one (server not configured yet) or if it is refused, fall back to the old anonymous sign-in.
+function fbSignIn(customToken){
   const el=document.getElementById('save-ts');
   if(el) el.textContent='☁ Connecting…';
-  fbAuth.signInAnonymously()
+  (customToken
+      ? fbAuth.signInWithCustomToken(customToken).catch(e=>{ console.warn('Custom sign-in failed, using anonymous:',e.code||e); return fbAuth.signInAnonymously(); })
+      : fbAuth.signInAnonymously())
     .then(()=>{
       fbReady=true;
       if(el) el.textContent='☁ Connected';

@@ -6,6 +6,9 @@ const jwt = require('jsonwebtoken');
 const PORT = 3200 + Math.floor(Math.random() * 500);
 const SECRET = 'test-secret-for-auth-tests';
 let proc;
+const { generateKeyPairSync } = require('node:crypto');
+const KEYS = generateKeyPairSync('rsa', { modulusLength: 2048, publicKeyEncoding: { type: 'spki', format: 'pem' }, privateKeyEncoding: { type: 'pkcs8', format: 'pem' } });
+const SERVICE_ACCOUNT = JSON.stringify({ client_email: 'svc@test-project.iam.gserviceaccount.com', private_key: KEYS.privateKey });
 const post = (body) => fetch(`http://localhost:${PORT}/api/auth`, {
   method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
 });
@@ -13,7 +16,7 @@ const post = (body) => fetch(`http://localhost:${PORT}/api/auth`, {
 test.before(async () => {
   proc = spawn(process.execPath, ['server.js'], {
     cwd: require('path').join(__dirname, '..'),
-    env: { ...process.env, PORT, JWT_SECRET: SECRET, ACCESS_CODE: 'legacy1',
+    env: { ...process.env, PORT, JWT_SECRET: SECRET, ACCESS_CODE: 'legacy1', FIREBASE_SERVICE_ACCOUNT: SERVICE_ACCOUNT,
       USER_CODES: 'WILSENT:abc123:edit;amir:Xyz789:view\nBADENTRY;ZUL:zzz:edit' },
     stdio: 'ignore',
   });
@@ -52,4 +55,20 @@ test('renewal keeps the same person and mode, with a fresh token', async () => {
   assert.deepEqual(renewed.user, { name: 'AMIR', mode: 'view' });
   assert.ok(jwt.decode(renewed.token).exp > jwt.decode(first.token).exp);
   assert.equal((await post({ token: 'garbage' })).status, 401);
+});
+
+test('login also returns a Firebase sign-in token carrying the person\'s mode (for the database rules)', async () => {
+  const check = async (code, name, mode) => {
+    const d = await (await post({ code })).json();
+    assert.ok(d.firebaseToken, 'firebaseToken missing');
+    const p = jwt.verify(d.firebaseToken, KEYS.publicKey, { algorithms: ['RS256'], audience: 'https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit' });
+    assert.equal(p.iss, 'svc@test-project.iam.gserviceaccount.com');
+    assert.equal(p.uid, 'u_' + name);
+    assert.deepEqual(p.claims, { mode, name });
+    // renewing with the session token keeps the same mode
+    const r = await (await post({ token: d.token })).json();
+    assert.equal(jwt.decode(r.firebaseToken).claims.mode, mode);
+  };
+  await check('abc123', 'WILSENT', 'edit');
+  await check('xyz789', 'AMIR', 'view');
 });
