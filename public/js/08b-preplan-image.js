@@ -67,7 +67,7 @@ function _showPrePlanModal(url){
       <div style="font-family:var(--cond);font-weight:700;letter-spacing:2px;font-size:13px">📸 PRE-PLAN SNAPSHOT</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-amber" onclick="copyPrePlanImage()">📋 COPY IMAGE</button>
-        ${canShare?'<button class="btn btn-green" onclick="sharePrePlanImage()">📤 SHARE</button>':''}
+        ${canShare?'<button class="btn btn-amber" onclick="sharePrePlanImage()">📤 SHARE</button>':''}
         <button class="btn btn-ghost" onclick="downloadPrePlanImage()">⬇ DOWNLOAD</button>
         <button class="btn btn-ghost" onclick="closePrePlanModal()">✕ CLOSE</button>
       </div>
