@@ -231,8 +231,21 @@ function savePermTrainees(){
 // ═══════════════════════════════════
 // MOC SECTION (shown in LO tab)
 // ═══════════════════════════════════
+// Duty Engineers in display order: core-shift DEs first (roster order), backup DEs always behind them.
+function mocOrdered(){
+  const staff=S.staff.filter(s=>isMocStaff(s));
+  return [...staff.filter(s=>!s.isBackup), ...staff.filter(s=>s.isBackup)];
+}
+// Names of the DEs on duty, core first, then backups (roster backups, then manually added backups that are AVAIL).
+function mocActiveNames(){
+  return [
+    ...mocOrdered().filter(s=>isActive(effAvail(s))).map(s=>displayName(s)),
+    ...(S.backups.moc||[]).filter(b=>b.status==='AVAIL').map(b=>b.name),
+  ];
+}
+
 function renderMocSection(){
-  const mocStaff = S.staff.filter(s=>isMocStaff(s));
+  const mocStaff = mocOrdered();
   const mocBk    = S.backups.moc||[];
   const avail    = mocStaff.filter(s=>isActive(effAvail(s))).length + mocBk.filter(b=>b.status==='AVAIL').length;
   const total    = mocStaff.length + mocBk.length;

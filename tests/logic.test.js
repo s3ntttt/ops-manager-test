@@ -90,3 +90,20 @@ test('staffMatchInput: nickname vs compound shortName (AMIR vs AMIR SYAMIM)', ()
   assert.equal(app.ctx.staffMatchInput(syamim, 'AMIR SYAMIM'), true);
   S.nicknames = {};
 });
+
+test('Duty Engineers: core shift first, backups always behind (roster backups and manual backups)', () => {
+  const { loadApp } = require('./helpers');
+  const app = loadApp();
+  app.run(`
+    const av = { st:'WORKING', lbl:'NIGHT', cls:'working', badge:'bwk', raw:'NIGHT' };
+    S.nicknames = {};
+    S.overrides = {};
+    S.staff = [
+      { id:'B1_BK', fullName:'BACKUP ONE', shortName:'BKONE', team:'MOC', desig:'DUTY ENGINEER', isBackup:true,  avail:av },
+      { id:'C1',    fullName:'CORE ONE',   shortName:'COREONE', team:'MOC', desig:'DUTY ENGINEER', isBackup:false, avail:av },
+      { id:'C2',    fullName:'CORE TWO',   shortName:'CORETWO', team:'MOC', desig:'DUTY ENGINEER', isBackup:false, avail:av },
+    ];
+    S.backups.moc = [{ name:'MANUAL', status:'AVAIL' }, { name:'OFFGUY', status:'OFF' }];
+  `);
+  assert.deepEqual(JSON.parse(app.run('JSON.stringify(mocActiveNames())')), ['COREONE', 'CORETWO', 'BKONE', 'MANUAL']);
+});

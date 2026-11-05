@@ -66,8 +66,7 @@ function _renderSummaryInner(el){
     const key={LO:'lo',IRR:'irreg',WO:'wo',CIM:'cim'}[team]||'lo';
     return `<button class="btn btn-ghost btn-sm np" style="font-size:8px;padding:1px 5px;margin-left:4px" onclick="openActingGLModal('${team}','${key}')">✎</button>`;
   };
-  const mocStaff   = S.staff.filter(s=>isMocStaff(s)&&isActive(effAvail(s)));
-  const mocNames   = mocStaff.length?mocStaff.map(s=>displayName(s)).join(' / '):'—';
+  const mocNames   = mocActiveNames().join(' / ')||'—';
 
   // Staff lists — own + cross-shift backups + manual backups
   const xsBk = S.staff.filter(s=>s.isBackup&&isActive(effAvail(s)));

@@ -26,7 +26,7 @@ function generateBriefingText(){
   };
 
   // MOC
-  const mocNames=S.staff.filter(s=>isMocStaff(s)&&isActive(effAvail(s))).map(s=>displayName(s)).join(' / ')||'—';
+  const mocNames=mocActiveNames().join(' / ')||'—';
 
   // Certifiers — all on-shift
   const isOnShift=s=>{const a=effAvail(s);if(a.st==='WORKING'||a.st==='BACKUP_SHIFT')return true;if(S.overrides[s.id])return false;const raw=(s.schedVal||'').toUpperCase().trim();return raw.startsWith(shift.toUpperCase());};
