@@ -18,3 +18,13 @@ test('inline handlers that edit S.* also save', () => {
   }
   assert.deepEqual(bad, [], 'these handlers change data but never save it:\n' + bad.join('\n'));
 });
+
+test('view-only guard: only look/print/share handlers are allowed, anything that edits is blocked', () => {
+  const { loadApp } = require('./helpers');
+  const app = loadApp();
+  const ok = c => { app.ctx.__c = c; return app.run('voAllowedHandler(__c)'); };
+  for (const safe of ['switchTab(\'summary\')', 'printSummary()', 'openPrePlanSnapshot()', 'event.stopPropagation();closePrePlanModal()', "_adpDept='LO';renderAdpModal()", 'toggleDark()'])
+    assert.equal(ok(safe), true, safe);
+  for (const bad of ['cycleOvr(\'M1\')', 'event.stopPropagation();editNickname(\'a\',\'b\',event)', 'rmSoc(2)', "S.soc[0].done=true;scheduleSave()", 'openRolesModal()', 'takeSnapshot()', 'toggleSS(\'x\')', 'confirmSwap()'])
+    assert.equal(ok(bad), false, bad);
+});

@@ -301,3 +301,7 @@ table[data-grid] tr.grid-drop-before td{border-top:2px solid #3B82F6}
 table[data-grid] tr.grid-drop-after td{border-bottom:2px solid #3B82F6}
 table[data-grid] input{min-width:0}
 @media print{ table[data-grid] tr.grid-sel td{box-shadow:none} }
+
+/* view-only login: edit controls look switched off */
+body.viewonly .vo-block{opacity:.4;cursor:not-allowed}
+body.viewonly input:read-only:not(#staff-search):not(#adp-search):not(#access-input){cursor:default}

@@ -53,6 +53,7 @@ function applyUser(u){
   if(chip && _user.name){ chip.style.display='inline-block'; chip.textContent='👤 '+_user.name+(isViewOnly()?' · VIEW ONLY':''); chip.classList.toggle('vo',isViewOnly()); }
   const lo=document.getElementById('logout-btn'); if(lo) lo.style.display=_user.name?'inline-block':'none';
   if(isViewOnly()) lockFirebaseWrites();
+  if(typeof applyViewOnlyDom==='function') applyViewOnlyDom();
 }
 
 // Log out: save anything pending, leave the live session, forget the token, and return to the code screen.
