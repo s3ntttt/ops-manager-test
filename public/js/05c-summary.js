@@ -220,7 +220,7 @@ function _renderSummaryInner(el){
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
       <div style="${col}">
         <div style="font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:2px;color:var(--txt);margin-bottom:4px;padding-bottom:4px;border-bottom:1px solid var(--b)">TECH (L/O) <span style="color:var(--txt3);font-size:9px">${loTechAvail}</span></div>
-        <div style="font-size:8px;color:var(--txt3);margin-bottom:4px">Click name to toggle SS (3 max)</div>
+        <div class="np" style="font-size:8px;color:var(--txt3);margin-bottom:4px">Click name to toggle SS (3 max)</div>
         ${numList(loTech, [], {ss:true})}
       </div>
       <div style="${col}">
@@ -611,28 +611,29 @@ function _renderSummaryInner(el){
   const xsBkByShift = {};
   xsBkAll2.forEach(s=>{ const sh=s.fromShift||'?'; if(!xsBkByShift[sh]) xsBkByShift[sh]=[]; xsBkByShift[sh].push(s); });
   const xsBanner = xsBkAll2.length ? `
-    <div style="background:var(--bbg);border:1px solid var(--blue);border-radius:var(--r);padding:8px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div data-pp="xs" style="background:var(--bbg);border:1px solid var(--blue);border-radius:var(--r);padding:8px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <span style="background:var(--blue);color:#fff;border-radius:3px;padding:1px 7px;font-size:9px;font-weight:700;letter-spacing:1px">${xsBkAll2.length} CROSS-SHIFT BK</span>
       <span style="font-size:10px;color:var(--blue)">${Object.entries(xsBkByShift).map(([sh,ppl])=>`SHIFT ${sh}: ${ppl.map(s=>displayName(s)).join(', ')}`).join(' · ')}</span>
     </div>` : '';
 
   let h=`
     <div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <div>
+      <div data-pp="title">
         <div style="font-family:var(--cond);font-size:20px;font-weight:700;letter-spacing:3px;color:var(--amber)">${dateStr} · ${shift}</div>
         <div style="font-size:9px;color:var(--txt2);margin-top:1px;letter-spacing:1px">SHIFT ${document.getElementById('shift-group-sel')?.value||'C'} · SUMMARY OPS</div>
       </div>
       <button class="btn btn-amber np" onclick="openRolesModal()">✎ ASSIGN ROLES</button>
       <button class="btn btn-ghost np" onclick="openAllocModal()" style="font-size:11px">📋 PASTE ALLOCATION</button>
       <button class="btn btn-ghost np" onclick="openBriefingModal()" style="font-size:11px">📤 GENERATE TEXT</button>
+      <button class="btn btn-ghost np" onclick="openPrePlanSnapshot()" style="font-size:11px">📸 PRE-PLAN SNAPSHOT</button>
       <button class="btn btn-ghost np" onclick="openExclusionsModal()" style="font-size:11px;color:var(--red)">🚫 HIDDEN STAFF${(S.exclusions||[]).length?` (${S.exclusions.length})`:''}</button>
     </div>
     ${xsBanner}
     ${adpBannerHtml}${wcAuthBannerHtml}
     ${conflictBanner}
     <div style="display:grid;grid-template-columns:200px 1fr 300px;gap:10px;align-items:start">
-      <div>${leftPanel}</div>
-      <div>${midPanel}</div>
+      <div data-pp="left">${leftPanel}</div>
+      <div data-pp="mid">${midPanel}</div>
       <div>${topRightPanel}</div>
     </div>
     ${bottomPanel}
