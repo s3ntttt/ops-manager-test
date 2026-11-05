@@ -20,3 +20,11 @@ test('socReorder moves selected rows before the drop position', () => {
   assert.deepEqual(run(['a', 'b', 'c', 'd'], [1], 4), { list: ['a', 'c', 'd', 'b'], start: 3, count: 1 });
   assert.deepEqual(run(['a', 'b', 'c'], [1], 1).list, ['a', 'b', 'c']);     // dropped on itself
 });
+
+test('copy format carries the tick as a 5th column', () => {
+  const app = loadApp();
+  app.run("S.soc=[{flight:'LDG',name:'A',time:'0700',remark:'',done:true},{flight:'TOW',name:'B',time:'',remark:''}]");
+  assert.equal(app.run('_socRowsTsv([0,1])'), 'LDG\tA\t0700\t\t✓\nTOW\tB\t\t\t');
+  assert.equal(app.run("_socIsTick('✓')"), true);
+  assert.equal(app.run("_socIsTick('')"), false);
+});

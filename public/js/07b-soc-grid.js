@@ -41,7 +41,9 @@ function socAfterRender(){ // called at the end of every renderSummary()
   _socSel=new Set([..._socSel].filter(i=>i<S.soc.length));
   _socPaint();
 }
-function _socRowsTsv(idx){ return idx.map(i=>SOC_COLS.map(k=>String(S.soc[i][k]||'').replace(/[\t\r\n]+/g,' ')).join('\t')).join('\n'); }
+// 5th column = the ✓ tick, so it travels with the row on copy / paste
+function _socRowsTsv(idx){ return idx.map(i=>SOC_COLS.map(k=>String(S.soc[i][k]||'').replace(/[\t\r\n]+/g,' ')).concat(S.soc[i].done?'✓':'').join('\t')).join('\n'); }
+const _socIsTick=v=>/^(✓|✔|x|1|true|yes|done)$/i.test(String(v||'').trim());
 function _socSelActive(e){
   if(!_socSel.size) return false;
   const t=e.target; if(!t) return true;
@@ -121,7 +123,7 @@ document.addEventListener('paste',e=>{
     const rows=socParseClipboard(text); if(!rows.length) return;
     e.preventDefault();
     const at=Math.max(..._socSel)+1;
-    S.soc.splice(at,0,...rows.map(r=>({flight:r[0]||'',name:r[1]||'',time:r[2]||'',remark:r[3]||''})));
+    S.soc.splice(at,0,...rows.map(r=>{ const o={flight:r[0]||'',name:r[1]||'',time:r[2]||'',remark:r[3]||''}; if(_socIsTick(r[4])) o.done=true; return o; }));
     _socSel=new Set(rows.map((_,k)=>at+k)); _socChanged(); return;
   }
   // 2) cursor in a SOC cell and the clipboard is multi-cell (e.g. copied from Excel) → fill the grid from that cell
@@ -131,6 +133,7 @@ document.addEventListener('paste',e=>{
     rows.forEach((cells,k)=>{
       while(r0+k>=S.soc.length) S.soc.push(_socBlank());
       cells.forEach((v,j)=>{ if(c0+j<SOC_COLS.length) S.soc[r0+k][SOC_COLS[c0+j]]=v; });
+      if(c0===0 && cells.length>4) S.soc[r0+k].done=_socIsTick(cells[4]) || undefined;
     });
     _socChanged([r0,c0]);
   }
