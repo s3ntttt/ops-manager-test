@@ -6,6 +6,7 @@ function renderSummary(){
   if(!el) return;
   try {
     _renderSummaryInner(el);
+    if(typeof socAfterRender==='function') socAfterRender();
   } catch(err){
     el.innerHTML=`<div style="padding:20px;max-width:600px">
       <div style="background:var(--rbg);border:1px solid var(--red);border-radius:8px;padding:16px 20px">
@@ -453,7 +454,7 @@ function _renderSummaryInner(el){
         <div style="font-size:9px;color:var(--amber);font-weight:700;letter-spacing:2px">SOC</div>
         <button class="btn btn-ghost btn-sm np" onclick="addSoc()" style="font-size:9px;padding:2px 8px">+ ADD</button>
       </div>
-      <table style="width:100%;border-collapse:collapse;font-size:8px;table-layout:fixed">
+      <table id="soc-table" style="width:100%;border-collapse:collapse;font-size:8px;table-layout:fixed">
         <tr style="background:var(--surf2)">
           <th style="width:16px;padding:1px 3px;font-size:7px;color:var(--txt3);font-weight:400;text-align:left;border:1px solid var(--b)">#</th>
           <th style="width:36px;padding:1px 3px;font-size:7px;color:var(--txt3);font-weight:400;text-align:left;border:1px solid var(--b)">REG</th>
@@ -470,12 +471,12 @@ function _renderSummaryInner(el){
           const isHo=rmk.includes('HO');
           const rowBg=done?'#D1FAE5':isExt?'#CFFAFE':isHo?'#FEF3C7':'transparent';
           const rowTxt=done?'#065F46':isExt?'#0E7490':isHo?'var(--yellow)':'var(--txt)';
-          return `<tr style="background:${rowBg};color:${rowTxt}">
-          <td style="padding:1px 3px;border:1px solid var(--b);font-size:8px;color:var(--txt3)">${i+1}</td>
-          <td style="padding:1px 3px;border:1px solid var(--b)"><input value="${sr.flight}" oninput="S.soc[${i}].flight=this.value;scheduleSave()" placeholder="LDG" style="background:transparent;border:none;color:${rowTxt};font-family:var(--mono);font-size:8px;width:32px;outline:none"></td>
-          <td style="padding:1px 3px;border:1px solid var(--b)"><input value="${sr.name}" oninput="S.soc[${i}].name=this.value;scheduleSave()" placeholder="Name" style="background:transparent;border:none;color:${rowTxt};font-family:var(--mono);font-size:8px;width:48px;outline:none"></td>
-          <td style="padding:1px 3px;border:1px solid var(--b)"><input value="${sr.time}" oninput="S.soc[${i}].time=this.value;scheduleSave()" placeholder="0715-1030" style="background:transparent;border:none;color:${rowTxt};font-family:var(--mono);font-size:8px;width:68px;outline:none"></td>
-          <td style="padding:1px 3px;border:1px solid var(--b)"><input value="${sr.remark||''}" oninput="S.soc[${i}].remark=this.value;scheduleSave()" placeholder="EXT/HO" style="background:transparent;border:none;color:${rowTxt};font-family:var(--mono);font-size:8px;width:36px;outline:none"></td>
+          return `<tr data-soc-i="${i}" style="background:${rowBg};color:${rowTxt}">
+          <td class="soc-handle" data-soc-h="${i}" draggable="true" tabindex="0" title="Click to select the row · drag to move it · Ctrl+C / Ctrl+X / Ctrl+V" style="padding:1px 3px;border:1px solid var(--b);font-size:8px;color:var(--txt3)">${i+1}</td>
+          <td style="padding:1px 3px;border:1px solid var(--b)"><input value="${sr.flight}" data-soc-r="${i}" data-soc-c="0" oninput="S.soc[${i}].flight=this.value;scheduleSave()" placeholder="LDG" style="background:transparent;border:none;color:${rowTxt};font-family:var(--mono);font-size:8px;width:32px;outline:none"></td>
+          <td style="padding:1px 3px;border:1px solid var(--b)"><input value="${sr.name}" data-soc-r="${i}" data-soc-c="1" oninput="S.soc[${i}].name=this.value;scheduleSave()" placeholder="Name" style="background:transparent;border:none;color:${rowTxt};font-family:var(--mono);font-size:8px;width:48px;outline:none"></td>
+          <td style="padding:1px 3px;border:1px solid var(--b)"><input value="${sr.time}" data-soc-r="${i}" data-soc-c="2" oninput="S.soc[${i}].time=this.value;scheduleSave()" placeholder="0715-1030" style="background:transparent;border:none;color:${rowTxt};font-family:var(--mono);font-size:8px;width:68px;outline:none"></td>
+          <td style="padding:1px 3px;border:1px solid var(--b)"><input value="${sr.remark||''}" data-soc-r="${i}" data-soc-c="3" oninput="S.soc[${i}].remark=this.value;scheduleSave()" placeholder="EXT/HO" style="background:transparent;border:none;color:${rowTxt};font-family:var(--mono);font-size:8px;width:36px;outline:none"></td>
           <td class="np" style="padding:1px 3px;border:1px solid var(--b);text-align:center">
             <input type="checkbox" ${done?'checked':''} onchange="S.soc[${i}].done=this.checked;scheduleSave();renderSummary()" style="cursor:pointer;accent-color:#10B981">
           </td>

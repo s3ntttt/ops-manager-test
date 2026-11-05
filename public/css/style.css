@@ -292,3 +292,12 @@ select option{background:var(--surf2)}
 #user-chip.vo{background:#FEF3C7;border-color:var(--amber);color:#92400E}
 body.viewonly::before{content:'VIEW ONLY — you can look around, but changes are not saved';display:block;position:sticky;top:0;z-index:9000;text-align:center;font-size:11px;font-weight:700;letter-spacing:1px;padding:4px;background:var(--amber);color:#fff}
 .alog-by{font-size:9px;color:var(--txt3)}
+
+/* SOC table — spreadsheet-style row selection / drag */
+#soc-table .soc-handle{cursor:grab;user-select:none;text-align:center}
+#soc-table tr.soc-sel td{box-shadow:inset 0 0 0 9999px rgba(59,130,246,.28)}
+#soc-table tr.soc-sel td.soc-handle{font-weight:700;color:var(--txt)}
+#soc-table tr.soc-drop-before td{border-top:2px solid #3B82F6}
+#soc-table tr.soc-drop-after td{border-bottom:2px solid #3B82F6}
+#soc-table input{min-width:0}
+@media print{ #soc-table tr.soc-sel td{box-shadow:none} }
