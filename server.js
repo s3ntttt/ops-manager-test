@@ -196,5 +196,7 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'change_this_to_a_long
 
 app.listen(PORT, () => {
   console.log(`\n  OPS MANAGER server running`);
-  console.log(`  → http://localhost:${PORT}\n`);
+  console.log(`  → http://localhost:${PORT}`);
+  require('./lib/watcher').start();
+  console.log('');
 });

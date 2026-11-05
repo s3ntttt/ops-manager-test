@@ -114,3 +114,9 @@ npm test
 
 Runs the roster-parsing and headcount tests (Node 18+, no extra packages). Add a test whenever a roster
 quirk causes a bug, so it can't come back. The 🔍 DEBUG panel is hidden by default — open the site with `?debug=1` to show it.
+
+## Sheet watcher
+`lib/watcher.js` runs inside the server (every `WATCH_INTERVAL_MIN`, default 5). It re-reads the roster sheet for
+yesterday/today/tomorrow (DAY + NIGHT) and compares it with the last copy it stored in Firebase
+(`settings/rosterSnap/…`). Changes to who is on duty are written to the activity log as `[ROSTER]` lines, so they
+show up even if nobody had the app open. Needs the Firebase database to allow the same anonymous access the app uses.

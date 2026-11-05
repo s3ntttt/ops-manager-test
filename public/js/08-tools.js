@@ -274,27 +274,20 @@ function toggleActLog(){
 const ROSTER_POLL_MS=3*60*1000;
 let _rosterPolling=false, _lastRosterPoll=Date.now();
 
-function _fmtHc(n){ const r=Math.round(n*100)/100; return Number.isInteger(r)?String(r):String(r); }
-
 function logRosterChanges(d){
   const key=S._fbKey||fbKey();
-  d.changes.forEach(c=>{
-    const detail=`${c.name}: ${c.from} → ${c.to} (${c.delta>0?'+':''}${_fmtHc(c.delta)})`;
-    _logRosterEntry(key, detail, `${c.name}|${c.from}|${c.to}`);
-  });
-  _logRosterEntry(key, `On duty ${_fmtHc(d.before)} → ${_fmtHc(d.after)} (sheet updated)`, `total|${d.before}|${d.after}`);
+  rosterChangeEntries(d).forEach(e=>_logRosterEntry(key, e.detail, e.sig));
 }
 
-// Several people may have the app open and all notice the same sheet edit — a transaction on a content-derived key
-// keeps it to one shared log line (a repeat of the identical change within 15 min is skipped).
+// Several people (and the server watcher) may all notice the same sheet edit — a transaction on a content-derived
+// key keeps it to one shared log line (a repeat of the identical change within 60 min is skipped).
 function _logRosterEntry(key, detail, sig){
   const entry={ts:Date.now(), name:'[ROSTER]', action:detail, _evt:true, by:'SHEET'};
   _actLog.unshift(entry); if(_actLog.length>200) _actLog.length=200;
   _renderActLog();
   if(!fbReady||!key) return;
-  let h=0; for(const ch of sig) h=(h*31+ch.charCodeAt(0))|0;
-  fbDb.ref(`activityLog/${key}/rs_${(h>>>0).toString(36)}`).transaction(cur=>{
-    if(cur && Date.now()-cur.ts<15*60*1000) return; // someone else just logged it
+  fbDb.ref(`activityLog/${key}/${rosterLogKey(sig)}`).transaction(cur=>{
+    if(cur && Date.now()-cur.ts<60*60*1000) return; // someone else just logged it
     return entry;
   }).catch(()=>{});
 }

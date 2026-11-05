@@ -27,6 +27,18 @@ function diffRoster(oldStaff, newStaff){
   return { changes, before:sum(oldStaff), after:sum(newStaff) };
 }
 
+// Shared by the browser and the server-side sheet watcher so both write identical log lines.
+const _fmtHc=n=>String(Math.round(n*100)/100);
+function rosterChangeEntries(d){
+  const out=d.changes.map(c=>({ detail:`${c.name}: ${c.from} → ${c.to} (${c.delta>0?'+':''}${_fmtHc(c.delta)})`, sig:`${c.name}|${c.from}|${c.to}` }));
+  out.push({ detail:`On duty ${_fmtHc(d.before)} → ${_fmtHc(d.after)} (sheet updated)`, sig:`total|${d.before}|${d.after}` });
+  return out;
+}
+function rosterLogKey(sig){ let h=0; for(const ch of sig) h=(h*31+ch.charCodeAt(0))|0; return 'rs_'+(h>>>0).toString(36); }
+// Compact copy of a roster for comparing against later (kept in Firebase by the server watcher).
+function rosterSnapshot(staff){ const o={}; staff.forEach(s=>{ o[s.id]={w:onDutyWeight(s),v:s.schedVal||'',n:s.shortName||s.fullName||s.id}; }); return o; }
+function snapshotToStaff(snap){ return Object.keys(snap||{}).map(id=>({ id, shortName:snap[id].n, schedVal:snap[id].v, avail:{ st:snap[id].w>0?'WORKING':'OFF', half:snap[id].w===0.5 } })); }
+
 let _rosterGen=0; // increment on each call; stale calls abort on completion
 async function loadRoster(){
   const gen=++_rosterGen; // capture this call's generation
