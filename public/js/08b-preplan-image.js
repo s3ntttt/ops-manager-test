@@ -4,7 +4,7 @@
 // Built from copies of the live summary elements, so it always matches the screen.
 // ═══════════════════════════════════
 const HTML2CANVAS_URL='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-let _ppCanvas=null, _ppBlob=null, _ppName='preplan.png';
+let _ppBlob=null, _ppName='preplan.png';
 
 function _loadHtml2Canvas(){
   if(window.html2canvas) return Promise.resolve();
@@ -55,7 +55,6 @@ async function openPrePlanSnapshot(){
   try{
     await _loadHtml2Canvas();
     const canvas=await html2canvas(wrap,{backgroundColor:'#ffffff',scale:Math.max(3,Math.ceil(window.devicePixelRatio||1)),useCORS:true,logging:false});
-    _ppCanvas=canvas;
     _ppBlob=await new Promise(r=>canvas.toBlob(r,'image/png'));
     const d=(document.getElementById('dp')?.value||'').replace(/-/g,''), sh=document.getElementById('shift-sel')?.value||'', g=document.getElementById('shift-group-sel')?.value||'C';
     _ppName=`PREPLAN_${g}_${d}_${sh}.png`;
@@ -65,23 +64,37 @@ async function openPrePlanSnapshot(){
   }finally{ wrap.remove(); }
 }
 
+// Phone / tablet → SHARE (picture + message go to WhatsApp together).   Computer → DOWNLOAD + COPY TEXT (full quality).
+function _isPhone(){
+  if(navigator.userAgentData && navigator.userAgentData.mobile) return true;
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints>1 && /Mac/i.test(navigator.platform)); // iPadOS
+}
+
 function _showPrePlanModal(url){
-  closePrePlanModal(); _ppCopyStep=0;
+  closePrePlanModal();
+  const phone=_isPhone();
   const ov=document.createElement('div');
   ov.id='pp-ov';
   ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+  const steps=phone
+    ? `<b>📱 On your phone:</b> tap <b>SHARE</b> → choose <b>WhatsApp</b> → pick the group → send. The picture and the message go together.`
+    : `<b>💻 On a computer</b> (WhatsApp Web / Desktop), so the picture stays sharp:<br>
+       1. Click <b>COPY TEXT</b> (copies the message).<br>
+       2. Click <b>DOWNLOAD</b> (saves the picture).<br>
+       3. In the WhatsApp group click the <b>📎 paperclip → Document</b> → choose the downloaded picture, paste the message (Ctrl+V) in the caption box and send.<br>
+       <span style="color:var(--txt3)">(Pasting the picture straight into WhatsApp Web makes it blurry.)</span>`;
   ov.innerHTML=`<div style="background:var(--surf);border-radius:12px;max-width:min(1100px,96vw);max-height:94vh;display:flex;flex-direction:column;padding:14px 16px;gap:10px;box-shadow:0 10px 40px rgba(0,0,0,.4)">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
       <div style="font-family:var(--cond);font-weight:700;letter-spacing:2px;font-size:13px">📸 PRE-PLAN SNAPSHOT</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-amber" onclick="sharePrePlanImage()">📤 SHARE</button>
-        <button id="pp-copy" class="btn btn-ghost" onclick="copyPrePlanAll()">📋 COPY PICTURE</button>
-        <button class="btn btn-ghost" onclick="downloadPrePlanImage()">⬇ DOWNLOAD</button>
+        ${phone
+          ? '<button class="btn btn-amber" onclick="sharePrePlanImage()">📤 SHARE</button>'
+          : '<button class="btn btn-amber" onclick="copyPrePlanText()">📝 COPY TEXT</button><button class="btn btn-amber" onclick="downloadPrePlanImage()">⬇ DOWNLOAD</button>'}
         <button class="btn btn-ghost" onclick="closePrePlanModal()">✕ CLOSE</button>
       </div>
     </div>
+    <div style="font-size:11px;line-height:1.6;color:var(--txt2);background:var(--surf2);border:1px solid var(--b);border-radius:8px;padding:8px 10px">${steps}</div>
     <pre id="pp-msg" style="margin:0;padding:8px 10px;background:var(--surf2);border:1px solid var(--b);border-radius:8px;font-family:var(--mono);font-size:11px;white-space:pre-wrap">${prePlanMessage()}</pre>
-    <div style="font-size:10px;color:var(--txt3)">📤 SHARE sends the picture with the message above — choose WhatsApp, then the group. 📋 COPY: click once to copy the picture and paste it in the chat, then click again (COPY MESSAGE) and paste the message in the caption box. Tip: WhatsApp compresses photos — in its preview tick the HD option, or send the downloaded file as a Document for full sharpness.</div>
     <div style="overflow:auto;border:1px solid var(--b);border-radius:8px;background:#fff"><img src="${url}" alt="Pre-plan snapshot" style="display:block;max-width:100%;height:auto"></div>
   </div>`;
   ov.addEventListener('mousedown',e=>{ if(e.target===ov) closePrePlanModal(); });
@@ -89,64 +102,19 @@ function _showPrePlanModal(url){
 }
 function closePrePlanModal(){ const ov=document.getElementById('pp-ov'); if(ov){ const im=ov.querySelector('img'); if(im) URL.revokeObjectURL(im.src); ov.remove(); } }
 
-async function copyPrePlanImage(){
-  try{
-    await navigator.clipboard.write([new ClipboardItem({'image/png':_ppBlob})]);
-    showToast('Image copied — paste it into the WhatsApp chat','ok',3000);
-  }catch(e){ showToast('Copy not allowed by this browser — use Download','err',3500); }
-}
 function downloadPrePlanImage(){
   const a=document.createElement('a'); a.href=URL.createObjectURL(_ppBlob); a.download=_ppName; document.body.appendChild(a); a.click();
   setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000);
-}
-async function whatsappPrePlan(){
-  await copyPrePlanImage();   // the picture can't be attached through a link, so it goes on the clipboard
-  window.open('https://wa.me/?text='+encodeURIComponent(prePlanMessage()),'_blank','noopener');
+  showToast('Picture downloaded — attach it in WhatsApp as a Document','ok',4000);
 }
 async function copyPrePlanText(){
-  try{ await navigator.clipboard.writeText(prePlanMessage()); showToast('Message copied','ok',1800); }
-  catch(e){ showToast('Copy not allowed by this browser','err',3000); }
+  try{ await navigator.clipboard.writeText(prePlanMessage()); showToast('Message copied — paste it in the caption','ok',3000); }
+  catch(e){ const t=document.getElementById('pp-msg'); if(t){ const r=document.createRange(); r.selectNodeContents(t); const sel=getSelection(); sel.removeAllRanges(); sel.addRange(r); } showToast('Message selected — press Ctrl+C to copy it','ok',3500); }
 }
-// One button does it all: native share sheet (picture + message) where the browser supports it,
-// otherwise copy the picture and open WhatsApp with the message pre-filled.
 async function sharePrePlanImage(){
   const file=new File([_ppBlob],_ppName,{type:'image/png'});
-  if(navigator.canShare && navigator.canShare({files:[file]})){
-    try{ await navigator.share({files:[file],text:prePlanMessage()}); return; }
-    catch(e){ if(e.name==='AbortError') return; /* otherwise fall through to the copy + WhatsApp route */ }
-  }
-  await whatsappPrePlan();
-}
-
-// COPY works in two clicks, because chat apps keep only the picture when a picture and text are on the clipboard together:
-//   1st click → copies the PICTURE   (paste it in the chat; WhatsApp then shows a caption box)
-//   2nd click → copies the MESSAGE   (paste it into the caption box)
-let _ppCopyStep=0;
-function _ppSetCopyLabel(){ const b=document.getElementById('pp-copy'); if(b) b.textContent=_ppCopyStep===0?'📋 COPY PICTURE':'📝 COPY MESSAGE (step 2)'; }
-// WhatsApp Web re-compresses pasted pictures and shrinks anything wider than ~1600 px with a rough resize, which is what
-// makes a big picture look blurry there. So the clipboard copy is pre-shrunk (smoothly) to 1600 px wide — it then goes
-// through WhatsApp's compressor without being resized again. (SHARE / DOWNLOAD keep the full-size picture.)
-function _ppClipboardBlob(){
-  const W=1600;
-  if(!_ppCanvas || _ppCanvas.width<=W) return Promise.resolve(_ppBlob);
-  const c=document.createElement('canvas'); c.width=W; c.height=Math.round(_ppCanvas.height*W/_ppCanvas.width);
-  const x=c.getContext('2d'); x.imageSmoothingEnabled=true; x.imageSmoothingQuality='high';
-  // step down in halves for a cleaner result than one big jump
-  let src=_ppCanvas, w=src.width, h=src.height;
-  while(w/2>W){ const t=document.createElement('canvas'); w=Math.round(w/2); h=Math.round(h/2); t.width=w; t.height=h; const tx=t.getContext('2d'); tx.imageSmoothingQuality='high'; tx.drawImage(src,0,0,w,h); src=t; }
-  x.drawImage(src,0,0,c.width,c.height);
-  return new Promise(r=>c.toBlob(r,'image/png'));
-}
-async function copyPrePlanAll(){
-  if(_ppCopyStep===0){
-    try{
-      await navigator.clipboard.write([new ClipboardItem({'image/png':await _ppClipboardBlob()})]);
-      _ppCopyStep=1; _ppSetCopyLabel();
-      showToast('Picture copied — paste it in WhatsApp, then click COPY MESSAGE here','ok',4500);
-    }catch(e){ showToast('Copy not allowed by this browser — use SHARE or DOWNLOAD','err',3500); }
-  } else {
-    try{ await navigator.clipboard.writeText(prePlanMessage()); showToast('Message copied — paste it in the caption box','ok',3000); }
-    catch(e){ showToast('Copy not allowed by this browser','err',3000); }
-    _ppCopyStep=0; _ppSetCopyLabel();
-  }
+  try{
+    if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file],text:prePlanMessage()}); return; }
+    showToast('Sharing pictures is not supported here — use DOWNLOAD','err',4000);
+  }catch(e){ if(e.name!=='AbortError') showToast('Share failed — try DOWNLOAD','err',3500); }
 }
