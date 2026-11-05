@@ -106,7 +106,7 @@ public/js/             Scripts, loaded in filename order
   06b-briefing-alloc   briefing text, paste-allocation modal
   06c-roles-export     roles modal, print / export
   07-sections          towers, trainees, MOC
-  07b-soc-grid         SOC table: Excel-style Enter/Tab, row select, copy/cut/paste, drag to re-order
+  07b-grid             SOC / PDSC / FGS tables: Excel-style Enter/Tab, row select, copy/cut/paste, drag to re-order
   08-tools             debug panel, snapshots, activity log, presence
   99-main              start-up (must stay last)
 tests/                 Automated tests for parsing + headcount maths
