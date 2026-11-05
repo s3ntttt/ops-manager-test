@@ -282,16 +282,22 @@ function setupPresence(){
   if(_presListener){ fbDb.ref(`presence/${_presKey}`).off('value',_presListener); }
   _presRef=fbDb.ref(`presence/${key}/${_presId}`);
   _presRef.onDisconnect().remove();
-  _presRef.set({at:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{});
+  _presRef.set({at:firebase.database.ServerValue.TIMESTAMP,name:(typeof _user!=='undefined'&&_user&&_user.name)||'?',mode:(typeof _user!=='undefined'&&_user&&_user.mode)||'edit'}).catch(()=>{});
   // Listen to count
   _presListener=fbDb.ref(`presence/${key}`).on('value',snap=>{
-    const count=snap.exists()?Object.keys(snap.val()).length:1;
+    const v=snap.exists()?snap.val():{};
+    const list=Object.keys(v).map(id=>({id,name:(v[id]&&v[id].name)||'?',mode:v[id]&&v[id].mode}));
+    const count=Math.max(list.length,1);
+    // names sorted alphabetically; same person on 2 devices shown once
+    const label=l=>l.name+(l.mode==='view'?' (view)':'');
+    const uniq=[...new Set(list.map(label))].sort();
     const chip=document.getElementById('presence-chip');
     if(chip){
       chip.style.display='inline-block';
-      chip.textContent=`👁 ${count}`;
+      const shown=uniq.slice(0,3).join(', ')+(uniq.length>3?` +${uniq.length-3}`:'');
+      chip.textContent=count===1?'👁 Only you':`👁 ${shown}`;
       chip.classList.toggle('multi',count>1);
-      chip.title=count===1?'Only you are viewing':`${count} people viewing`;
+      chip.title=count===1?'Only you are viewing':`Online now (${count}): ${uniq.join(', ')}`;
     }
   });
 }
