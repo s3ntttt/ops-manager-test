@@ -1210,7 +1210,7 @@ function _renderSummaryInner(el){
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
           ${['ARR','DEP','TOW'].map(k=>`<div style="text-align:center">
             <div style="font-size:8px;color:var(--txt3);letter-spacing:1px;margin-bottom:3px">${k}</div>
-            <input type="text" value="${S.ops[k]}" oninput="S.ops['${k}']=this.value" placeholder="—"
+            <input type="text" value="${S.ops[k]}" oninput="S.ops['${k}']=this.value;scheduleSave()" placeholder="—"
               style="background:var(--bg);border:1px solid var(--b);border-radius:4px;color:var(--amber);font-family:var(--cond);font-size:22px;font-weight:700;text-align:center;width:100%;outline:none;padding:4px 0">
           </div>`).join('')}
         </div>
