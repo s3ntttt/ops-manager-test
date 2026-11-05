@@ -228,7 +228,7 @@ function _evtCls(cat){
   const c=(cat||'').toUpperCase();
   if(c.includes('SWAP')) return 'sw';
   if(c.includes('TRANSFER')) return 'tr';
-  if(c.includes('BACKUP')) return 'bk';
+  if(c.includes('BACKUP')||c.includes('ROSTER')) return 'bk';
   if(c.includes('SS')) return 'ss';
   if(c.includes('GL')) return 'gl';
   if(c.includes('ROLE')) return 'rl';
@@ -266,6 +266,68 @@ function toggleActLog(){
   document.getElementById('actlog-panel').classList.toggle('open',_actLogOpen);
   if(_actLogOpen) _renderActLog();
 }
+
+// ── Live-sheet watcher ──
+// Re-reads the Google Sheet every few minutes (and when the tab comes back to the foreground). If someone's
+// duty status changed in the sheet (MC, AL, shift swap, added as backup...), the roster is refreshed in place —
+// saved allocations are kept — and the change is written to the activity log with the new on-duty headcount.
+const ROSTER_POLL_MS=3*60*1000;
+let _rosterPolling=false, _lastRosterPoll=Date.now();
+
+function _fmtHc(n){ const r=Math.round(n*100)/100; return Number.isInteger(r)?String(r):String(r); }
+
+function logRosterChanges(d){
+  const key=S._fbKey||fbKey();
+  d.changes.forEach(c=>{
+    const detail=`${c.name}: ${c.from} → ${c.to} (${c.delta>0?'+':''}${_fmtHc(c.delta)})`;
+    _logRosterEntry(key, detail, `${c.name}|${c.from}|${c.to}`);
+  });
+  _logRosterEntry(key, `On duty ${_fmtHc(d.before)} → ${_fmtHc(d.after)} (sheet updated)`, `total|${d.before}|${d.after}`);
+}
+
+// Several people may have the app open and all notice the same sheet edit — a transaction on a content-derived key
+// keeps it to one shared log line (a repeat of the identical change within 15 min is skipped).
+function _logRosterEntry(key, detail, sig){
+  const entry={ts:Date.now(), name:'[ROSTER]', action:detail, _evt:true, by:'SHEET'};
+  _actLog.unshift(entry); if(_actLog.length>200) _actLog.length=200;
+  _renderActLog();
+  if(!fbReady||!key) return;
+  let h=0; for(const ch of sig) h=(h*31+ch.charCodeAt(0))|0;
+  fbDb.ref(`activityLog/${key}/rs_${(h>>>0).toString(36)}`).transaction(cur=>{
+    if(cur && Date.now()-cur.ts<15*60*1000) return; // someone else just logged it
+    return entry;
+  }).catch(()=>{});
+}
+
+async function pollRoster(){
+  if(_rosterPolling||!S.loaded||_restoringFromFb||!_sessionToken||document.visibilityState==='hidden') return;
+  _rosterPolling=true; _lastRosterPoll=Date.now();
+  const gen=_rosterGen;
+  try{
+    const dateStr=fmtDate(document.getElementById('dp').value);
+    const shift=document.getElementById('shift-sel').value;
+    const group=document.getElementById('shift-group-sel')?.value||'C';
+    const rows=await fetchSheet();
+    if(gen!==_rosterGen||!S.loaded) return; // user switched date meanwhile
+    const fresh=buildStaff(rows, dateStr, shift, group);
+    if(!fresh.length) return; // sheet momentarily empty/broken — keep what we have
+    const d=diffRoster(S.staff, fresh);
+    if(!d.changes.length) return;
+    const snap=captureFocusSnapshot();
+    _applyingRemote=true;
+    S.staff=fresh;
+    renderAll();
+    _applyingRemote=false;
+    restoreFocusSnapshot(snap);
+    logRosterChanges(d); // view-only logins just see it locally (their Firebase writes are blocked)
+    showToast(`📋 Sheet updated — on duty ${_fmtHc(d.before)} → ${_fmtHc(d.after)}`,'ok',4000);
+  }catch(e){ console.warn('pollRoster:',e.message); }
+  finally{ _applyingRemote=false; _rosterPolling=false; }
+}
+setInterval(pollRoster, ROSTER_POLL_MS);
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState==='visible' && Date.now()-_lastRosterPoll>60*1000) pollRoster();
+});
 
 // ═══════════════════════════════════════════════════════
 // MULTI-USER PRESENCE

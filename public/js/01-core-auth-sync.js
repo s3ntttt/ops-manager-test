@@ -272,6 +272,74 @@ async function fbLoad(){
   }
 }
 
+// Identify the currently focused field by its oninput/onchange/onclick attribute
+// string — these are generated per-row with the row's own closure (dk, i, id, …
+// baked in), so each rendered input/select already has a naturally unique
+// signature we can use to re-find "the same logical field" after a re-render,
+// without having to add id/data attributes everywhere.
+function fieldSig(el){
+  return el.getAttribute('oninput')||el.getAttribute('onchange')||el.getAttribute('onclick')||(el.id?('#id:'+el.id):null);
+}
+
+// Snapshot the focused field (identity, live value/checked, cursor position,
+// scroll position) so a re-render triggered by someone else's change can put
+// it all back exactly as it was — the user never sees their field move,
+// blank out, or lose their place mid-keystroke.
+function captureFocusSnapshot(){
+  const a=document.activeElement;
+  const snap={ scrollX:window.scrollX, scrollY:window.scrollY };
+  if(a && a.matches && a.matches('input,textarea,select')){
+    const sig=fieldSig(a);
+    if(sig){
+      snap.sig=sig;
+      if(a.type==='checkbox'||a.type==='radio') snap.checked=a.checked;
+      else { snap.value=a.value; try{ snap.selStart=a.selectionStart; snap.selEnd=a.selectionEnd; }catch(e){} }
+    }
+  }
+  return snap;
+}
+
+function restoreFocusSnapshot(snap){
+  if(!snap) return;
+  window.scrollTo(snap.scrollX, snap.scrollY);
+  if(!snap.sig) return;
+  let el=null;
+  for(const c of document.querySelectorAll('input,textarea,select')){
+    if(fieldSig(c)===snap.sig){ el=c; break; }
+  }
+  if(!el) return; // the row/field no longer exists after the merge — nothing to restore
+  const hasOninput=!!el.getAttribute('oninput'), hasOnchange=!!el.getAttribute('onchange');
+  if(snap.checked!==undefined){
+    el.checked=snap.checked;
+    if(hasOnchange) el.dispatchEvent(new Event('change',{bubbles:true}));
+    else if(hasOninput) el.dispatchEvent(new Event('input',{bubbles:true}));
+  } else if(snap.value!==undefined){
+    el.value=snap.value;
+    // Re-fire the field's own handler so S (and the debounced save) picks up
+    // whatever the user had typed — not just the DOM text.
+    if(hasOninput) el.dispatchEvent(new Event('input',{bubbles:true}));
+    else if(hasOnchange) el.dispatchEvent(new Event('change',{bubbles:true}));
+  }
+  el.focus();
+  if(snap.selStart!=null && el.setSelectionRange){ try{ el.setSelectionRange(snap.selStart, snap.selEnd); }catch(e){} }
+}
+
+// Merge a remote payload into local state and re-render — live, immediately —
+// while preserving exactly what the user was doing (focus, cursor, in-progress
+// text, scroll position). _applyingRemote guards scheduleSave() so re-rendering
+// someone else's change doesn't immediately echo a save straight back; it's
+// cleared before restoreFocusSnapshot() so the user's own resumed edit still
+// saves normally afterward.
+function applyRemoteData(raw){
+  const d=sanitizeState(raw);
+  const focusSnap=captureFocusSnapshot();
+  _applyingRemote=true;
+  SAVE_FIELDS.forEach(f=>{ if(d[f]!=null) try{ S[f]=JSON.parse(JSON.stringify(d[f])); }catch(e){} });
+  renderAll();
+  _applyingRemote=false;
+  restoreFocusSnapshot(focusSnap);
+}
+
 function setupFbLiveSync(){
   // Detach previous listener if any
   if(_fbLiveRef){ _fbLiveRef.off('value'); _fbLiveRef=null; }

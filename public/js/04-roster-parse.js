@@ -1,6 +1,32 @@
 // ═══════════════════════════════════
 // FETCH & PARSE
 // ═══════════════════════════════════
+// Parse the sheet rows into the staff list for one date/shift/group.
+function buildStaff(rows, dateStr, shift, group){
+  const staff = parseRoster(rows, dateStr, shift, group);
+  // Force ENG SPECIALIST TEAM members into IRR regardless of how the parser sectioned them
+  const engIds = ENG_SPECIALISTS[group.toUpperCase()] || [];
+  staff.forEach(s => { if(engIds.includes(s.id)) s.team = 'IRR'; });
+  return staff;
+}
+
+// Compare two parsed rosters and describe what changed for people ON DUTY (avail.st==='WORKING').
+// Returns { changes:[{name,from,to,delta}], before, after } — empty changes when headcount-relevant data is identical.
+function onDutyWeight(s){ return (s && s.avail && s.avail.st==='WORKING') ? (s.avail.half?0.5:1) : 0; }
+function diffRoster(oldStaff, newStaff){
+  const om=new Map(oldStaff.map(s=>[s.id,s])), nm=new Map(newStaff.map(s=>[s.id,s]));
+  const changes=[];
+  new Set([...om.keys(),...nm.keys()]).forEach(id=>{
+    const o=om.get(id), n=nm.get(id);
+    const ow=onDutyWeight(o), nw=onDutyWeight(n);
+    if(ow===nw) return;
+    const ref=n||o;
+    changes.push({ name: ref.shortName||ref.fullName, from: o?(o.schedVal||'—'):'not listed', to: n?(n.schedVal||'—'):'not listed', delta: nw-ow });
+  });
+  const sum=l=>l.reduce((t,s)=>t+onDutyWeight(s),0);
+  return { changes, before:sum(oldStaff), after:sum(newStaff) };
+}
+
 let _rosterGen=0; // increment on each call; stale calls abort on completion
 async function loadRoster(){
   const gen=++_rosterGen; // capture this call's generation
@@ -12,10 +38,7 @@ async function loadRoster(){
     const rows = await fetchSheet();
     if(gen!==_rosterGen) return; // a newer loadRoster started — abort this one
     const group = document.getElementById('shift-group-sel')?.value || 'C';
-    const staff = parseRoster(rows, dateStr, shift, group);
-    // Force ENG SPECIALIST TEAM members into IRR regardless of how the parser sectioned them
-    const engIds = ENG_SPECIALISTS[group.toUpperCase()] || [];
-    staff.forEach(s => { if(engIds.includes(s.id)) s.team = 'IRR'; });
+    const staff = buildStaff(rows, dateStr, shift, group);
     S.staff = staff;
     // Reset shift-specific state before loading saved data
     // Flush any unsaved changes from the PREVIOUS roster before switching date
