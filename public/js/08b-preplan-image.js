@@ -19,7 +19,7 @@ function prePlanMessage(){
   const night=(document.getElementById('shift-sel')?.value||'DAY').toUpperCase()==='NIGHT';
   return night
     ? 'PREPLAN FOR TONIGHT\n\nNAME IN BLUE TO REPORT IN 1800 - 0600. TQ'
-    : 'PREPLAN FOR TODAY\n\nNAME IN BLUE TO REPORT IN 0600 - 1800. TQ';
+    : 'PREPLAN FOR TOMORROW\n\nNAME IN BLUE TO REPORT IN 0600-1800. TQ';
 }
 
 function _buildPrePlanNode(){
