@@ -212,12 +212,20 @@ document.addEventListener('visibilitychange', ()=>{
 
 
 
+// Each person's own preferences live in the cloud under settings/userPrefs/<NAME>, so they follow the person to any
+// device. (The shared TEAM login shares one entry.) The browser copy is a fallback for view-only logins / offline.
+const userPrefKey=()=>String((_user&&_user.name)||'GUEST').replace(/[.#$\[\]\/]/g,'_');
+function saveGroupPref(){
+  const sg=document.getElementById('shift-group-sel')?.value; if(!sg) return;
+  try{ localStorage.setItem('ops_last_group_'+userPrefKey(),sg); }catch(e){}
+  if(fbReady) fbDb.ref('settings/userPrefs/'+userPrefKey()+'/shiftGroup').set(sg).catch(()=>{});
+}
 function saveLastDate(){
   if(!fbReady) return;
   const d =document.getElementById('dp')?.value;
   const sh=document.getElementById('shift-sel')?.value;
   const sg=document.getElementById('shift-group-sel')?.value;
-  if(sg){ try{ localStorage.setItem('ops_last_group',sg); }catch(e){} }
+  saveGroupPref();
   if(d&&sh) fbDb.ref('settings/lastDate').set({date:d,shift:sh,shiftGroup:sg||'C'}).catch(()=>{});
 }
 
@@ -422,7 +430,7 @@ function dutyPageNow(now=new Date()){
   return { date: iso, shift: (h>=6 && h<18) ? 'DAY' : 'NIGHT' };
 }
 
-// Every login opens on the CURRENT date/shift. Only the shift GROUP (C / D …) is remembered — per browser, so one
+// Every login opens on the CURRENT date/shift. Only the shift GROUP (C / D …) is remembered — per person, so one
 // team switching group doesn't change what the other team sees.
 async function loadLastDate(){
   if(!fbReady) return;
@@ -433,8 +441,10 @@ async function loadLastDate(){
     const now=dutyPageNow();
     if(dp) dp.value=now.date;
     if(ss) ss.value=now.shift;
-    let group=''; try{ group=localStorage.getItem('ops_last_group')||''; }catch(e){}
-    if(!group){                                   // first time on this browser → fall back to the last group saved in the cloud
+    let group='';
+    try{ const s1=await fbDb.ref('settings/userPrefs/'+userPrefKey()+'/shiftGroup').get(); if(s1.exists()) group=s1.val()||''; }catch(e){}
+    if(!group){ try{ group=localStorage.getItem('ops_last_group_'+userPrefKey())||''; }catch(e){} }
+    if(!group){                                   // nothing saved for this person yet → the last group anyone used
       const snap=await fbDb.ref('settings/lastDate').get();
       if(snap.exists()) group=(snap.val()||{}).shiftGroup||'';
     }

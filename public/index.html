@@ -51,7 +51,7 @@
   </div>
   <div style="display:flex;align-items:center;gap:6px">
     <span class="clbl">SHIFT</span>
-    <select id="shift-group-sel" onchange="updateLogoShift();loadEngSpecialists();S.towers={permanent:[],backups:[]};S.trainees={permanent:[],backups:[]};loadTowers();loadTrainees();if(S.loaded){loadRoster();}" style="width:52px">
+    <select id="shift-group-sel" onchange="saveGroupPref();updateLogoShift();loadEngSpecialists();S.towers={permanent:[],backups:[]};S.trainees={permanent:[],backups:[]};loadTowers();loadTrainees();if(S.loaded){loadRoster();}" style="width:52px">
       <option value="A">A</option>
       <option value="B">B</option>
       <option value="C">C</option>
