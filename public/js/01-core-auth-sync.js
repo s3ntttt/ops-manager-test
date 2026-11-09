@@ -217,6 +217,7 @@ function saveLastDate(){
   const d =document.getElementById('dp')?.value;
   const sh=document.getElementById('shift-sel')?.value;
   const sg=document.getElementById('shift-group-sel')?.value;
+  if(sg){ try{ localStorage.setItem('ops_last_group',sg); }catch(e){} }
   if(d&&sh) fbDb.ref('settings/lastDate').set({date:d,shift:sh,shiftGroup:sg||'C'}).catch(()=>{});
 }
 
@@ -412,19 +413,32 @@ async function clearDateData(){
   if(el) el.textContent = '🗑 Reset — ' + label;
 }
 
+// Which roster page is "now"? Uses the local clock: 0600-1800 → today's DAY, 1800-2400 → today's NIGHT,
+// 0000-0600 → yesterday's NIGHT (that night shift started yesterday evening).
+function dutyPageNow(now=new Date()){
+  const h=now.getHours();
+  const d=new Date(now.getFullYear(), now.getMonth(), now.getDate()-(h<6?1:0));
+  const iso=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return { date: iso, shift: (h>=6 && h<18) ? 'DAY' : 'NIGHT' };
+}
+
+// Every login opens on the CURRENT date/shift. Only the shift GROUP (C / D …) is remembered — per browser, so one
+// team switching group doesn't change what the other team sees.
 async function loadLastDate(){
   if(!fbReady) return;
   try {
-    const snap=await fbDb.ref('settings/lastDate').get();
-    if(snap.exists()){
-      const {date,shift,shiftGroup}=snap.val();
-      const dp=document.getElementById('dp');
-      const ss=document.getElementById('shift-sel');
-      const sg=document.getElementById('shift-group-sel');
-      if(dp&&date) dp.value=date;
-      if(ss&&shift) ss.value=shift;
-      if(sg&&shiftGroup){ sg.value=shiftGroup; updateLogoShift(); loadEngSpecialists(); }
+    const dp=document.getElementById('dp');
+    const ss=document.getElementById('shift-sel');
+    const sg=document.getElementById('shift-group-sel');
+    const now=dutyPageNow();
+    if(dp) dp.value=now.date;
+    if(ss) ss.value=now.shift;
+    let group=''; try{ group=localStorage.getItem('ops_last_group')||''; }catch(e){}
+    if(!group){                                   // first time on this browser → fall back to the last group saved in the cloud
+      const snap=await fbDb.ref('settings/lastDate').get();
+      if(snap.exists()) group=(snap.val()||{}).shiftGroup||'';
     }
+    if(sg&&group){ sg.value=group; updateLogoShift(); loadEngSpecialists(); }
   } catch(e){}
 }
 

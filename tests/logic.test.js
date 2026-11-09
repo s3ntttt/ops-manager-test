@@ -107,3 +107,16 @@ test('Duty Engineers: core shift first, backups always behind (roster backups an
   `);
   assert.deepEqual(JSON.parse(app.run('JSON.stringify(mocActiveNames())')), ['COREONE', 'CORETWO', 'BKONE', 'MANUAL']);
 });
+
+test('dutyPageNow: login opens on the current roster page (local clock)', () => {
+  const { loadApp } = require('./helpers');
+  const app = loadApp();
+  const at = (y, m, d, h, min) => { app.ctx.__n = new Date(y, m - 1, d, h, min); return JSON.parse(app.run('JSON.stringify(dutyPageNow(__n))')); };
+  assert.deepEqual(at(2026, 11, 10, 9, 30),  { date: '2026-11-10', shift: 'DAY' });
+  assert.deepEqual(at(2026, 11, 10, 6, 0),   { date: '2026-11-10', shift: 'DAY' });
+  assert.deepEqual(at(2026, 11, 10, 17, 59), { date: '2026-11-10', shift: 'DAY' });
+  assert.deepEqual(at(2026, 11, 10, 18, 0),  { date: '2026-11-10', shift: 'NIGHT' });
+  assert.deepEqual(at(2026, 11, 10, 23, 30), { date: '2026-11-10', shift: 'NIGHT' });
+  assert.deepEqual(at(2026, 11, 10, 2, 30),  { date: '2026-11-09', shift: 'NIGHT' });   // still last night's shift
+  assert.deepEqual(at(2026, 3, 1, 1, 0),     { date: '2026-02-28', shift: 'NIGHT' });   // month boundary
+});

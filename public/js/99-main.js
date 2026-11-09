@@ -6,7 +6,7 @@
   try { const n=JSON.parse(localStorage.getItem('ops_nicknames')||'{}'); S.nicknames=n; } catch(_){}
   try { const _g=currentGroup(); const t=JSON.parse(localStorage.getItem('ops_towers_'+_g)||'null'); if(t) S.towers.permanent=t; } catch(_){}
   try { const _g=currentGroup(); const tr=JSON.parse(localStorage.getItem('ops_trainees_'+_g)||'[]'); if(Array.isArray(tr)&&tr.length) S.trainees.permanent=tr; } catch(_){}
-  document.getElementById('dp').value = new Date().toISOString().split('T')[0];
+  { const n=dutyPageNow(); document.getElementById('dp').value = n.date; const ss=document.getElementById('shift-sel'); if(ss) ss.value=n.shift; }   // local date (toISOString would give the UTC date, a day behind in the early morning)
   close_setup();
   // Auto-login if session is still valid (page refresh)
   if(_sessionToken && sessionStorage.getItem('ops_access')==='OK'){
