@@ -75,6 +75,7 @@ async function loadRoster(){
     };
     S.loaded = true;
     setSt(`${staff.length} staff · ${dateStr} · Shift ${group} ${shift}`);
+    saveUserPage(); // remember where this person is, for their next login
     showToast(`Roster loaded — ${staff.length} staff`,'ok');
     hideLoading();
     // Immediately restore from localStorage (synchronous) before Firebase responds

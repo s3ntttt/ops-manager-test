@@ -120,3 +120,14 @@ test('dutyPageNow: login opens on the current roster page (local clock)', () => 
   assert.deepEqual(at(2026, 11, 10, 2, 30),  { date: '2026-11-09', shift: 'NIGHT' });   // still last night's shift
   assert.deepEqual(at(2026, 3, 1, 1, 0),     { date: '2026-02-28', shift: 'NIGHT' });   // month boundary
 });
+
+test('pickStartPage: login opens on the person\'s last page, unless that date is already behind today', () => {
+  const { loadApp } = require('./helpers');
+  const app = loadApp();
+  const pick = (pref, now) => { app.ctx.__p = pref; app.ctx.__n = now; return JSON.parse(app.run('JSON.stringify(pickStartPage(__p, __n))')); };
+  const now = { date: '2026-11-10', shift: 'DAY' };
+  assert.deepEqual(pick({ date: '2026-11-10', shift: 'NIGHT', shiftGroup: 'D' }, now), { date: '2026-11-10', shift: 'NIGHT', group: 'D' }); // same day → keep their shift
+  assert.deepEqual(pick({ date: '2026-11-12', shift: 'DAY', shiftGroup: 'C' }, now),   { date: '2026-11-12', shift: 'DAY', group: 'C' });   // planning ahead → keep
+  assert.deepEqual(pick({ date: '2026-11-08', shift: 'NIGHT', shiftGroup: 'D' }, now), { date: '2026-11-10', shift: 'DAY', group: 'D' });   // behind → today, same group
+  assert.deepEqual(pick(null, now), { date: '2026-11-10', shift: 'DAY', group: '' });                                                      // first login
+});

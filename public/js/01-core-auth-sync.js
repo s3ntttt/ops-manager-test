@@ -212,20 +212,31 @@ document.addEventListener('visibilitychange', ()=>{
 
 
 
-// Each person's own preferences live in the cloud under settings/userPrefs/<NAME>, so they follow the person to any
-// device. (The shared TEAM login shares one entry.) The browser copy is a fallback for view-only logins / offline.
+// Each person's own place is kept in the cloud under settings/userPrefs/<NAME> (date, shift, group), so it follows the
+// person to any device. (The shared TEAM login shares one entry.) A browser copy is the fallback for view-only logins / offline.
 const userPrefKey=()=>String((_user&&_user.name)||'GUEST').replace(/[.#$\[\]\/]/g,'_');
-function saveGroupPref(){
-  const sg=document.getElementById('shift-group-sel')?.value; if(!sg) return;
-  try{ localStorage.setItem('ops_last_group_'+userPrefKey(),sg); }catch(e){}
-  if(fbReady) fbDb.ref('settings/userPrefs/'+userPrefKey()+'/shiftGroup').set(sg).catch(()=>{});
+function saveUserPage(){
+  const date=document.getElementById('dp')?.value, shift=document.getElementById('shift-sel')?.value, shiftGroup=document.getElementById('shift-group-sel')?.value;
+  if(!date||!shift||!shiftGroup) return;
+  const pref={date,shift,shiftGroup};
+  try{ localStorage.setItem('ops_last_page_'+userPrefKey(),JSON.stringify(pref)); }catch(e){}
+  if(fbReady) fbDb.ref('settings/userPrefs/'+userPrefKey()).set(pref).catch(()=>{});
 }
+const saveGroupPref=saveUserPage;   // (the Group dropdown calls this)
+
+// Where should this person land? Their own last date/shift/group — unless that date is already in the past,
+// in which case they go to the current date/shift (keeping their group). pref may be null/partial.
+function pickStartPage(pref, now=dutyPageNow()){
+  pref=pref||{};
+  const keep=pref.date && pref.date>=now.date;       // ISO dates compare correctly as text
+  return { date: keep?pref.date:now.date, shift: keep?(pref.shift||now.shift):now.shift, group: pref.shiftGroup||'' };
+}
+
 function saveLastDate(){
   if(!fbReady) return;
   const d =document.getElementById('dp')?.value;
   const sh=document.getElementById('shift-sel')?.value;
   const sg=document.getElementById('shift-group-sel')?.value;
-  saveGroupPref();
   if(d&&sh) fbDb.ref('settings/lastDate').set({date:d,shift:sh,shiftGroup:sg||'C'}).catch(()=>{});
 }
 
@@ -430,25 +441,24 @@ function dutyPageNow(now=new Date()){
   return { date: iso, shift: (h>=6 && h<18) ? 'DAY' : 'NIGHT' };
 }
 
-// Every login opens on the CURRENT date/shift. Only the shift GROUP (C / D …) is remembered — per person, so one
-// team switching group doesn't change what the other team sees.
+// Login opens where this person last was (date + shift + group). If that date is already behind today, it opens on the
+// current date/shift instead.
 async function loadLastDate(){
   if(!fbReady) return;
   try {
     const dp=document.getElementById('dp');
     const ss=document.getElementById('shift-sel');
     const sg=document.getElementById('shift-group-sel');
-    const now=dutyPageNow();
-    if(dp) dp.value=now.date;
-    if(ss) ss.value=now.shift;
-    let group='';
-    try{ const s1=await fbDb.ref('settings/userPrefs/'+userPrefKey()+'/shiftGroup').get(); if(s1.exists()) group=s1.val()||''; }catch(e){}
-    if(!group){ try{ group=localStorage.getItem('ops_last_group_'+userPrefKey())||''; }catch(e){} }
-    if(!group){                                   // nothing saved for this person yet → the last group anyone used
-      const snap=await fbDb.ref('settings/lastDate').get();
-      if(snap.exists()) group=(snap.val()||{}).shiftGroup||'';
+    let pref=null;
+    try{ const s1=await fbDb.ref('settings/userPrefs/'+userPrefKey()).get(); if(s1.exists()) pref=s1.val(); }catch(e){}
+    if(!pref || !pref.date){ try{ pref=JSON.parse(localStorage.getItem('ops_last_page_'+userPrefKey())||'null'); }catch(e){} }
+    if(!pref || !pref.shiftGroup){                   // nothing saved for this person yet → group last used by anyone
+      try{ const snap=await fbDb.ref('settings/lastDate').get(); if(snap.exists()) pref={...(pref||{}), shiftGroup:(snap.val()||{}).shiftGroup||''}; }catch(e){}
     }
-    if(sg&&group){ sg.value=group; updateLogoShift(); loadEngSpecialists(); }
+    const start=pickStartPage(pref);
+    if(dp) dp.value=start.date;
+    if(ss) ss.value=start.shift;
+    if(sg&&start.group){ sg.value=start.group; updateLogoShift(); loadEngSpecialists(); }
   } catch(e){}
 }
 
