@@ -132,9 +132,16 @@ function fmtDate(iso){
 // ── Backup code parser ──
 // Matches exact patterns seen in sheet. Returns {matchesShift, dept} or null.
 // STBY and plain DAY/NIGHT are NOT backup — those are own-shift or standby.
+// "B/U SZB", "(D5) B/U PEN" … = backing up ANOTHER STATION (outstation), not KUL. Returns the station code or null.
+// (B/U DAY, B/U NIGHT and B/U KUL are normal KUL backups, so they are not outstation.)
+function outstationOf(raw){
+  const m=String(raw||'').toUpperCase().match(/\b(?:BACKUP|B\/?UP?)\s*\(?([A-Z]{3})\)?(?![A-Z])/);
+  return (m && m[1]!=='DAY' && m[1]!=='KUL') ? m[1] : null;
+}
+
 function parseBkCode(raw, selectedShift){
   const v = raw.toUpperCase().trim();
-
+  if(outstationOf(v)) return null;   // backing up another station → not a backup for KUL
   // Extract dept suffix: (LO), (IRR), (IRREG), (WO)
   const deptMatch = v.match(/\((LO|IRR|IRREG|WO)\)/);
   const dept = deptMatch ? (deptMatch[1]==='LO'?'LO':deptMatch[1]==='WO'?'WO':'IRR') : null;
@@ -652,6 +659,9 @@ function availOf(v, shift){
   if(raw.startsWith(shift)) return { st:'WORKING', lbl:shift, cls:'working', badge:'bwk', raw };
   if(/^DAY\s*\(MD\)/.test(raw)&&shift==='DAY')   return { st:'WORKING', lbl:'DAY MD',   cls:'working', badge:'bwk', raw };
   if(/^NIGHT\s*\(MD\)/.test(raw)&&shift==='NIGHT') return { st:'WORKING', lbl:'NIGHT MD', cls:'working', badge:'bwk', raw };
+  // Backing up another station (e.g. "(D5) B/U SZB") → away from KUL, not available here
+  const _os=outstationOf(raw);
+  if(_os) return { st:'OUTSTATION', lbl:'B/U '+_os, cls:'xfer', badge:'bxf', raw };
   // B/U codes on own staff
   if((/B\/U\s+DAY|BACKUP\s+DAY/.test(raw))&&shift==='DAY')   return { st:'WORKING', lbl:'BK DAY', cls:'working', badge:'bwk', raw };
   if((/B\/U\s+NIGHT|BACKUP\s+NIGHT/.test(raw))&&shift==='NIGHT') return { st:'WORKING', lbl:'BK NIGHT', cls:'working', badge:'bwk', raw };

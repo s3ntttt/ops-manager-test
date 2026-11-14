@@ -52,3 +52,25 @@ test('parseRoster: wrong date throws a clear error', () => {
   const app = loadApp({ shift: 'NIGHT' });
   assert.throws(() => app.ctx.parseRoster(ROWS, '15 Aug 2031', 'NIGHT', 'C'), /not found/i);
 });
+
+test('"(D5) B/U SZB" = backing up another station → not counted at KUL (neither as cross-shift backup nor as own staff)', () => {
+  const app = loadApp({ shift: 'DAY' });
+  const rows = JSON.parse(JSON.stringify(ROWS));
+  const day = (id, name, sched, shift) => ['', id, name, 'LAE (B2)', 'A330', 'LAEB2', '', 'IRR', shift, 'DAY', 'DAY', sched];
+  rows.splice(rows.findIndex(r => r[0] === 'IRREGULARITIES SHIFT A') + 0, 0,
+    day('M10009', 'OWN SHIFT GUY', '(D5) B/U SZB\n(0800-2000)', 'C'));            // own-shift staff sent to SZB
+  rows.push(day('M30001', 'AMMIRUL HAFIZ', '(D5) B/U SZB\n(0800-2000)', 'B'));     // other shift, backing up SZB
+  rows.push(day('M30002', 'REAL BACKUP', '(D5) B/U DAY', 'B'));                    // other shift, normal KUL backup
+  const staff = app.ctx.parseRoster(rows, '02 May 2026', 'DAY', 'C');
+  const byId = Object.fromEntries(staff.map(s => [s.id, s]));
+  assert.equal(byId['M30001_BK'], undefined, 'SZB backup must not appear in the KUL roster');
+  assert.ok(byId['M30002_BK'], 'a normal (D5) B/U DAY backup still counts');
+  const own = byId.M10009;
+  assert.equal(own.avail.st, 'OUTSTATION');
+  assert.equal(own.avail.lbl, 'B/U SZB');
+  assert.equal(app.ctx.isActive(own.avail), false);
+  // helper
+  assert.equal(app.ctx.outstationOf('(D5) B/U SZB'), 'SZB');
+  assert.equal(app.ctx.outstationOf('B/U PEN'), 'PEN');
+  for (const k of ['(D5) B/U DAY', 'B/U NIGHT', '(N5) B/U (NIGHT)', 'B/U KUL', 'DAY', '(D2)*']) assert.equal(app.ctx.outstationOf(k), null, k);
+});
